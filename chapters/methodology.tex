@@ -1,0 +1,205 @@
+%!TEX root = ../dissertation.tex
+
+% =====================================================================
+%  CHAPTER 4 — METHODOLOGY   (SCAFFOLD + OUTLINE)
+% ---------------------------------------------------------------------
+%  HOW TO USE THIS FILE
+%  - Each section has a "TODO" comment block: a checklist of what to
+%    write there. Delete the TODO block as you fill the prose in.
+%  - Rule: this chapter says WHAT you do and WHY. All numbers/results
+%    go in Chapter 5. If you write a score here, move it to Results.
+%  - Notation macros (see block below) should be added ONCE to the
+%    preamble (dissertation.tex) so every chapter shares them.
+%  - Target length ~18 pages. Per-section budgets are noted in [].
+% =====================================================================
+
+% ---- SUGGESTED PREAMBLE MACROS (move these to dissertation.tex) ------
+% \newcommand{\Iq}{I_{q}}            % reference (query) image
+% \newcommand{\tq}{t_{q}}            % modification text
+% \newcommand{\query}{q}            % a query q = (Iq, tq)
+% \newcommand{\db}{\mathcal{D}}     % image database
+% \newcommand{\cap}{c}              % generated target caption
+% \newcommand{\enc}{\phi}           % a VLM encoder
+% \newcommand{\sx}[1]{s_{#1}}        % similarity score, e.g. \sx{img}
+% \newcommand{\clamp}{\mathrm{clamp}}
+% ---------------------------------------------------------------------
+
+\chapter{Methodology}\label{chapt:method}
+
+% TODO (chapter intro, ~0.5 page):
+% - One paragraph: restate the goal (zero-shot instance-level CIR) and the
+%   core idea of this thesis in 2-3 sentences: add an MLLM-generated TARGET
+%   CAPTION as a third retrieval modality, fused with image and text scores.
+% - Then a sentence listing the sections, mirroring the template style:
+%   "This chapter is organised as follows: Section~\ref{sect:method_problem}
+%    ... Section~\ref{sect:method_impl}."
+
+This chapter is organised as follows.
+Section~\ref{sect:method_problem} formalises the composed image retrieval task and fixes the notation used throughout the thesis.
+Section~\ref{sect:method_eval} defines the evaluation protocol and metrics.
+Section~\ref{sect:method_overview} gives an overview of the proposed retrieval pipeline.
+Section~\ref{sect:method_backbones} describes the vision--language backbones used to embed the data.
+Section~\ref{sect:method_basic} recalls the \textsc{Basic} baseline that this work builds upon.
+Section~\ref{sect:method_caption} introduces the target-caption generation step, the central contribution.
+Section~\ref{sect:method_fusion} presents the triplet late-fusion scoring function.
+Section~\ref{sect:method_impl} reports the implementation details.
+
+% =====================================================================
+\section{Problem Formulation and Notation}\label{sect:method_problem}  % [~2 pages]
+% =====================================================================
+% TODO:
+% - Define a query q = (Iq, tq): reference image + short modification text.
+% - Define the database D = {x_1, ..., x_N} of N database images (N=752,092
+%   full / 143,769 on the 20% subset). Goal: rank D so the user's intended
+%   target image is near the top.
+% - Define "instance-level": ground truth = images sharing the same
+%   (instance, text_query) folder; what makes i-CIR different from
+%   category-level CIR (CIRR/FashionIQ): targets are specific object
+%   instances, and HARD NEGATIVES = same instance, different modification.
+% - State the zero-shot assumption: no training on i-CIR; off-the-shelf VLMs.
+% - Fix every symbol here and reuse it everywhere (see preamble macros).
+
+% =====================================================================
+\section{Evaluation Protocol and Metrics}\label{sect:method_eval}  % [~1.5 pages]
+% =====================================================================
+% TODO:
+% - Define the instance-pool ranking protocol (how each query is scored
+%   against its pool), consistent with the i-CIR paper.
+% - Define each metric you report, with a one-line formula:
+%     macro-mAP (mmAP) -- trapezoidal AP, averaged per query then per instance
+%     micro-mAP (mAP), Recall@k (R@10, R@100), Hit@1, Hit@10.
+% - State macro-mAP is the primary metric (matches the paper).
+% Equation stub for Average Precision (fill in the trapezoidal form):
+\begin{equation}\label{eq:ap}
+    \mathrm{AP} = \text{TODO: trapezoidal average-precision definition.}
+\end{equation}
+
+% =====================================================================
+\section{Pipeline Overview}\label{sect:method_overview}  % [~1.5 pages]
+% =====================================================================
+% TODO:
+% - Describe the whole system at a high level; the figure does the heavy
+%   lifting, the text walks through it left-to-right.
+% - Three modalities -> three similarity scores -> late fusion -> ranking.
+% - Emphasise: all encoders are frozen / off-the-shelf (zero-shot).
+\begin{figure}[h!]
+\centering
+% \includegraphics[width=\textwidth]{figures/pipeline_overview.png}
+\caption[Overview of the proposed retrieval pipeline.]{Overview of the
+proposed pipeline: the reference image and modification text are encoded by
+a frozen VLM; an MLLM generates a target caption; image, text and caption
+similarities are fused by the triplet product and used to rank the database.
+\label{fig:pipeline}}
+\end{figure}
+
+% =====================================================================
+\section{Vision--Language Backbones}\label{sect:method_backbones}  % [~2 pages]
+% =====================================================================
+% TODO:
+% - List the backbones compared: CLIP ViT-L/14, CLIP ViT-H/14,
+%   SigLIP ViT-L/16-256, SigLIP2 g/16-384 (and Qwen3-VL-Embedding-2B, which
+%   underperformed -- mention as a tried-but-weak baseline).
+% - For each: architecture family, embedding dim, why included.
+% - Explain how each modality is embedded: image encoder for Iq and DB
+%   images; text encoder for tq and for the generated caption c.
+% - Justify "off-the-shelf / zero-shot": no fine-tuning, fair comparison.
+\begin{table}[h!]
+\centering
+\begin{tabular}{l c c}
+\toprule
+Backbone & Embedding dim & Notes \\ \midrule
+CLIP ViT-L/14   & TODO & paper-comparable \\
+CLIP ViT-H/14   & TODO & strongest duplet backbone \\
+SigLIP ViT-L/16-256 & TODO & \\
+SigLIP2 g/16-384 & TODO & best overall \\
+Qwen3-VL-Emb-2B & TODO & weak baseline \\
+\bottomrule
+\end{tabular}
+\caption[Vision--language backbones compared.]{Vision--language backbones
+compared in this work.\label{tab:backbones}}
+\end{table}
+
+% =====================================================================
+\section{The \textsc{Basic} Baseline}\label{sect:method_basic}  % [~3 pages]
+% =====================================================================
+% TODO (this is the pipeline you build ON, from the i-CIR paper):
+% - Describe the BASIC zero-shot pipeline you re-implemented, component by
+%   component (see src/thesis_cir/icir/pipeline.py):
+%     * feature CENTERING (subtract a mean; global DB-mean vs LAION-1M mean)
+%     * PCA / whitening
+%     * query expansion
+%     * Harris fusion
+%     * text contextualisation
+% - This defines the DUPLET baseline: score = text x image similarity.
+% - Make clear which parts you keep, tune, or drop in your method.
+\subsection{Feature Centering}\label{subsect:method_centering}
+% TODO: define centering; the two mean choices (global vs LAION-1M); why it
+% helps (removes modality/dataset bias). Defer the magnitude to Results.
+\subsection{Duplet Baseline Score}\label{subsect:method_duplet}
+% TODO: give the duplet scoring equation (image x text product).
+
+% =====================================================================
+\section{Target-Caption Generation}\label{sect:method_caption}  % [~3.5 pages] *** CONTRIBUTION ***
+% =====================================================================
+% TODO (write this section most carefully -- it is the core contribution):
+% - Idea: an MLLM (InternVL-8B) takes the reference image Iq AND the
+%   modification text tq, and writes a short description of the IMAGINED
+%   TARGET image -- i.e. it "applies" the edit in language space.
+% - Why this helps: turns an implicit cross-modal edit into an explicit
+%   text query that the VLM text encoder handles well.
+% - Prompt / instruction design: you tried 9 instruction variants; describe
+%   the design space and what distinguishes them (Table~\ref{tab:instructions}).
+% - Robustness via averaging: embed all 9 caption variants and average the
+%   embeddings ("avg-9") to reduce caption variance. Define this formally.
+% - Include ONE qualitative example (Iq + tq -> generated caption).
+\begin{figure}[h!]
+\centering
+% \includegraphics[width=\textwidth]{figures/caption_example.png}
+\caption[Example of target-caption generation.]{Given the reference image
+and the modification text, the MLLM generates a description of the intended
+target image.\label{fig:caption_example}}
+\end{figure}
+\begin{table}[h!]
+\centering
+\begin{tabular}{l l}
+\toprule
+ID & Instruction (summary) \\ \midrule
+1\_8b   & TODO \\
+6\_A\_8b & TODO (best single instruction) \\
+\multicolumn{2}{l}{\dots\ (9 variants total)} \\
+\bottomrule
+\end{tabular}
+\caption[Caption-generation instruction variants.]{The instruction variants
+used to prompt the MLLM; \texttt{avg-9} averages all nine.\label{tab:instructions}}
+\end{table}
+
+% =====================================================================
+\section{Triplet Late-Fusion Scoring}\label{sect:method_fusion}  % [~2 pages] *** CONTRIBUTION ***
+% =====================================================================
+% TODO:
+% - Define the three per-candidate cosine similarities against a DB image x:
+%     s_img  = sim(phi_img(Iq), phi_img(x))
+%     s_txt  = sim(phi_txt(tq), phi_img(x))
+%     s_cap  = sim(phi_txt(c),  phi_img(x))
+% - Define the triplet score as the clamped product (fill the equation):
+% - Explain WHY: product = logical AND (a good match must satisfy all three);
+%   clamp(.) avoids sign flips / negative-times-negative artefacts.
+% - Contrast with the duplet baseline (Section~\ref{subsect:method_duplet}).
+\begin{equation}\label{eq:triplet}
+    s_{\text{triplet}}(q, x) =
+    \clamp\!\big(s_{\text{cap}}\big)\cdot
+    \clamp\!\big(s_{\text{txt}}\big)\cdot
+    \clamp\!\big(s_{\text{img}}\big).
+\end{equation}
+
+% =====================================================================
+\section{Implementation Details}\label{sect:method_impl}  % [~1.5 pages]
+% =====================================================================
+% TODO:
+% - Hardware/software: SLURM HPC cluster, GPUs used, frameworks
+%   (PyTorch, OpenCLIP, HuggingFace Transformers).
+% - Embedding pipeline: sharded + resumable embedding of 752K DB images.
+% - The 20% development subset (instance_sample20_seed42: 400 queries /
+%   143,769 DB): why it is a fair proxy (subset baseline ~= full baseline).
+% - Caching of embeddings; CSR-packed result storage.
+% - Reproducibility: seeds, config files.

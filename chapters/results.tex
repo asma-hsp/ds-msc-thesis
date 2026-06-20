@@ -1,0 +1,222 @@
+%!TEX root = ../dissertation.tex
+
+% =====================================================================
+%  CHAPTER 5 — EXPERIMENTAL RESULTS   (OUTLINE + REAL TABLES)
+% ---------------------------------------------------------------------
+%  Tables below are pre-filled with your actual numbers from
+%  thesis_cir/docs/*.{md,csv}. SOURCE is noted above each table.
+%  *** Distinguish FULL i-CIR (headline) vs 20% SUBSET (ablations). ***
+%  Write the prose in the TODO blocks; the numbers are already in.
+%  Target length ~22 pages.
+% =====================================================================
+
+\chapter{Experimental Results}\label{chapt:results}
+
+This chapter is organised as follows.
+Section~\ref{sect:res_setup} describes the experimental setup.
+Section~\ref{sect:res_main} reports the main results on the full i-CIR dataset.
+Section~\ref{sect:res_centering} analyses the effect of feature centering.
+Section~\ref{sect:res_backbones} compares the vision--language backbones.
+Section~\ref{sect:res_ablation} ablates the contribution of each component.
+Section~\ref{sect:res_rerank} reports a negative result on reranking.
+Section~\ref{sect:res_qual} shows qualitative examples.
+
+% =====================================================================
+\section{Experimental Setup}\label{sect:res_setup}  % [~2 pages]
+% =====================================================================
+% TODO:
+% - Dataset: full i-CIR (1,883 queries / 752,092 DB images); the 20% dev
+%   subset (instance_sample20_seed42: 400 queries / 143,769 DB) and why it is
+%   a fair proxy (subset baseline ~= full baseline).
+% - Metrics: refer back to Section~\ref{sect:method_eval} (macro-mAP primary).
+% - Configurations compared: BASIC (img x text), Ours (img x text x caption),
+%   +centering; default vs tuned BASIC params.
+% - Caption setting: avg-9 by default (Section~\ref{sect:method_caption}).
+
+% =====================================================================
+\section{Main Results: BASIC vs.\ Triplet}\label{sect:res_main}  % [~4 pages]
+% =====================================================================
+% TODO:
+% - Headline finding: the target caption improves every backbone; gains are
+%   largest for SigLIP-L (+20.0) and SigLIP2 (+16.0).
+% - Discuss why weaker text-image alignment benefits more from the caption.
+% SOURCE: thesis_cir/docs/full_basic_vs_triplet_table.md (full i-CIR, mmAP)
+\begin{table}[h!]
+\centering
+\begin{tabular}{l c c c c}
+\toprule
+Backbone & BASIC (img$\times$txt) & Ours [avg-9] & Ours [6\_A\_8b] & $\Delta$ best \\ \midrule
+CLIP-L   & 17.95 & 24.42 & 23.08 & +6.47 \\
+CLIP-H   & 41.04 & 47.75 & 45.90 & +6.71 \\
+SigLIP-L & 21.10 & 41.15 & 39.79 & +20.05 \\
+SigLIP2  & 38.04 & \textbf{54.00} & 51.55 & +15.96 \\
+\bottomrule
+\end{tabular}
+\caption[BASIC vs.\ triplet on the full i-CIR dataset.]{Macro-mAP (\%) on the
+full i-CIR dataset (1,883 queries / 752,092 DB). BASIC is the
+image$\times$text product; Ours adds the generated target caption.
+\label{tab:res_main}}
+\end{table}
+
+% =====================================================================
+\section{Effect of Feature Centering}\label{sect:res_centering}  % [~3 pages]
+% =====================================================================
+% TODO:
+% - Centering helps every configuration; combined with the caption it gives
+%   the best results (SigLIP2 Ours+center = 59.23).
+% - Note: global DB-mean vs LAION-1M mean centering are within ~0.5 mmAP
+%   (see the full metrics table) -> centering source does not matter much.
+% SOURCE: thesis_cir/docs/full_centering_and_metrics.md (full i-CIR, mmAP)
+\begin{table}[h!]
+\centering
+\begin{tabular}{l c c c c}
+\toprule
+Backbone & BASIC & BASIC+center & Ours & Ours+center \\ \midrule
+CLIP-L   & 17.95 & 25.22 & 24.42 & 28.74 \\
+CLIP-H   & 41.04 & 46.05 & 47.75 & 50.10 \\
+SigLIP-L & 21.10 & 44.76 & 41.15 & 48.97 \\
+SigLIP2  & 38.04 & 53.94 & 54.00 & \textbf{59.23} \\
+\bottomrule
+\end{tabular}
+\caption[Effect of feature centering on the full i-CIR dataset.]{Macro-mAP
+(\%) on the full i-CIR dataset, with and without feature centering.
+\label{tab:res_centering}}
+\end{table}
+
+% --- Comprehensive metrics table (all configs) -------------------------
+% TODO: reference this as the full breakdown; discuss R@k / Hit@k trends.
+% SOURCE: thesis_cir/docs/full_centering_and_metrics.md ("Full metrics")
+% NOTE: wide table -- uses \small; switch to landscape if it overflows.
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{l l c c c c c c}
+\toprule
+Backbone & Config & mmAP & mAP & R@10 & R@100 & Hit@1 & Hit@10 \\ \midrule
+CLIP-H & BASIC            & 41.04 & 37.29 & 44.80 & 80.31 & 50.56 & 83.48 \\
+CLIP-H & BASIC+center     & 46.05 & 43.37 & 51.10 & 84.91 & 57.04 & 88.37 \\
+CLIP-H & Ours             & 47.75 & 46.35 & 53.55 & 86.25 & 59.48 & 89.27 \\
+CLIP-H & Ours+center      & 50.10 & 49.02 & 56.03 & 87.50 & 63.25 & 91.02 \\ \midrule
+CLIP-L & BASIC            & 17.95 & 21.85 & 27.03 & 65.03 & 31.12 & 65.64 \\
+CLIP-L & BASIC+center     & 25.22 & 30.34 & 36.80 & 75.96 & 39.72 & 76.42 \\
+CLIP-L & BASIC+ctr(LAION) & 25.30 & 29.88 & 36.08 & 75.35 & 39.46 & 75.52 \\
+CLIP-L & Ours             & 24.42 & 28.62 & 34.56 & 73.77 & 36.75 & 72.81 \\
+CLIP-L & Ours+center      & 28.74 & 33.63 & 40.50 & 78.74 & 43.44 & 79.08 \\
+CLIP-L & Ours+ctr(LAION)  & 28.77 & 33.31 & 39.49 & 78.73 & 43.18 & 77.85 \\ \midrule
+SigLIP-L & BASIC            & 21.10 & 23.13 & 29.40 & 69.88 & 28.52 & 64.63 \\
+SigLIP-L & BASIC+center     & 44.76 & 47.98 & 54.45 & 86.96 & 59.11 & 87.47 \\
+SigLIP-L & BASIC+ctr(LAION) & 44.89 & 47.95 & 54.45 & 87.24 & 59.80 & 88.05 \\
+SigLIP-L & Ours             & 41.15 & 43.66 & 50.51 & 86.23 & 52.04 & 86.19 \\
+SigLIP-L & Ours+center      & 48.97 & 52.53 & 57.56 & 89.00 & 62.72 & 89.70 \\
+SigLIP-L & Ours+ctr(LAION)  & 49.51 & 52.64 & 57.67 & 89.22 & 63.04 & 89.70 \\ \midrule
+SigLIP2 & BASIC            & 38.04 & 35.36 & 42.70 & 76.19 & 44.66 & 78.86 \\
+SigLIP2 & BASIC+center     & 53.94 & 50.39 & 56.68 & 86.80 & 60.65 & 88.69 \\
+SigLIP2 & Ours             & 54.00 & 51.68 & 56.94 & 87.01 & 62.45 & 90.44 \\
+SigLIP2 & Ours+center      & \textbf{59.23} & \textbf{56.81} & \textbf{61.76} & \textbf{89.27} & \textbf{68.40} & \textbf{91.45} \\
+\bottomrule
+\end{tabular}
+\caption[Comprehensive results on the full i-CIR dataset.]{All metrics (\%)
+on the full i-CIR dataset. mmAP = macro-mAP; ctr(LAION) = centering with the
+LAION-1M mean instead of the global DB mean.\label{tab:res_full}}
+\end{table}
+
+% =====================================================================
+\section{Backbone Comparison}\label{sect:res_backbones}  % [~3 pages]
+% =====================================================================
+% TODO:
+% - Duplet (text x image) baseline ranking of backbones on the 20% subset.
+% - CLIP-H is the strongest duplet backbone; Qwen3-VL is far behind.
+% - Contrast with the full-dataset triplet ranking (SigLIP2 wins there).
+% SOURCE: meeting_2026-06-18_results.md / runs/..._subset/summary_comparison.csv
+% *** 20% SUBSET, macro-mAP@100 ***
+\begin{table}[h!]
+\centering
+\begin{tabular}{l c c}
+\toprule
+Backbone & macro-mAP@100 & mAP@100 \\ \midrule
+CLIP ViT-H/14        & \textbf{44.50} & 35.56 \\
+SigLIP2 g/16-384     & 33.26 & 27.84 \\
+SigLIP ViT-L/16-256  & 23.38 & 22.43 \\
+CLIP ViT-L/14        & 18.03 & 21.05 \\
+Qwen3-VL-Emb 2B      & 3.08  & 2.98  \\
+\bottomrule
+\end{tabular}
+\caption[Backbone comparison (duplet baseline, 20\% subset).]{Duplet
+(text$\times$image) baseline, 20\% instance subset (400 queries / 143,769
+DB).\label{tab:res_backbones}}
+\end{table}
+
+% =====================================================================
+\section{Ablation Studies}\label{sect:res_ablation}  % [~4 pages]
+% =====================================================================
+% TODO (intro): isolate the contribution of each component on the subset.
+
+\subsection{Contribution of Each Component}\label{subsect:res_ablation_steps}
+% TODO:
+% - Biggest single jump = the caption (+7.8 over duplet); centering second (+4.8).
+% - The elaborate BASIC preprocessing adds little once the caption is present.
+% SOURCE: meeting_2026-06-18_results.md, Section 2. *** CLIP-L, 20% SUBSET ***
+\begin{table}[h!]
+\centering
+\begin{tabular}{l c c}
+\toprule
+Configuration & macro-mAP & mAP \\ \midrule
+text $\times$ image (duplet baseline)        & 18.73 & 22.05 \\
+triplet, single best instruction            & 26.27 & 27.38 \\
+triplet, avg-9 captions (no preprocessing)  & 26.49 & 29.81 \\
+\quad + centering                           & 31.33 & 37.48 \\
+\quad + full BASIC (default params)         & 31.71 & 36.68 \\
+\quad + full BASIC (tuned)                  & \textbf{34.29} & 39.90 \\
+\bottomrule
+\end{tabular}
+\caption[Component ablation (CLIP-L, 20\% subset).]{Contribution of each
+component, CLIP-L on the 20\% subset. Tuned BASIC:
+$\lambda{=}0.2$, $N_c{=}600$, $\alpha{=}0.2$, $k{=}5$, $t{=}0.5$.
+\label{tab:res_ablation_steps}}
+\end{table}
+
+\subsection{Caption Instruction Variants}\label{subsect:res_ablation_instr}
+% TODO:
+% - Best single instruction (6_A_8b) ~ averaging all nine; avg-9 is more
+%   robust, so it is the default.
+% SOURCE: meeting_2026-06-18_results.md, Section 4. *** CLIP-L triplet, SUBSET ***
+\begin{table}[h!]
+\centering
+\begin{tabular}{l c c}
+\toprule
+Instruction & macro-mAP & mAP \\ \midrule
+6\_A\_8b          & \textbf{26.27} & 27.38 \\
+1\_8b             & 25.97 & 28.50 \\
+3\_8b             & 25.53 & 27.71 \\
+2\_8b             & 24.93 & 27.88 \\
+4\_8b             & 24.67 & 27.20 \\
+5\_8b / 7\_8b     & 22.52 & 27.44 \\
+6\_B\_8b / 8\_8b  & 21.97 & 25.39 \\
+avg of 9          & 24.04 & 27.15 \\
+\bottomrule
+\end{tabular}
+\caption[Caption-instruction ablation (CLIP-L triplet, 20\% subset).]{Per-instruction
+macro-mAP, CLIP-L triplet on the 20\% subset.\label{tab:res_ablation_instr}}
+\end{table}
+
+% =====================================================================
+\section{Reranking: A Negative Result}\label{sect:res_rerank}  % [~2 pages]
+% =====================================================================
+% TODO:
+% - Reranking the top-200 CLIP-L results with DINOv2/DINOv3 features HURTS
+%   performance on the subset. Report it honestly and hypothesise why
+%   (self-supervised features lack the text-conditioned signal).
+% SOURCE: runs/reranking_experiments/  (fill in the exact deltas here).
+
+% =====================================================================
+\section{Qualitative Results}\label{sect:res_qual}  % [~2 pages]
+% =====================================================================
+% TODO:
+% - 2-3 example queries: reference image + text -> generated caption ->
+%   top-k retrieved (successes and a failure case).
+\begin{figure}[h!]
+\centering
+% \includegraphics[width=\textwidth]{figures/qualitative_examples.png}
+\caption[Qualitative retrieval examples.]{Example queries with the generated
+target caption and the top retrieved images.\label{fig:qualitative}}
+\end{figure}
