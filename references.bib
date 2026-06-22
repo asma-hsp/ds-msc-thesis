@@ -1,43 +1,165 @@
+% =====================================================================
+%  References for the thesis.
+%  NOTE: arXiv IDs / venues are filled from the papers' own metadata.
+%  Double-check year/venue fields against the published versions before
+%  the final submission (flagged in HIGHLIGHTS.md).
+% =====================================================================
 
-@BOOK{book1,
- title = {Title of the book with some {Upper Case LETTERS}},
- author = {Surname1, Name1 and Surname2, Name2 and Surname3, Name3},
- publisher = {Book publisher},
- edition = {1st},
- year = {2021}
+% ---- The i-CIR benchmark (primary reference) -------------------------
+@misc{psomas2025icir,
+  title         = {Instance-Level Composed Image Retrieval},
+  author        = {Psomas, Bill and others},
+  year          = {2025},
+  eprint        = {2510.25387},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CV},
+  note          = {Accepted at NeurIPS 2025}
 }
 
-@ARTICLE{article1,
-  title = {Title of the article},
-  author = {Surname4, Name4 and Surname5, Name5 and Surname6, Name6},
-  journal = {Journal's name},
-  volume = {1},
-  number = {2},
-  pages = {3--5},
-  year = {2021}
+% ---- Vision--language pretraining ------------------------------------
+@inproceedings{radford2021clip,
+  title     = {Learning Transferable Visual Models from Natural Language Supervision},
+  author    = {Radford, Alec and Kim, Jong Wook and Hallacy, Chris and Ramesh, Aditya and Goh, Gabriel and Agarwal, Sandhini and Sastry, Girish and Askell, Amanda and Mishkin, Pamela and Clark, Jack and Krueger, Gretchen and Sutskever, Ilya},
+  booktitle = {Proceedings of the International Conference on Machine Learning (ICML)},
+  year      = {2021}
 }
 
-@INPROCEEDINGS{conference1,
- title = {Title of the conference},
- author = {Surname7, Name7 and Surname8, Name8 and Surname9, Name9},
- booktitle = {Proceedings of the conference's name},
- month = {Feb.},
- year = {2021},
- address = {city, state}
+@inproceedings{zhai2023siglip,
+  title     = {Sigmoid Loss for Language Image Pre-Training},
+  author    = {Zhai, Xiaohua and Mustafa, Basil and Kolesnikov, Alexander and Beyer, Lucas},
+  booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+  year      = {2023}
 }
 
-@ONLINE{online1,
- author = {{Author of the resource}},
- title = {Title of the resource},
- url  = {https://unipd.it},
- addendum = {(accessed: 16.02.2021)}
+@misc{tschannen2025siglip2,
+  title         = {SigLIP 2: Multilingual Vision-Language Encoders with Improved Semantic Understanding, Localization, and Dense Features},
+  author        = {Tschannen, Michael and others},
+  year          = {2025},
+  eprint        = {2502.14786},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CV}
 }
 
-@STANDARD{standard1,
- title = {Name of the standard},
- year = {2021},
- month = {Feb.},
- organization = {organization},
- note = {Identifier of the standard}
+@inproceedings{ilharco2021openclip,
+  title     = {OpenCLIP},
+  author    = {Ilharco, Gabriel and Wortsman, Mitchell and Wightman, Ross and Gordon, Cade and Carlini, Nicholas and Taori, Rohan and Dave, Achal and Shankar, Vaishaal and Namkoong, Hongseok and Miller, John and Hajishirzi, Hannaneh and Farhadi, Ali and Schmidt, Ludwig},
+  year      = {2021},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.5143773}
 }
 
+@inproceedings{schuhmann2022laion5b,
+  title     = {{LAION-5B}: An Open Large-Scale Dataset for Training Next Generation Image-Text Models},
+  author    = {Schuhmann, Christoph and Beaumont, Romain and Vencu, Richard and Gordon, Cade and Wightman, Ross and Cherti, Mehdi and Coombes, Theo and Katta, Aarush and Mullis, Clayton and Wortsman, Mitchell and others},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS), Datasets and Benchmarks Track},
+  year      = {2022}
+}
+
+% ---- Multimodal LLMs (captioner) ------------------------------------
+@misc{wang2025internvl35,
+  title         = {InternVL3.5: Advancing Open-Source Multimodal Models},
+  author        = {Wang, Weiyun and others},
+  year          = {2025},
+  eprint        = {2508.18265},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CV}
+}
+
+@misc{bai2025qwen3vl,
+  title         = {Qwen3-VL Technical Report},
+  author        = {Bai, Shuai and others},
+  year          = {2025},
+  note          = {Alibaba Qwen Team},
+  howpublished  = {\url{https://github.com/QwenLM/Qwen3-VL}}
+}
+
+% ---- Composed image retrieval: supervised + benchmarks --------------
+@inproceedings{vo2019tirg,
+  title     = {Composing Text and Image for Image Retrieval -- An Empirical Odyssey},
+  author    = {Vo, Nam and Jiang, Lu and Sun, Chen and Murphy, Kevin and Li, Li-Jia and Fei-Fei, Li and Hays, James},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2019}
+}
+
+@inproceedings{liu2021cirr,
+  title     = {Image Retrieval on Real-life Images with Pre-trained Vision-and-Language Models},
+  author    = {Liu, Zheyuan and Rodriguez-Opazo, Cristian and Teney, Damien and Gould, Stephen},
+  booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+  year      = {2021}
+}
+
+@inproceedings{wu2021fashioniq,
+  title     = {Fashion {IQ}: A New Dataset Towards Retrieving Images by Natural Language Feedback},
+  author    = {Wu, Hui and Gao, Yupeng and Guo, Xiaoxiao and Al-Halah, Ziad and Rennie, Steven and Grauman, Kristen and Feris, Rogerio},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2021}
+}
+
+@inproceedings{baldrati2023circo,
+  title     = {Zero-Shot Composed Image Retrieval with Textual Inversion},
+  author    = {Baldrati, Alberto and Agnolucci, Lorenzo and Bertini, Marco and Del Bimbo, Alberto},
+  booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+  year      = {2023}
+}
+
+% ---- Zero-shot CIR --------------------------------------------------
+@inproceedings{saito2023pic2word,
+  title     = {Pic2Word: Mapping Pictures to Words for Zero-Shot Composed Image Retrieval},
+  author    = {Saito, Kuniaki and Sohn, Kihyuk and Zhang, Xiang and Li, Chun-Liang and Lee, Chen-Yu and Saenko, Kate and Pfister, Tomas},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2023}
+}
+
+@inproceedings{karthik2024cirevl,
+  title     = {Vision-by-Language for Training-Free Compositional Image Retrieval},
+  author    = {Karthik, Shyamgopal and Roth, Karsten and Mancini, Massimiliano and Akata, Zeynep},
+  booktitle = {Proceedings of the International Conference on Learning Representations (ICLR)},
+  year      = {2024}
+}
+
+@inproceedings{gu2024lincir,
+  title     = {Language-only Efficient Training of Zero-shot Composed Image Retrieval},
+  author    = {Gu, Geonmo and Chun, Sanghyuk and Kim, Wonjae and Kang, Yoohoon and Yun, Sangdoo},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2024}
+}
+
+@article{song2024cirsurvey,
+  title   = {Composed Image Retrieval: A Survey},
+  author  = {Song, and others},
+  journal = {arXiv preprint},
+  year    = {2024},
+  note    = {Survey of composed image retrieval}
+}
+
+% ---- Self-supervised visual features (reranking) --------------------
+@article{oquab2024dinov2,
+  title   = {{DINOv2}: Learning Robust Visual Features without Supervision},
+  author  = {Oquab, Maxime and Darcet, Timoth{\'e}e and Moutakanni, Th{\'e}o and Vo, Huy and Szafraniec, Marc and Khalidov, Vasil and Fernandez, Pierre and Haziza, Daniel and Massa, Francisco and El-Nouby, Alaaeldin and others},
+  journal = {Transactions on Machine Learning Research (TMLR)},
+  year    = {2024}
+}
+
+@misc{simeoni2025dinov3,
+  title         = {{DINOv3}},
+  author        = {Sim{\'e}oni, Oriane and others},
+  year          = {2025},
+  eprint        = {2508.10104},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CV}
+}
+
+% ---- Retrieval post-processing --------------------------------------
+@inproceedings{radenovic2018finetuning,
+  title     = {Fine-tuning {CNN} Image Retrieval with No Human Annotation},
+  author    = {Radenovi{\'c}, Filip and Tolias, Giorgos and Chum, Ond{\v{r}}ej},
+  booktitle = {IEEE Transactions on Pattern Analysis and Machine Intelligence (TPAMI)},
+  year      = {2019}
+}
+
+@inproceedings{philbin2007oxford,
+  title     = {Object Retrieval with Large Vocabularies and Fast Spatial Matching},
+  author    = {Philbin, James and Chum, Ondrej and Isard, Michael and Sivic, Josef and Zisserman, Andrew},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2007}
+}

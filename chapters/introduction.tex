@@ -1,22 +1,147 @@
 %!TEX root = ../dissertation.tex
 \chapter{Introduction}\label{chapt:intro}
 
-% TODO (Introduction, ~8 pages). Suggested structure:
-% 1. Motivation: why composed image retrieval (CIR) matters -- searching with
-%    a reference image + a text describing the desired change.
-% 2. Problem: instance-level CIR (i-CIR) -- retrieving a specific object
-%    instance, with hard negatives; why it is harder than category-level CIR.
-% 3. Gap: zero-shot CIR with off-the-shelf VLMs; limitations of the BASIC
-%    pipeline; the role of language as a bridge.
-% 4. Contributions (bullet list): (i) an MLLM-generated TARGET CAPTION as a
-%    third modality; (ii) a triplet late-fusion scoring function; (iii) a
-%    backbone comparison (CLIP-L/H, SigLIP, SigLIP2) on the full i-CIR; (iv)
-%    ablations isolating the effect of caption, centering, and fusion.
-% 5. Thesis outline.
+% =====================================================================
+%  DRAFT v1 (Asma) -- full prose. Search "HIGHLIGHT" for things only you
+%  can decide/insert (figures, exact citations, personal framing).
+%  Target length ~8 pages.
+% =====================================================================
+
+\section{Motivation}\label{sect:intro_motivation}
+
+Searching a large image collection for one specific picture is a task that
+text alone, or an example image alone, often cannot express. A user who
+remembers \emph{a particular handbag, but in black instead of brown}, or
+\emph{this building, photographed at night}, has a target in mind that is
+naturally described as an existing image together with a desired change. This
+is the setting of \emph{composed image retrieval} (CIR): the query is a pair
+$(\qv, \qt)$ consisting of a reference image $\qv$ and a short text $\qt$ that
+specifies how the desired result differs from it, and the system must return,
+from a database $\DB$, the image the user actually has in mind.
+
+Composed image retrieval has attracted growing attention because it combines
+the complementary strengths of the two most common query modalities. The
+reference image grounds the search in concrete visual appearance, while the
+text supplies the relational or attribute-level change that an image alone
+cannot convey~\cite{vo2019tirg}. Applications range from e-commerce product
+search and fashion recommendation~\cite{wu2021fashioniq} to general visual
+search on real-world photographs~\cite{liu2021cirr}. The central difficulty is
+that the modification text does not describe the reference image; it describes
+the \emph{difference} between the reference and an image that is not available
+at query time, which the model must imagine and then match against the
+database.
+
+\section{Instance-Level Composed Image Retrieval}\label{sect:intro_icir}
+
+Most CIR benchmarks are \emph{category-level}: a retrieved image is considered
+correct if it belongs to the same broad category as the intended target (for
+example, ``a red dress'' rather than \emph{the} specific dress the user
+wanted). Recent work argues that this protocol overstates real performance,
+because it rewards coarse semantic matches and tolerates retrieving a
+different object of the same kind. The \emph{instance-level} composed image
+retrieval benchmark, i-CIR~\cite{psomas2025icir}, was introduced to close this
+gap. In i-CIR the ground truth is defined at the level of a specific object
+\emph{instance}: a retrieved image is correct only if it depicts the same
+instance, modified as the query text requests.
+
+% HIGHLIGHT: confirm the exact dataset statistics below against the i-CIR
+% paper / your data card before final submission.
+This makes the task substantially harder in two ways. First, the database is
+large and open-domain (752{,}092 database images and 1{,}883 queries in the
+full benchmark), so the correct target competes with a very large pool of
+distractors. Second, and more importantly, i-CIR deliberately populates each
+query's pool with \emph{hard negatives}: images of the same instance under a
+\emph{different} modification, visually similar images that do \emph{not}
+satisfy the text, and images that satisfy the text but show a \emph{different}
+instance. A method that latches onto only the reference image, or only the
+text, is therefore systematically punished. Success requires jointly
+respecting both the visual identity of the instance and the precise change
+demanded by the text.
+
+\section{Zero-Shot Retrieval and the Role of Language}\label{sect:intro_gap}
+
+A natural way to attack CIR is to train a fusion network that maps the pair
+$(\qv, \qt)$ to a single query embedding using triplet supervision on a CIR
+training set~\cite{vo2019tirg}. However, instance-level annotation is
+expensive, the i-CIR benchmark is designed for evaluation rather than
+large-scale training, and supervised fusion models tend to overfit the
+distribution of modifications seen during training. This motivates the
+\emph{zero-shot} setting~\cite{saito2023pic2word,baldrati2023circo}, in which
+no CIR-specific training is performed and retrieval is built entirely on
+\emph{off-the-shelf}, frozen vision--language models such as
+CLIP~\cite{radford2021clip} and SigLIP~\cite{zhai2023siglip,tschannen2025siglip2}.
+
+The i-CIR paper accompanies the benchmark with a strong zero-shot baseline,
+\textsc{Basic}, which combines a frozen vision--language backbone with a
+sequence of feature post-processing steps (feature centering, dimensionality
+reduction, query expansion, and a contextualization of the modification text)
+to fuse the image and text similarities~\cite{psomas2025icir}. \textsc{Basic}
+shows that careful use of frozen features alone can be ``surprisingly strong''.
+Yet it also exposes the core weakness of treating the modification text in
+isolation: a short phrase such as \emph{``make it red''} is a poor standalone
+text query, because the encoder has no access to \emph{what} should become red.
+The text only makes sense \emph{relative} to the reference image.
+
+This thesis builds on the observation that language can serve as an explicit
+bridge between the two modalities. Instead of feeding the encoder the bare
+modification text, we use a multimodal large language model (MLLM) to read the
+reference image and the modification \emph{together} and to write a short
+description of the \emph{imagined target} -- effectively performing the edit in
+language space. This \emph{target caption} is a self-contained text query that
+the frozen text encoder can embed well, and it captures the composition that
+the raw modification text cannot.
+
+\section{Contributions}\label{sect:intro_contrib}
+
+The contributions of this thesis are the following:
+
+\begin{itemize}
+  \item \textbf{An MLLM-generated target caption as a third retrieval modality.}
+        We propose to generate, for each query, a caption of the intended
+        target image with a frozen MLLM (InternVL-3.5-8B), and to use the
+        embedding of this caption as an additional, text-side retrieval signal
+        alongside the reference-image and modification-text signals
+        (Chapter~\ref{chapt:method}).
+  \item \textbf{A triplet late-fusion scoring function.} We rank database
+        images by the clamped product of three similarities -- image, text,
+        and caption -- which acts as a soft logical \textsc{and}: a candidate
+        must agree with all three signals to score highly.
+  \item \textbf{A backbone comparison on the full i-CIR benchmark.} We embed
+        the full database (752K images) with four off-the-shelf backbones
+        (CLIP ViT-L/14, CLIP ViT-H/14, SigLIP ViT-L/16, and SigLIP2 g/16-384)
+        and report apples-to-apples results, identifying SigLIP2 as the
+        strongest backbone for our pipeline.
+  \item \textbf{Ablations isolating each component.} We quantify the separate
+        contributions of the caption, of feature centering, and of the
+        remaining \textsc{Basic} preprocessing, and show that the caption is
+        the single largest contributor -- adding it to a plain text$\times$image
+        baseline reaches, and with a strong backbone exceeds, the full
+        \textsc{Basic} preprocessing stack (Chapter~\ref{chapt:results}).
+  \item \textbf{An honest negative result.} We show that reranking the
+        top-ranked candidates with self-supervised visual features
+        (DINOv2/DINOv3) \emph{hurts} retrieval quality, and explain why.
+\end{itemize}
+
+% HIGHLIGHT (optional but recommended): add a small "teaser" figure here --
+% one query (reference image + text), the generated caption, and the top-1
+% retrieved image -- so the reader sees the idea on page 1.
+% \begin{figure}[t]
+%   \centering
+%   \includegraphics[width=\textwidth]{figures/teaser.png}
+%   \caption{...}\label{fig:teaser}
+% \end{figure}
+
+\section{Outline}\label{sect:intro_outline}
 
 This thesis is organised as follows.
-Chapter~\ref{chapt:background} provides the theoretical background.
-Chapter~\ref{chapt:related} reviews related work on composed image retrieval.
-Chapter~\ref{chapt:method} describes the proposed methodology.
-Chapter~\ref{chapt:results} reports and discusses the experimental results.
+Chapter~\ref{chapt:background} provides the theoretical background on image
+retrieval, contrastive vision--language pretraining, and multimodal large
+language models.
+Chapter~\ref{chapt:related} reviews related work on composed image retrieval,
+zero-shot CIR, and the i-CIR benchmark.
+Chapter~\ref{chapt:method} describes the proposed methodology: the problem
+formulation, the evaluation protocol, the retrieval pipeline, the target-caption
+generation step, and the triplet fusion.
+Chapter~\ref{chapt:results} reports and discusses the experimental results on
+the full i-CIR dataset and the ablation studies on the development subset.
 Chapter~\ref{chapt:conclusion} draws the conclusions and outlines future work.

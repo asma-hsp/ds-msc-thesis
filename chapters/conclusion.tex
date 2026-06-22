@@ -1,13 +1,78 @@
 %!TEX root = ../dissertation.tex
 \chapter{Conclusion}\label{chapt:conclusion}
 
-% TODO (Conclusion, ~6 pages). Suggested structure:
-% 1. Summary: restate the problem and what was done (no new results).
-% 2. Key findings: caption adds the most; centering second; SigLIP2 best;
-%    reranking with DINOv2/v3 hurts (honest negative result).
-% 3. Limitations: zero-shot only; caption variance; compute cost; subset
-%    development; single MLLM (InternVL-8B).
-% 4. Future work: better captioners, learned fusion, end-to-end finetuning,
-%    extending beyond i-CIR.
+% =====================================================================
+%  DRAFT v1 (Asma) -- full prose. ~6 pages target. No NEW results here.
+% =====================================================================
 
-Content to be written.
+\section{Summary}\label{sect:concl_summary}
+
+This thesis studied zero-shot, instance-level composed image retrieval on the
+i-CIR benchmark~\cite{psomas2025icir}, where a query is a reference image
+together with a short modification text and the goal is to retrieve the specific
+\emph{instance} the user has in mind, modified as requested. The core
+contribution is to add a third retrieval modality on top of the usual image and
+text signals: a frozen multimodal large language model (InternVL-3.5-8B) reads
+the reference image and the modification together and writes a short description
+of the \emph{imagined target}, and the embedding of this \emph{target caption}
+is fused with the image and text similarities by a clamped triplet product. The
+entire pipeline is zero-shot -- every encoder, the caption generator, and all
+fusion and post-processing steps are off-the-shelf and frozen. We evaluated the
+approach on the full $752$K-image database with four backbones and ablated each
+component on a $20\%$ development subset.
+
+\section{Key Findings}\label{sect:concl_findings}
+
+The experiments support five conclusions.
+\begin{itemize}
+  \item \textbf{The caption is the single most effective component.} Adding the
+        target caption improves every backbone on the full dataset, and in the
+        component ablation it is the largest single contributor -- larger than
+        feature centering and far larger than the remaining \textsc{Basic}
+        preprocessing.
+  \item \textbf{A simple caption can replace elaborate preprocessing.} A plain
+        text$\times$image baseline plus the caption reaches the level of the
+        fully tuned \textsc{Basic} pipeline, and with a strong backbone exceeds
+        it. The textual signal is better supplied by an explicit target
+        description than by contextualizing the bare modification phrase.
+  \item \textbf{Centering and the caption are complementary.} Their gains add
+        up; the best configuration combines both. The source of the centering
+        mean (global vs.\ LAION-1M) does not materially matter.
+  \item \textbf{SigLIP2 is the strongest backbone for the pipeline,} reaching
+        $59.23$ macro-mAP with the caption and centering, even though CLIP-H is
+        stronger on the bare duplet baseline -- the backbone must be judged
+        within the full pipeline.
+  \item \textbf{Text-agnostic reranking hurts.} Reranking the shortlist by
+        self-supervised visual features (DINOv2/DINOv3) lowers retrieval
+        quality, because such features reorder by similarity to the reference
+        and ignore the modification.
+\end{itemize}
+
+\section{Limitations}\label{sect:concl_limitations}
+
+Several limitations qualify these findings. The approach is \emph{zero-shot by
+design}, so it leaves on the table any gains a learned fusion could provide.
+Caption generation introduces \emph{variance}: a single instruction is
+prompt-sensitive, which the \texttt{avg-9} averaging mitigates but does not
+eliminate, and it adds a non-trivial \emph{compute cost} (nine MLLM generations
+per query). The ablations were conducted on a $20\%$ \emph{development subset};
+although the subset baseline closely matches the full-dataset baseline, not
+every ablated configuration was re-run at full scale. Finally, the caption
+relies on a \emph{single MLLM} (InternVL-3.5-8B); the sensitivity of the results
+to the choice of captioner was not explored, and an exploratory line using a
+different MLLM (Qwen3-VL) was not pursued to completion.
+
+\section{Future Work}\label{sect:concl_future}
+
+Several directions follow naturally. A stronger or more efficient
+\emph{captioner} -- or a single high-quality caption that matches \texttt{avg-9}
+without nine generations -- would cut the main compute cost. The fixed,
+unweighted product could be replaced by a \emph{learned or weighted fusion} of
+the three similarities, which would relax the zero-shot constraint in exchange
+for accuracy. The negative reranking result suggests a \emph{text-conditioned
+reranker} -- one that reranks by similarity to the target caption rather than to
+the reference image -- as a more promising second stage. Finally, the
+caption-as-third-modality idea is benchmark-agnostic and could be evaluated
+\emph{beyond i-CIR}, on category-level CIR benchmarks and other instance-level
+retrieval settings, to test how far the explicit target-description signal
+generalises.

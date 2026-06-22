@@ -1,18 +1,160 @@
 %!TEX root = ../dissertation.tex
 \chapter{Related Work}\label{chapt:related}
 
-% TODO (Related Work, ~10 pages). Suggested sections:
-% 3.1 Composed image retrieval: early supervised methods (TIRG, etc.),
-%     benchmarks (CIRR, FashionIQ).
-% 3.2 Zero-shot CIR: textual inversion (Pic2Word, SEARLE), training-free
-%     approaches; the BASIC pipeline.
-% 3.3 Instance-level retrieval and the i-CIR benchmark; how it differs from
-%     category-level CIR (specific instances, hard negatives).
-% 3.4 MLLM/caption-based CIR: methods that turn the query into text via a
-%     captioner or LLM; position this thesis relative to them.
-% 3.5 Vision-language backbones for retrieval: CLIP, SigLIP, SigLIP2.
-% End with a short paragraph stating the gap this thesis addresses.
+% =====================================================================
+%  DRAFT v1 (Asma) -- full prose. ~10 pages target.
+%  HIGHLIGHT markers = citations to verify / optional additions.
+% =====================================================================
 
-\section{Placeholder}\label{sect:related_placeholder}
-% Remove this placeholder once real sections are added.
-Content to be written.
+This chapter situates the thesis within the literature.
+Section~\ref{sect:rel_supervised} reviews supervised composed image retrieval
+and its benchmarks. Section~\ref{sect:rel_zeroshot} surveys zero-shot CIR.
+Section~\ref{sect:rel_icir} introduces instance-level retrieval and the i-CIR
+benchmark. Section~\ref{sect:rel_caption} discusses caption- and LLM-based
+approaches that, like ours, route the query through language.
+Section~\ref{sect:rel_backbones} reviews the vision--language backbones used
+for retrieval. The chapter closes with the gap this thesis addresses
+(Section~\ref{sect:rel_gap}).
+
+% =====================================================================
+\section{Supervised Composed Image Retrieval}\label{sect:rel_supervised}
+% =====================================================================
+
+The composed image retrieval task was popularised by TIRG (Text Image Residual
+Gating)~\cite{vo2019tirg}, which framed retrieval with a (reference image,
+modification text) query and proposed an \emph{early-fusion} network that
+combines the image and text features into a single composed embedding via a
+gated residual connection. TIRG established the now-standard training recipe:
+supervise a fusion module with a metric-learning loss on annotated triplets so
+that the composed query embedding is pulled towards the target-image embedding.
+
+Subsequent work scaled the task to more realistic data and introduced the
+benchmarks that the field still uses. \emph{Fashion-IQ}~\cite{wu2021fashioniq}
+targets fashion product retrieval with natural-language relative feedback,
+while \emph{CIRR}~\cite{liu2021cirr} moved to open-domain real-life images and
+explicitly highlighted the need for models that reason about fine-grained
+visual differences rather than matching on global appearance. A recurring
+limitation of these benchmarks is that relevance is judged at the
+\emph{category} or single-target level, and the modification language is often
+correlated with easy visual cues, which inflates measured performance -- an
+observation that directly motivates the instance-level protocol discussed in
+Section~\ref{sect:rel_icir}.
+
+% =====================================================================
+\section{Zero-Shot Composed Image Retrieval}\label{sect:rel_zeroshot}
+% =====================================================================
+
+Because triplet supervision is expensive and does not transfer well across
+domains, a line of work removes CIR-specific training entirely and builds on
+frozen vision--language models. \emph{Pic2Word}~\cite{saito2023pic2word}
+introduced \emph{textual inversion} for CIR: it learns, using only image data
+(no triplets), a mapping that converts a reference image into a single
+pseudo-word token; the modification text is then written as a prompt containing
+this token (e.g. ``a photo of $[\ast]$, but red''), and the composed prompt is
+embedded by the frozen CLIP text encoder. SEARLE and the CIRCO
+benchmark~\cite{baldrati2023circo} refined this idea, optimising the inverted
+token to be close to a set of descriptive words and providing a CIR test set
+with multiple validated ground-truth targets to reduce annotation noise.
+LinCIR~\cite{gu2024lincir} pushed efficiency further by training the inversion
+using \emph{language only}, without any images.
+
+These textual-inversion methods share the philosophy of this thesis -- express
+the composed query as \emph{text} so that the frozen text encoder can handle it
+-- but differ in mechanism. They compress the reference image into a single
+opaque token and still rely on the user's short modification phrase as the rest
+of the prompt. In contrast, this thesis uses a generative MLLM to produce a
+\emph{full, human-readable description of the imagined target}, which captures
+the composition explicitly rather than relegating the reference to one learned
+token.
+
+% =====================================================================
+\section{Instance-Level Retrieval and the i-CIR Benchmark}\label{sect:rel_icir}
+% =====================================================================
+
+Instance-level retrieval -- finding images of a \emph{specific} object instance
+rather than its category -- has a long tradition in classical image
+retrieval~\cite{philbin2007oxford}, where evaluation pools deliberately contain
+visually similar distractors of the same category. The i-CIR
+benchmark~\cite{psomas2025icir} brings this rigour to composed image retrieval.
+In i-CIR a retrieval is correct only if it returns the \emph{same instance}
+modified as the query specifies, and each query's evaluation is conducted
+against a pool engineered to contain hard negatives: the same instance under a
+different modification, visually similar but text-violating images, and
+text-satisfying images of a different instance. This design penalises models
+that exploit only one modality and demands genuine composition.
+
+Alongside the benchmark, i-CIR contributes a strong zero-shot baseline,
+\textsc{Basic} (a ``Baseline Approach for SurprIsingly strong Composition'').
+\textsc{Basic} combines a frozen vision--language backbone with a sequence of
+training-free post-processing steps -- feature centering, dimensionality
+reduction, query expansion, and a \emph{contextualization} of the modification
+text that prepends or appends a subject term to the raw phrase -- and fuses the
+image and text similarities into a final score. \textsc{Basic} demonstrates
+that careful use of frozen features is a deceptively strong baseline, and it is
+the method this thesis builds upon and compares against. The present work keeps
+the late-fusion philosophy of \textsc{Basic} but argues that an MLLM-generated
+target caption is a more effective way to inject the textual signal than
+contextualizing the bare modification phrase.
+
+% =====================================================================
+\section{Caption- and LLM-Based Composed Retrieval}\label{sect:rel_caption}
+% =====================================================================
+
+A complementary family of zero-shot methods routes the query through
+\emph{generated language}. CIReVL (Compositional Image Retrieval via
+Vision-by-Language)~\cite{karthik2024cirevl} is the closest in spirit to this
+thesis: it is training-free and uses a captioner to describe the reference
+image, then prompts a large language model to rewrite that caption according to
+the modification, yielding a target description that is embedded by the frozen
+CLIP text encoder. This confirms the central intuition -- that an explicit
+textual description of the intended target is a powerful zero-shot query -- but
+CIReVL operates in two stages (caption the reference, then edit the caption with
+a separate LLM) and was evaluated on category-level benchmarks.
+
+This thesis differs in three respects. First, it uses a single
+\emph{multimodal} model that sees the reference image and the modification
+\emph{together} and writes the target caption in one step, rather than
+captioning and editing in separate text-only stages. Second, it does not
+\emph{replace} the image and text signals with the caption; it \emph{adds} the
+caption as a third modality and fuses all three by a clamped product, so the
+visual identity of the instance is preserved -- which is essential at the
+instance level. Third, it is evaluated on the demanding i-CIR instance-level
+benchmark and on the full 752K-image database, rather than on category-level
+test sets.
+
+% =====================================================================
+\section{Vision--Language Backbones for Retrieval}\label{sect:rel_backbones}
+% =====================================================================
+
+The choice of frozen backbone strongly determines zero-shot retrieval quality.
+CLIP~\cite{radford2021clip} and its open reproductions trained on
+LAION~\cite{ilharco2021openclip,schuhmann2022laion5b} remain the default
+encoders for zero-shot CIR. SigLIP~\cite{zhai2023siglip} and
+SigLIP2~\cite{tschannen2025siglip2} provide more strongly aligned image--text
+spaces through the sigmoid objective and improved training, and are
+increasingly adopted for retrieval. This thesis compares CLIP ViT-L/14, CLIP
+ViT-H/14, SigLIP ViT-L/16, and SigLIP2 g/16-384 on the full i-CIR benchmark
+under an identical pipeline, isolating the effect of the backbone
+(Section~\ref{sect:res_backbones}). It also briefly considers an MLLM-derived
+embedding model (Qwen3-VL-Embedding~\cite{bai2025qwen3vl}), which underperforms
+in this setting. For reranking it draws on self-supervised visual features from
+the DINOv2~\cite{oquab2024dinov2} and DINOv3~\cite{simeoni2025dinov3} families;
+the corresponding (negative) result is reported in
+Section~\ref{sect:res_rerank}.
+
+% =====================================================================
+\section{Positioning and Gap}\label{sect:rel_gap}
+% =====================================================================
+
+In summary, supervised CIR requires expensive triplet annotation and transfers
+poorly; zero-shot textual-inversion methods express the query as text but
+compress the reference into a single learned token and still depend on the bare
+modification phrase; and the strongest zero-shot baseline on the new
+instance-level benchmark, \textsc{Basic}, injects the textual signal by
+contextualizing the modification rather than describing the target. The gap
+this thesis addresses is therefore the following: \emph{in the zero-shot,
+instance-level setting, can an MLLM-generated description of the imagined
+target, fused as a third modality with the image and text signals, provide a
+stronger and simpler textual signal than the elaborate preprocessing of
+\textsc{Basic}?} The remainder of the thesis answers this question
+affirmatively.

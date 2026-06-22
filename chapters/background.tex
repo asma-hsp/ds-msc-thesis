@@ -1,18 +1,250 @@
 %!TEX root = ../dissertation.tex
 \chapter{Theoretical Background}\label{chapt:background}
 
-% TODO (Theoretical Background, ~13 pages). Suggested sections:
-% 2.1 Image retrieval fundamentals: embeddings, cosine similarity, nearest
-%     neighbour search, evaluation (precision/recall, AP).
-% 2.2 Contrastive vision-language pretraining: CLIP (dual encoder,
-%     contrastive loss, zero-shot transfer).
-% 2.3 SigLIP / SigLIP2: sigmoid loss, what changes vs CLIP.
-% 2.4 Multimodal large language models (MLLMs): InternVL family, how they
-%     take image+text and produce text.
-% 2.5 Composed image retrieval as a task: query = (image, text); late vs
-%     early fusion; zero-shot vs supervised.
-% 2.6 Feature post-processing: centering/whitening, PCA, query expansion.
+% =====================================================================
+%  DRAFT v1 (Asma) -- full prose. ~13 pages target.
+%  This chapter is TEXTBOOK material: define the tools, no results.
+%  HIGHLIGHT markers = optional figures or things to double-check.
+% =====================================================================
 
-\section{Placeholder}\label{sect:background_placeholder}
-% Remove this placeholder once real sections are added.
-Content to be written.
+This chapter introduces the technical background on which the thesis builds.
+Section~\ref{sect:bg_retrieval} reviews the fundamentals of content-based image
+retrieval: embeddings, similarity, nearest-neighbour search, and evaluation.
+Section~\ref{sect:bg_clip} describes contrastive vision--language pretraining
+and the CLIP model. Section~\ref{sect:bg_siglip} presents the SigLIP and
+SigLIP2 variants. Section~\ref{sect:bg_mllm} introduces multimodal large
+language models. Section~\ref{sect:bg_cir} frames composed image retrieval as a
+task and distinguishes early from late fusion. Section~\ref{sect:bg_postproc}
+reviews the feature post-processing techniques used by the \textsc{Basic}
+baseline.
+
+% =====================================================================
+\section{Image Retrieval Fundamentals}\label{sect:bg_retrieval}
+% =====================================================================
+
+\subsection{Embeddings and Similarity}
+
+Modern content-based image retrieval represents every image as a fixed-length
+vector, or \emph{embedding}, produced by a learned encoder
+$\phi : \mathcal{I} \to \mathbb{R}^d$ that maps the raw image space
+$\mathcal{I}$ into a $d$-dimensional space in which semantically similar images
+lie close together. Retrieval then reduces to a nearest-neighbour search: given
+a query embedding, the database images are ranked by their similarity to it.
+
+The standard similarity measure is the cosine similarity, which compares the
+directions of two vectors irrespective of their magnitude,
+\begin{equation}\label{eq:cosine}
+  \simop(u, v) = \frac{u^{\top} v}{\lVert u \rVert\, \lVert v \rVert}.
+\end{equation}
+When all embeddings are $\ell_2$-normalised to unit length, as is standard for
+the encoders used in this thesis, the cosine similarity equals the dot product
+$u^{\top}v$, and ranking by cosine similarity is equivalent to ranking by
+(negative) squared Euclidean distance. Throughout the thesis, ``similarity''
+refers to the cosine similarity between $\ell_2$-normalised embeddings.
+
+\subsection{Nearest-Neighbour Search}
+
+Given a query embedding $q$ and a database
+$\DB = \{\xdb_1, \dots, \xdb_N\}$ of $N$ image embeddings, retrieval returns the
+database images sorted by decreasing similarity $\simop(q, \xdb_i)$. For the
+database sizes considered here ($N$ up to ${\sim}752$K), an exact search
+implemented as a single matrix--vector product is both feasible and exact, so
+this thesis uses exact (brute-force) search and does not rely on approximate
+nearest-neighbour indexing. The output of a query is a full ranking of the
+database, from which the evaluation metrics are computed.
+
+\subsection{Evaluation: Precision, Recall, and Average Precision}
+
+Retrieval quality is measured against a set of \emph{relevant} (positive)
+database items per query. The two elementary quantities are \emph{precision}
+(the fraction of retrieved items that are relevant) and \emph{recall} (the
+fraction of relevant items that are retrieved). Evaluated at a cutoff $k$,
+$\mathrm{Recall}@k$ is the fraction of the relevant items found within the
+top-$k$ results, and $\mathrm{Hit}@k$ is $1$ if at least one relevant item
+appears in the top-$k$ and $0$ otherwise.
+
+To summarise the whole ranking with a single number, retrieval uses
+\emph{average precision} (AP), the area under the precision--recall curve. AP
+rewards rankings that place relevant items near the top. For a query with
+relevant set $R$, one common form is
+\begin{equation}\label{eq:ap_basic}
+  \mathrm{AP} = \frac{1}{|R|} \sum_{k=1}^{N} P(k)\,\mathbb{1}[\,\text{item at
+  rank } k \text{ is relevant}\,],
+\end{equation}
+where $P(k)$ is the precision at cutoff $k$. The \emph{mean average precision}
+(mAP) averages AP over all queries. The exact trapezoidal variant used by the
+i-CIR benchmark, and the distinction between macro- and micro-averaging, are
+defined in Section~\ref{sect:method_eval}.
+
+% =====================================================================
+\section{Contrastive Vision--Language Pretraining: CLIP}\label{sect:bg_clip}
+% =====================================================================
+
+The encoders used in this thesis come from the family of \emph{contrastive
+vision--language models}, of which CLIP (Contrastive Language--Image
+Pretraining)~\cite{radford2021clip} is the canonical example. CLIP is a
+\emph{dual-encoder} model: a vision encoder $\encv$ (a Vision Transformer or a
+ResNet) maps an image to an embedding, and a separate text encoder $\enct$ (a
+Transformer) maps a text string to an embedding in the \emph{same}
+$d$-dimensional space. Both embeddings are $\ell_2$-normalised.
+
+CLIP is trained on a very large collection of image--text pairs harvested from
+the web (400M pairs for the original model; later open reproductions use the
+LAION datasets~\cite{schuhmann2022laion5b,ilharco2021openclip}). Training uses
+a symmetric \emph{contrastive} (InfoNCE) objective: within a batch of $B$
+image--text pairs, the model maximises the cosine similarity of the $B$ matching
+(image, text) pairs while minimising the similarity of the $B^2 - B$
+non-matching pairs. Formally, with image embeddings $u_i$ and text embeddings
+$v_j$ and a learned temperature $\tau$, the image-to-text loss is
+\begin{equation}\label{eq:infonce}
+  \mathcal{L}_{\text{i2t}} = -\frac{1}{B}\sum_{i=1}^{B}
+  \log \frac{\exp(u_i^{\top} v_i / \tau)}
+            {\sum_{j=1}^{B}\exp(u_i^{\top} v_j / \tau)},
+\end{equation}
+and the total loss symmetrises this with the analogous text-to-image term.
+
+The crucial property for this thesis is the resulting \emph{shared embedding
+space}: an image and a text describing it are mapped to nearby vectors. This is
+exactly what enables zero-shot cross-modal retrieval -- a text query can be
+matched directly against image embeddings -- and it is the substrate on which
+all of the retrieval signals in this thesis (image, text, and caption) are
+compared. CLIP-style models also exhibit strong \emph{zero-shot transfer}: they
+generalise to new datasets and tasks without task-specific fine-tuning, which
+is the foundation of the zero-shot CIR setting.
+
+% HIGHLIGHT (optional): a CLIP dual-encoder diagram would help here.
+% \begin{figure}[t] \centering
+%   \includegraphics[width=0.85\textwidth]{figures/clip.png}
+%   \caption{The CLIP dual-encoder architecture.}\label{fig:clip} \end{figure}
+
+% =====================================================================
+\section{SigLIP and SigLIP2}\label{sect:bg_siglip}
+% =====================================================================
+
+SigLIP (Sigmoid Loss for Language--Image Pretraining)~\cite{zhai2023siglip}
+keeps the CLIP dual-encoder architecture but replaces the softmax-based
+contrastive loss of Equation~\eqref{eq:infonce} with a pairwise \emph{sigmoid}
+loss. Each image--text pair is treated as an independent binary classification
+problem -- matching or not -- so the loss does not require a softmax normalised
+over the whole batch:
+\begin{equation}\label{eq:siglip}
+  \mathcal{L} = -\frac{1}{B}\sum_{i=1}^{B}\sum_{j=1}^{B}
+  \log \sigma\!\big(y_{ij}\,(t\, u_i^{\top} v_j + b)\big),
+\end{equation}
+where $y_{ij} = +1$ for matching pairs and $-1$ otherwise, $\sigma$ is the
+logistic sigmoid, and $t, b$ are a learned scale and bias. Decoupling the loss
+from the batch-wide normalisation makes training more stable, more
+memory-efficient, and effective at smaller batch sizes, which in practice yields
+encoders with stronger image--text alignment.
+
+SigLIP2~\cite{tschannen2025siglip2} extends SigLIP with additional training
+objectives -- including self-distillation and captioning-style losses -- and
+multilingual data, improving semantic understanding, localisation, and dense
+features. For this thesis the relevant consequence is empirical: SigLIP2
+provides a particularly well-aligned shared embedding space, which (as
+Chapter~\ref{chapt:results} shows) makes it the strongest backbone for our
+pipeline. The thesis treats CLIP, SigLIP, and SigLIP2 uniformly as frozen
+dual encoders that supply $\encv$ and $\enct$; their differences are confined
+to how that shared space was trained.
+
+% =====================================================================
+\section{Multimodal Large Language Models}\label{sect:bg_mllm}
+% =====================================================================
+
+A \emph{multimodal large language model} (MLLM) is a large language model
+augmented with a visual input pathway, so that it can take an image (or several
+images) together with a text prompt and generate free-form text conditioned on
+both. A typical MLLM couples a pretrained vision encoder to a pretrained LLM
+through a lightweight connector (for example, an MLP projector or a set of
+learned query tokens) that maps visual features into the LLM's token-embedding
+space; the combined model is then instruction-tuned on multimodal data. The
+InternVL family~\cite{wang2025internvl35} used in this thesis follows this
+recipe, pairing a strong vision encoder with an LLM and supporting
+high-resolution images through a tiling scheme that splits an image into
+several sub-images.
+
+The capability this thesis relies on is \emph{instruction-conditioned visual
+description}: given the reference image and a prompt that states the desired
+modification, an MLLM can be asked to describe the \emph{intended target}
+image, i.e. to apply the edit in language. This is fundamentally different from
+a contrastive dual encoder. A dual encoder can only \emph{embed} a given text or
+image; it cannot \emph{compose} a new description from an image and an
+instruction. The MLLM, being generative and instruction-following, can perform
+exactly this composition, producing a self-contained caption that a dual-encoder
+text branch can subsequently embed and use for retrieval. The thesis uses the
+MLLM purely as a frozen, off-the-shelf caption generator -- it is never
+fine-tuned -- so the overall pipeline remains zero-shot with respect to the
+retrieval task.
+
+% =====================================================================
+\section{Composed Image Retrieval as a Task}\label{sect:bg_cir}
+% =====================================================================
+
+Composed image retrieval generalises the two classical retrieval modes.
+\emph{Content-based image retrieval} uses an image as the query;
+\emph{text-to-image retrieval} uses a text. CIR uses both at once: the query is
+a pair $(\qv, \qt)$, a reference image and a modification text, and the system
+must retrieve the image that results from applying the modification to the
+reference~\cite{vo2019tirg}. The defining challenge, noted in
+Chapter~\ref{chapt:intro}, is that $\qt$ describes a \emph{relative} change and
+is not a description of the target on its own.
+
+Approaches to combining the two modalities fall into two families.
+\emph{Early fusion} merges the image and text \emph{before} matching, producing
+a single composed query embedding -- typically with a trained fusion network
+that takes $(\encv(\qv), \enct(\qt))$ and outputs one vector, which is then
+matched against database image embeddings~\cite{vo2019tirg}. \emph{Late fusion}
+keeps the modalities separate: it computes independent similarity scores for
+each modality against a candidate and combines the \emph{scores} (for example,
+by a weighted sum or a product). Late fusion needs no trained combiner, which
+makes it the natural choice in the zero-shot setting; the \textsc{Basic}
+baseline and the method proposed in this thesis are both late-fusion methods
+(Chapters~\ref{chapt:related} and~\ref{chapt:method}).
+
+A further axis is supervision. \emph{Supervised} CIR trains on annotated
+triplets (reference, modification, target) from a CIR training
+set~\cite{vo2019tirg,liu2021cirr}. \emph{Zero-shot} CIR performs no
+CIR-specific training and instead reuses frozen, pretrained
+encoders~\cite{saito2023pic2word,baldrati2023circo}. This thesis operates
+entirely in the zero-shot regime.
+
+% =====================================================================
+\section{Feature Post-Processing for Retrieval}\label{sect:bg_postproc}
+% =====================================================================
+
+Even with a fixed encoder, the geometry of an embedding space can be improved
+for retrieval by simple, training-free post-processing. The \textsc{Basic}
+baseline (Section~\ref{sect:method_basic}) combines several such techniques;
+this section defines them in the abstract.
+
+\paragraph{Centering.} Embeddings produced by contrastive encoders often share
+a dominant common component -- an ``embedding-space bias'' -- that inflates the
+similarity of \emph{all} pairs and reduces the discriminativeness of the cosine
+similarity. \emph{Centering} subtracts a fixed mean vector $\mu$ from every
+embedding (followed by re-normalisation),
+\begin{equation}\label{eq:centering}
+  \tilde{\phi}(x) = \frac{\phi(x) - \mu}{\lVert \phi(x) - \mu \rVert},
+\end{equation}
+which removes this shared component and typically sharpens retrieval. The mean
+$\mu$ can be estimated from the database itself (a global mean) or from an
+external reference corpus such as a sample of LAION~\cite{schuhmann2022laion5b};
+the effect of this choice is studied empirically in
+Section~\ref{sect:res_centering}.
+
+\paragraph{Dimensionality reduction and whitening.} Principal component
+analysis (PCA) projects embeddings onto their leading directions of variance
+and, when combined with \emph{whitening}, equalises the variance across those
+directions. In retrieval this can suppress noisy or redundant dimensions and
+has a long history as a post-processing step~\cite{radenovic2018finetuning}.
+
+\paragraph{Query expansion.} Query expansion refines a query by aggregating it
+with its own top-ranked neighbours: after a first retrieval pass, the query
+embedding is combined with the embeddings of the highest-scoring database items
+and the search is repeated. This propagates information from confident matches
+and is a classic technique in instance
+retrieval~\cite{philbin2007oxford,radenovic2018finetuning}.
+
+These operations are entirely unsupervised and add no learned parameters, which
+is why they fit naturally into a zero-shot pipeline. Chapter~\ref{chapt:method}
+describes how \textsc{Basic} assembles them, and Chapter~\ref{chapt:results}
+quantifies how much each contributes once the target caption is introduced.

@@ -8,13 +8,26 @@
 \usepackage[export]{adjustbox}
 
 % ---- Notation macros (shared by all chapters) ------------------------
-\newcommand{\Iq}{I_{q}}            % reference (query) image
-\newcommand{\tq}{t_{q}}            % modification text
-\newcommand{\qcap}{c}              % generated target caption
-\newcommand{\db}{\mathcal{D}}     % image database
-\newcommand{\enc}{\phi}           % a VLM encoder
+%  Aligned with the i-CIR paper: q^v image (visual) query, q^t text query,
+%  X database, phi^v / phi^t visual / textual encoders.
+\newcommand{\qv}{q^{v}}            % query (reference) image
+\newcommand{\qt}{q^{t}}            % query (modification) text
+\newcommand{\qc}{c}               % generated target caption
+\newcommand{\DB}{\mathcal{X}}     % image database
+\newcommand{\xdb}{x}              % a database image
+\newcommand{\encv}{\phi^{v}}      % visual encoder
+\newcommand{\enct}{\phi^{t}}      % textual encoder
 \newcommand{\simop}{\mathrm{sim}} % cosine similarity
 \newcommand{\clamp}{\mathrm{clamp}}
+\newcommand{\sv}{s_{v}}           % image (visual) similarity score
+\newcommand{\st}{s_{t}}           % text similarity score
+\newcommand{\sc}{s_{c}}           % caption similarity score
+% --- legacy aliases (kept so older drafts still compile) -------------
+\newcommand{\Iq}{q^{v}}
+\newcommand{\tq}{q^{t}}
+\newcommand{\qcap}{c}
+\newcommand{\db}{\mathcal{X}}
+\newcommand{\enc}{\phi}
 % ---------------------------------------------------------------------
 
 \begin{document}
