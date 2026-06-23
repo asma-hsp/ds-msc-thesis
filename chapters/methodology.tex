@@ -157,18 +157,23 @@ caption branch is purely \emph{additive} -- it supplies a strong text-side query
 without removing the visual signal from the image branch, which is what allows
 the fusion to respect instance identity while applying the modification.
 
-\begin{figure}[h!]
+\begin{figure}[t]
 \centering
-% HIGHLIGHT: create figures/pipeline_overview.png (or .pdf). Suggested content:
-%   left: query image q^v and query text q^t; q^v + q^t -> MLLM -> caption c;
-%   middle: three encoders -> three similarities s_v, s_t, s_c;
-%   right: clamp-product fusion -> ranked database.
-% \includegraphics[width=\textwidth]{figures/pipeline_overview.png}
+\resizebox{\textwidth}{!}{\input{figures/pipeline_overview}}
 \caption[Overview of the proposed retrieval pipeline.]{Overview of the
-proposed pipeline: the reference image and modification text are encoded by a
-frozen vision--language model; a frozen MLLM generates a target caption; the
-image, text and caption similarities are fused by the clamped triplet product
-and used to rank the database.\label{fig:pipeline}}
+  proposed pipeline.
+  \textit{Left:} the reference image $\qv$ and modification text $\qt$ are
+  fed jointly to the MLLM (InternVL 3.5-8B), which generates a target
+  caption $c$.
+  \textit{Centre:} $\qv$, $\qt$, and $c$ are independently encoded and
+  centred, yielding $\bar{q}^v$, $\bar{q}^t$, and $\bar{c}$.
+  Each is compared against the precomputed database embeddings
+  $\{\bar{x}^v_i\}$ via dot product, producing three similarity scores
+  $s^v_i$, $s^t_i$, $s^c_i$.
+  \textit{Right:} the clamped triplet product
+  $\tilde{s}^f_i = \mathrm{clamp}(s^v_i)\cdot\mathrm{clamp}(s^t_i)\cdot
+  \mathrm{clamp}(s^c_i)$ ranks the database.
+  All components are frozen and zero-shot.\label{fig:pipeline}}
 \end{figure}
 
 % =====================================================================
