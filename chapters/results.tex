@@ -43,7 +43,7 @@ in the comprehensive table (Table~\ref{tab:res_full}).
 (image$\times$text) against \emph{Ours} (the triplet
 image$\times$text$\times$caption of Equation~\eqref{eq:triplet}), each with and
 without feature centering. The caption signal uses the \texttt{avg-9} setting
-(Equation~\eqref{eq:avg9}) by default; per-instruction results are reported in
+(Equation~\eqref{eq:avg5}) by default; per-instruction results are reported in
 Section~\ref{subsect:res_ablation_instr}. ``Ours [6\_A\_8b]'' denotes the
 triplet using the single best instruction instead of \texttt{avg-9}.
 
@@ -68,7 +68,7 @@ helps such backbones the most. Where the backbone is already well aligned
 the text branch was already informative. Comparing the two caption settings,
 \texttt{avg-9} consistently outperforms the single best instruction
 \texttt{6\_A\_8b} on the full dataset, confirming that embedding-space averaging
-(Equation~\eqref{eq:avg9}) is a worthwhile robustness measure.
+(Equation~\eqref{eq:avg5}) is a worthwhile robustness measure.
 
 % SOURCE: thesis_cir/docs/full_basic_vs_triplet_table.md (full i-CIR, mmAP)
 \begin{table}[h!]

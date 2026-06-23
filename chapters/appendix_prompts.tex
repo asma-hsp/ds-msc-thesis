@@ -1,0 +1,183 @@
+%!TEX root = ../dissertation.tex
+
+% =====================================================================
+%  APPENDIX — Caption-generation prompts (verbatim)
+% ---------------------------------------------------------------------
+%  Reproduced from scripts/generate_internvl_captions_v9.py (INSTR_F..J).
+%  Bullet/checkbox glyphs are transcribed to ASCII ([+], [-], [ ], ->)
+%  so the listings typeset cleanly under XeLaTeX; the wording is verbatim.
+%  At run time the placeholder "relative_caption" is replaced by the
+%  query's modification text.
+% =====================================================================
+
+\chapter{Caption-Generation Prompts}\label{app:prompts}
+
+This appendix reproduces the five instruction prompts used to drive the MLLM
+caption generator of Section~\ref{sect:method_caption}, summarised in
+Table~\ref{tab:instructions}. The default caption embedding (\texttt{avg-5})
+averages the text embeddings of the captions produced by all five.
+
+\section*{INSTR\,F --- Adaptive Precision}
+\begin{verbatim}
+You are given an image and a modification text: "relative_caption".
+
+GOAL: Generate a short retrieval caption for the SINGLE main instance with
+the modification applied.
+
+STEP 1 - Recognise the instance (mandatory; pick exactly one):
+  (A) NAMED   - I recognise this as [EXACT NAME], which is [2-4 word category].
+  (B) UNNAMED - I cannot name this. It is a [instance type] with these traits:
+                [trait1], [trait2], [trait3][, trait4 if useful].
+Confidence threshold for (A): >90%. If in doubt, use (B).
+
+STEP 2 - Extract modification constraints.
+List every DISTINCT constraint in the modification text as separate items.
+
+STEP 3 - Write the caption.
+  - If NAMED:   "[EXACT NAME] ([category]), [modification applied naturally]"
+  - If UNNAMED: "A/An [type] with [2-3 most distinctive traits],
+                 [modification applied naturally]"
+  Maximum 25 words.
+  ALL constraints from STEP 2 must appear.
+  FORBIDDEN in the caption: background, scene, weather, lighting, reflections,
+  atmosphere, adjectives like beautiful/stunning/picturesque/dramatic/breathtaking.
+
+Output format (STRICT - two lines only):
+Line 1: JSON with keys: is_named (bool), instance_name (str|null),
+        instance_category (str), visual_traits ([str,...]), constraints ([str,...])
+Line 2: @Final Caption: <caption from STEP 3>
+English only.
+\end{verbatim}
+
+\section*{INSTR\,G --- Constraint-Priority}
+\begin{verbatim}
+You are given an image and a modification text: "relative_caption".
+
+This is instance-based retrieval. Generate a caption for the MODIFIED main instance.
+
+STEP A - Decompose the modification into ATOMIC CONSTRAINTS (split; do not merge).
+Example: "with a red flag on top" -> ["has a red flag", "flag is on top"]
+
+STEP B - Identify the instance the modification refers to.
+  - If you recognise it with HIGH confidence (>90%): record exact name +
+    2-word category.
+  - Otherwise: record instance type + exactly 3 distinctive visual identifiers
+    (be SPECIFIC: "steel cable-stayed bridge with blue towers", not "bridge").
+
+STEP C - Synthesise ONE caption:
+  ALL atomic constraints from STEP A must appear explicitly.
+  Instance identity from STEP B must appear (name OR distinctive traits).
+  - Named:   "[NAME] ([category]), [all constraints joined naturally]"
+  - Unnamed: "A/An [type] with [trait1, trait2, and trait3], [all constraints]"
+  Maximum 30 words.
+  EXCLUDED: background, scene, lighting, atmosphere, aesthetic adjectives.
+
+Output format (STRICT - two lines only):
+Line 1: JSON with keys: is_named (bool), instance_name (str|null),
+        instance_type (str), visual_identifiers ([str,...]),
+        atomic_constraints ([str,...])
+Line 2: @Final Caption: <caption from STEP C containing ALL atomic constraints>
+English only.
+\end{verbatim}
+
+\section*{INSTR\,H --- Anti-Noise Contract}
+\begin{verbatim}
+You are given an image and a modification text: "relative_caption".
+
+TASK: Generate a retrieval caption for the SINGLE main instance with the
+modification applied.
+
+QUALITY CONTRACT - your caption must satisfy ALL of these:
+ [+]  Describes ONLY the main instance (not the scene).
+ [+]  ALL modification constraints appear explicitly in the caption.
+ [+]  Instance is clearly identified: by exact NAME (if well-known, >90%
+      confidence) OR by 3-4 distinctive visual traits (not just generic type).
+ [+]  Caption is 10-25 words, self-contained.
+
+FORBIDDEN - your caption must NOT contain any of these:
+ [-]  Background, surroundings, scene, environment, setting.
+ [-]  Lighting, illuminated, lit, glowing, reflecting, reflections.
+ [-]  Atmosphere, mood, ambiance, aesthetic.
+ [-]  Adjectives: beautiful, stunning, picturesque, dramatic, breathtaking, majestic.
+ [-]  Introductory phrases: "The image shows", "An image of", "A photo of",
+      "Pictured is".
+
+PROCESS:
+1. Identify the instance the modification refers to.
+   Named (>90% sure)? -> record exact name + short category.
+   Not named?         -> record type + 3-4 distinctive visual traits.
+2. List all modification constraints.
+3. Write caption satisfying the contract. Check against [+] and [-] lists.
+
+Output format (STRICT - two lines only):
+Line 1: JSON with keys: instance_name (str|null), instance_type (str),
+        visual_traits ([str,...]), modification_constraints ([str,...])
+Line 2: @Final Caption: <caption passing the full quality contract>
+English only.
+\end{verbatim}
+
+\section*{INSTR\,I --- Slot-Fill Template}
+\begin{verbatim}
+You are given an image and a modification text: "relative_caption".
+
+Your task is to fill the following retrieval caption template - nothing more.
+
+Template:
+  @Final Caption: [INSTANCE_PHRASE] [MODIFICATION_PHRASE].
+
+Rules for INSTANCE_PHRASE:
+  - Named (>90% confident): "NAME (CATEGORY)" - e.g. "Charles Bridge (a historic
+    bridge)", "Buzz Lightyear (a cartoon character)"
+  - Unnamed: "a/an INSTANCE_TYPE with TRAIT1, TRAIT2, and TRAIT3" - be specific
+    (not "an object", "a thing", "a bridge")
+
+Rules for MODIFICATION_PHRASE:
+  - Rewrite the modification text as a natural participial or prepositional phrase.
+  - ALL distinct constraints from the modification must appear.
+  - Keep it concise.
+
+Hard constraints:
+  - Total caption length: 8-22 words.
+  - No background, no scene, no lighting, no aesthetic adjectives.
+  - Only two outputs: the JSON metadata line and the caption line.
+
+Output format (STRICT - two lines only):
+Line 1: JSON with keys: instance_name (str|null), instance_type (str),
+        visual_traits ([str,...]), modification_phrase (str)
+Line 2: @Final Caption: [INSTANCE_PHRASE] [MODIFICATION_PHRASE].
+English only.
+\end{verbatim}
+
+\section*{INSTR\,J --- Draft-Refine}
+\begin{verbatim}
+You are given an image and a modification text: "relative_caption".
+
+Generate a retrieval caption for the SINGLE main instance with the
+modification applied.
+
+PHASE 1 - Identify:
+  What instance does the modification refer to?
+  Is it well-known (>90% confident)? -> Name it and give 2-word category.
+  Otherwise -> state type + 3 distinctive visual traits.
+
+PHASE 2 - Decompose modification:
+  List each constraint separately (at most 4 items).
+
+PHASE 3 - Draft caption:
+  Write a first attempt combining instance identity + all constraints.
+  Maximum 25 words.
+
+PHASE 4 - Self-check (silent):
+  [ ] Does it clearly identify the instance (name or 3 traits)?
+  [ ] Does it include ALL constraints from PHASE 2?
+  [ ] Is it free of: background, lighting, atmosphere, aesthetic adjectives?
+  [ ] Is it <= 25 words?
+  If ANY box is unchecked, rewrite the caption until all boxes are checked.
+
+Output format (STRICT - two lines only):
+Line 1: JSON with keys: instance_name (str|null), instance_type (str),
+        visual_traits ([str,...]), constraints ([str,...]),
+        issues_fixed ([str,...] or [])
+Line 2: @Final Caption: <final caption from PHASE 4 passing all checks>
+English only.
+\end{verbatim}

@@ -22,6 +22,7 @@ similarities are combined by a late-fusion product. The chapter is organised as
 follows.
 Section~\ref{sect:method_problem} formalises the composed image retrieval task
 and fixes the notation used throughout the thesis.
+Section~\ref{sect:method_dataset} describes the i-CIR benchmark.
 Section~\ref{sect:method_eval} defines the evaluation protocol and metrics.
 Section~\ref{sect:method_overview} gives an overview of the proposed retrieval
 pipeline.
@@ -48,8 +49,9 @@ $\DB$ that places the image the user intends -- the result of applying the
 modification $\qt$ to the instance shown in $\qv$ -- as close to the top as
 possible. We denote by $\encv$ the visual encoder of a frozen vision--language
 model and by $\enct$ its textual encoder; both map their input to an
-$\ell_2$-normalised vector in a shared $d$-dimensional space, and similarity is
-measured by the cosine similarity $\simop$ of Equation~\eqref{eq:cosine}.
+$\ell_2$-normalised vector in a shared $d$-dimensional space. Image-to-image and
+image-to-text similarities are then computed as the dot product of the
+corresponding features.
 
 \paragraph{Instance-level relevance.}
 This thesis adopts the instance-level protocol of the i-CIR
@@ -69,6 +71,47 @@ jointly preserve the visual identity of the instance \emph{and} apply the
 precise change demanded by the text, since collapsing onto either modality
 alone aligns the method with one of the hard-negative types.
 
+\paragraph{Zero-shot assumption.}
+We operate strictly in the \emph{zero-shot} regime: no component of the system
+is trained or fine-tuned on i-CIR. All encoders $\encv, \enct$ are
+off-the-shelf, frozen vision--language models, the caption generator is a
+frozen MLLM, and every fusion and post-processing step is training-free. We
+adopt this setting because the zero-shot regime is the more practical and
+scalable one for composed image retrieval in general:
+\begin{itemize}
+  \item \textbf{Supervised training is expensive and labour-intensive.} It
+        requires large-scale annotated triplets of reference image, modification
+        text, and target image, which are costly to collect.
+  \item \textbf{It does not scale.} Building a dedicated training set for every
+        possible kind of modification a user might request is unrealistic.
+  \item \textbf{Trained models generalise poorly.} A fusion model trained on one
+        CIR dataset often transfers badly to another.
+\end{itemize}
+Operating zero-shot side-steps all three issues; on i-CIR specifically, it
+additionally isolates the contribution of the proposed retrieval signal from any
+benefit of supervision.
+
+% =====================================================================
+\section{The i-CIR Dataset}\label{sect:method_dataset}
+% =====================================================================
+
+We conduct all experiments on i-CIR~\cite{psomas2025icir}, the instance-level
+composed image retrieval benchmark. The benchmark is organised around object
+\emph{instances}: each instance is associated with one or more composed queries,
+where a query pairs a reference image $\qv$ of the instance with a modification
+text $\qt$ describing a desired change. Relevance is defined at instance
+granularity, exactly as in Section~\ref{sect:method_problem}.
+
+\paragraph{Query-specific instance pool.}
+Rather than ranking each query against the full database, i-CIR equips every
+instance with a dedicated \emph{pool} of candidate images. This pool gathers the
+positive (relevant) images of all queries belonging to the instance together
+with a curated set of hard negatives of the three types introduced in
+Section~\ref{sect:method_problem}. Retrieval and evaluation for a query are
+carried out within this pool, which concentrates closely related distractors
+around each query and makes the ranking task substantially harder than retrieval
+against an unconstrained gallery.
+
 \paragraph{Scale.}
 % HIGHLIGHT: verify these counts against the i-CIR data card.
 The full benchmark comprises $1{,}883$ queries and $N = 752{,}092$ database
@@ -76,58 +119,67 @@ images. For development we use a fixed $20\%$ instance subset ($400$ queries and
 $N = 143{,}769$ database images; see Section~\ref{sect:method_impl}), on which
 the ablation studies of Chapter~\ref{chapt:results} are conducted.
 
-\paragraph{Zero-shot assumption.}
-We operate strictly in the \emph{zero-shot} regime: no component of the system
-is trained or fine-tuned on i-CIR. All encoders $\encv, \enct$ are
-off-the-shelf, frozen vision--language models, the caption generator is a
-frozen MLLM, and every fusion and post-processing step is training-free. We
-adopt this setting both because the benchmark is intended for evaluation rather
-than large-scale training and because it isolates the contribution of the
-proposed retrieval signal from any benefit of supervision. The justification
-for preferring zero-shot over a trained fusion model is given here, at the point
-where the assumption is introduced, rather than deferred to the experiments.
-
 % =====================================================================
 \section{Evaluation Protocol and Metrics}\label{sect:method_eval}
 % =====================================================================
 
 \paragraph{Ranking protocol.}
-Each query is evaluated by ranking the database (or, equivalently, its
-instance pool) by decreasing fused similarity and comparing the ranking against
-the query's relevant set, consistent with the i-CIR
-protocol~\cite{psomas2025icir}.
+Following the i-CIR protocol~\cite{psomas2025icir}, each query is evaluated
+within its query-specific instance pool (Section~\ref{sect:method_dataset}): the
+pool is ranked by decreasing fused similarity and the ranking is compared against
+the query's relevant set.
+
+\paragraph{Precision and recall.}
+Given a ranking, let $\mathrm{rel}(j)\in\{0,1\}$ indicate whether the item at
+rank $j$ is relevant, and let $R$ be the total number of relevant items for the
+query. At a rank cutoff $k$, precision and recall are
+\begin{equation}\label{eq:prec_rec}
+    \mathrm{P}@k = \frac{1}{k}\sum_{j=1}^{k}\mathrm{rel}(j),
+    \qquad
+    \mathrm{R}@k = \frac{1}{R}\sum_{j=1}^{k}\mathrm{rel}(j),
+\end{equation}
+i.e. the fraction of the top-$k$ that is relevant, and the fraction of all
+relevant items recovered within the top-$k$, respectively.
 
 \paragraph{Average precision.}
-The primary quality measure is the average precision of the ranking, computed in
-the trapezoidal (Oxford-style) form used by the benchmark and classical
-instance retrieval~\cite{philbin2007oxford}. Writing the precision--recall
-curve as the sequence of points $(r_0, p_0), (r_1, p_1), \dots$ obtained by
-sweeping the rank threshold, the trapezoidal average precision integrates
-precision over recall as
+Average precision (AP) summarises the whole precision--recall curve into a single
+number. Sweeping the cutoff $k$ traces the sequence of points
+$(\mathrm{R}@k, \mathrm{P}@k)$, and AP is the area under this curve. We use the
+trapezoidal (Oxford-style) estimate adopted by the benchmark and classical
+instance retrieval~\cite{philbin2007oxford},
 \begin{equation}\label{eq:ap}
     \mathrm{AP} = \sum_{i \geq 1} (r_i - r_{i-1})\,
     \frac{p_i + p_{i-1}}{2},
 \end{equation}
-i.e. the area under the precision--recall curve approximated by trapezoids
-between successive recall levels.
+where $(r_i, p_i)$ are successive recall--precision points. AP is high only when
+relevant items are concentrated near the top of the ranking.
 
-\paragraph{Macro- vs.\ micro-averaging.}
+\paragraph{Mean average precision.}
 % HIGHLIGHT: confirm this matches the paper's macro/micro definition exactly.
-Because the number of queries per instance is uneven, we distinguish two ways of
-aggregating AP. The \emph{micro}-averaged mAP (denoted \textsc{mAP}) is the mean
-of AP over \emph{all queries}, giving every query equal weight. The
-\emph{macro}-averaged mAP (denoted \textsc{mmAP}) first averages AP over the
-queries belonging to each \emph{instance} and then averages across instances,
-giving every instance equal weight regardless of how many queries it has.
+The mean average precision (mAP) is AP averaged over a set of queries. Because
+the number of queries per instance is uneven, two averagings are distinguished.
+The \emph{micro}-averaged mAP averages AP over \emph{all queries} equally,
+\begin{equation}\label{eq:micro_map}
+    \textsc{mAP} = \frac{1}{|Q|}\sum_{q\in Q}\mathrm{AP}(q),
+\end{equation}
+where $Q$ is the set of all queries. The \emph{macro}-averaged mAP first
+averages AP within each instance and then averages across instances,
+\begin{equation}\label{eq:macro_map}
+    \textsc{mmAP} = \frac{1}{|\mathcal{I}|}\sum_{I\in\mathcal{I}}
+    \frac{1}{|Q_I|}\sum_{q\in Q_I}\mathrm{AP}(q),
+\end{equation}
+where $\mathcal{I}$ is the set of instances and $Q_I$ the queries of instance
+$I$. Macro-averaging gives every instance equal weight regardless of how many
+queries it has, whereas micro-averaging gives every query equal weight.
 Following the i-CIR benchmark, \textbf{macro-mAP is the primary metric}; it is
 the headline number in all tables unless stated otherwise.
 
 \paragraph{Auxiliary metrics.}
-We additionally report rank-cutoff metrics: $\mathrm{Recall}@k$ (the fraction
-of relevant items retrieved within the top-$k$, for $k \in \{10, 100\}$) and
-$\mathrm{Hit}@k$ (whether at least one relevant item appears in the top-$k$,
-for $k \in \{1, 10\}$). These characterise the top of the ranking, which is
-what a user sees first.
+We additionally report rank-cutoff metrics that characterise the top of the
+ranking, which is what a user sees first: $\mathrm{R}@k$ of
+Equation~\eqref{eq:prec_rec} for $k \in \{10, 100\}$, and $\mathrm{Hit}@k$
+(whether at least one relevant item appears in the top-$k$) for
+$k \in \{1, 10\}$.
 
 % =====================================================================
 \section{Pipeline Overview}\label{sect:method_overview}
@@ -151,8 +203,9 @@ candidate database image $\xdb$:
 The three scores are combined by the late-fusion product of
 Section~\ref{sect:method_fusion} into a single score per candidate, and the
 database is ranked by this fused score. Two properties are worth emphasising.
-First, \emph{all encoders are frozen and off-the-shelf}: the only learning that
-ever occurred is the original vision--language and MLLM pretraining. Second, the
+First, \emph{all encoders are frozen and off-the-shelf}: every model is used
+exactly as released, with no training or fine-tuning on the retrieval task.
+Second, the
 caption branch is purely \emph{additive} -- it supplies a strong text-side query
 without removing the visual signal from the image branch, which is what allows
 the fusion to respect instance identity while applying the modification.
@@ -181,28 +234,37 @@ the fusion to respect instance identity while applying the modification.
 % =====================================================================
 
 The encoders $\encv$ and $\enct$ are supplied by a frozen, contrastively
-pretrained vision--language model. To understand how much the choice of backbone
-matters, and to report results that are comparable to the i-CIR baseline, we
-evaluate the pipeline with four backbones spanning two model families and two
-capacity levels, listed in Table~\ref{tab:backbones}. CLIP
-ViT-L/14~\cite{radford2021clip} is included because it is the backbone most
-commonly reported in the zero-shot CIR literature and makes our numbers directly
-comparable. CLIP ViT-H/14~\cite{ilharco2021openclip} is a higher-capacity CLIP
-model and the strongest of the CLIP variants on the duplet baseline. SigLIP
-ViT-L/16-256~\cite{zhai2023siglip} and SigLIP2 g/16-384~\cite{tschannen2025siglip2}
-represent the sigmoid-loss family, with SigLIP2 being the most recent and
-best-aligned encoder; as Chapter~\ref{chapt:results} shows, it is the strongest
-backbone for our pipeline.
+pretrained vision--language model that maps images and text into a shared
+embedding space. We evaluate the pipeline with four such backbones spanning two
+model families and two capacity levels (Table~\ref{tab:backbones}), both to
+measure how much the choice of backbone matters and to report numbers comparable
+to the i-CIR baseline.
+
+The first family is CLIP~\cite{radford2021clip}, which learns a joint
+image--text space by contrastive training on large image--caption datasets: a
+symmetric InfoNCE objective pulls matching image--text pairs together and pushes
+mismatched pairs apart within each batch. We use two CLIP variants: ViT-L/14,
+the backbone most commonly reported in the zero-shot CIR literature, which makes
+our numbers directly comparable; and the higher-capacity ViT-H/14 from
+OpenCLIP~\cite{ilharco2021openclip}, the strongest CLIP model on the duplet
+baseline.
+
+The second family is SigLIP~\cite{zhai2023siglip}, which replaces CLIP's
+softmax-based contrastive loss with a pairwise \emph{sigmoid} loss: each
+image--text pair is scored independently as a binary matched/not-matched
+decision, removing the dependence on a global softmax over the batch. This
+stabilises training, scales better to large batch sizes, and yields stronger
+image--text alignment. We use SigLIP ViT-L/16 at $256$px resolution and the more
+recent, higher-capacity SigLIP2 g/16 at $384$px~\cite{tschannen2025siglip2},
+which is the best-aligned encoder of the four and, as
+Chapter~\ref{chapt:results} shows, the strongest backbone for our pipeline.
 
 For every backbone, the reference image $\qv$ and all database images $\xdb$ are
 embedded with the visual encoder $\encv$, while the modification text $\qt$ and
 the generated caption $\qc$ are embedded with the textual encoder $\enct$ into
-the same space; all embeddings are $\ell_2$-normalised. Crucially, no backbone
-is fine-tuned -- each is used exactly as released -- which keeps the comparison
-fair and the pipeline zero-shot. We additionally tried an MLLM-derived embedding
-model, Qwen3-VL-Embedding-2B~\cite{bai2025qwen3vl}; we include it as a
-tried-but-weak baseline because it underperforms the contrastive encoders
-substantially in this retrieval setting.
+the same space; all embeddings are $\ell_2$-normalised. No backbone is
+fine-tuned -- each is used exactly as released -- which keeps the comparison fair
+and the pipeline zero-shot.
 
 \begin{table}[h!]
 \centering
@@ -213,11 +275,10 @@ CLIP ViT-L/14       & 768  & paper-comparable \\
 CLIP ViT-H/14       & 1024 & strongest CLIP / duplet backbone \\
 SigLIP ViT-L/16-256 & 1024 & sigmoid-loss family \\
 SigLIP2 g/16-384    & 1536 & best overall \\
-Qwen3-VL-Emb-2B     & ---  & MLLM-derived; weak baseline \\
 \bottomrule
 \end{tabular}
 % HIGHLIGHT: verify the embedding dims above (especially SigLIP-L=1024,
-% SigLIP2=1536, Qwen3-VL-Emb dim) against the model cards / your configs.
+% SigLIP2=1536) against the model cards / your configs.
 \caption[Vision--language backbones compared.]{Vision--language backbones
 compared in this work. Embedding dimension is the dimensionality of the shared
 image--text space.\label{tab:backbones}}
@@ -227,40 +288,117 @@ image--text space.\label{tab:backbones}}
 \section{The \textsc{Basic} Baseline}\label{sect:method_basic}
 % =====================================================================
 
-The method of this thesis builds on \textsc{Basic}, the zero-shot pipeline
-introduced together with the i-CIR benchmark~\cite{psomas2025icir} and
-re-implemented here. \textsc{Basic} fuses the reference-image and
-modification-text similarities using only frozen features and a sequence of
-training-free post-processing steps. We summarise its components below, marking
-which parts this thesis keeps, tunes, or supersedes; the empirical contribution
-of each is quantified in Chapter~\ref{chapt:results}.
+The method of this thesis builds on \textsc{Basic}, the training-free zero-shot
+pipeline introduced together with the i-CIR benchmark~\cite{psomas2025icir} and
+re-implemented here. \textsc{Basic} rests on the assumption that the two
+modalities of a composed query encode \emph{complementary} information that
+jointly defines the retrieval target, which makes composed retrieval analogous to
+a logical conjunction over the modalities: the result sought is one that is
+simultaneously relevant to the reference image \emph{and} to the modification
+text.\footnote{This assumption holds well for standard composite queries (e.g.\
+\emph{this image} and the concept ``winter''), but may weaken when one modality
+dominates (e.g.\ purely textual transformations) or when the text query is highly
+entangled with the image content, as in CIRR-like datasets; in such cases the
+benefit of the mechanisms below diminishes.} Following this assumption,
+\textsc{Basic} computes a similarity per modality and fuses the two. Before
+fusing, it improves each modality by removing modality-specific noise and
+spurious correlations that interfere with their combination: visual features can
+be entangled with background clutter, image composition, or dataset-specific
+style, while textual features can reflect lexical biases or corpus-level drift.
+The pipeline is a sequence of conceptually simple yet effective steps that
+progressively filter out these artefacts. We summarise them below, marking which
+parts this thesis keeps, tunes, or supersedes; the empirical contribution of each
+is quantified in Chapter~\ref{chapt:results}.
 
-\paragraph{Feature centering.} The dominant post-processing step subtracts a
-mean vector from every embedding before computing similarities
-(Equation~\eqref{eq:centering}), removing the shared common component of the
-contrastive space. We keep centering and study two choices of mean -- the global
-database mean and the mean of a LAION-1M reference sample -- in
+\paragraph{Centering for bias removal.} Each embedding is centered by subtracting
+a precomputed modality mean, which captures low-level regularities (general
+visual patterns for images, common linguistic patterns for text) and whose
+removal isolates semantic content from distributional bias
+(Equation~\eqref{eq:centering}). A mean $\boldsymbol{\mu}^v$ is subtracted from
+the image features $\encv(\qv)$ and from the database features, and a text mean
+$\boldsymbol{\mu}^t$ from the text features $\enct(\qt)$. For scale and
+generalisation, $\boldsymbol{\mu}^v$ is estimated on a large external dataset
+such as LAION~\cite{schuhmann2022laion5b} and $\boldsymbol{\mu}^t$ on a
+predefined textual corpus. The choice of image mean is studied in
 Section~\ref{subsect:method_centering}.
 
-\paragraph{Dimensionality reduction.} A PCA/whitening projection reduces the
-embedding dimensionality and equalises variance across the retained directions,
-suppressing noisy components.
+\paragraph{Projection onto a semantic subspace.} To retain information about the
+main object while suppressing style, object domain, and background -- exactly the
+dimensions that common text modifications target -- \textsc{Basic} projects the
+centered image features onto a low-dimensional subspace derived from text
+features. Two textual corpora are used: an \emph{object} corpus $\mathcal{C}^+$
+of object-oriented terms (e.g.\ ``building'', ``dog'') and a \emph{stylistic}
+corpus $\mathcal{C}^-$ of style, viewing-condition, and context terms (e.g.\
+``cartoon'', ``aerial view'', ``in a cloudy day''). A weighted contrastive
+covariance matrix
+\begin{equation}\label{eq:basic_proj}
+  C = (1-\alpha)\,C^{+} - \alpha\,C^{-},
+  \qquad
+  C^{\pm} = \frac{1}{|\mathcal{C}^{\pm}|}\sum_{x\in\mathcal{C}^{\pm}}
+  \big(\enct(x)-\boldsymbol{\mu}^t\big)\big(\enct(x)-\boldsymbol{\mu}^t\big)^{\!\top}
+\end{equation}
+is formed, with $\alpha$ an empirically chosen hyperparameter. The top-$k$
+eigenvectors of $C\in\mathbb{R}^{d\times d}$ form a projection matrix
+$P\in\mathbb{R}^{d\times k}$ that captures directions of high variance in
+$\mathcal{C}^+$ and low variance in $\mathcal{C}^-$, emphasising object-specific
+cues while suppressing style-related variation; centered image features
+$\bar{x}^v$ are projected as $P^{\top}\bar{x}^v\in\mathbb{R}^{k}$. The corpora
+need not match the retrieval domain -- even generic terms (e.g.\ ImageNet class
+names) transfer well. This is the step our high-level overview earlier called
+dimensionality reduction; it is in fact a \emph{semantic} projection rather than
+plain PCA.
 
-\paragraph{Query expansion.} After a first retrieval pass, the query is
-aggregated with its top-ranked neighbours and the search is repeated, propagating
-information from confident matches.
+\paragraph{Image query expansion.} Optionally, the image-query feature is
+enhanced by a weighted combination of the top-ranked database features it
+retrieves, with weights increasing in the corresponding similarities -- a
+standard recall-boosting technique in instance retrieval~\cite{philbin2007oxford}.
 
-\paragraph{Text contextualization.} Because the bare modification text $\qt$ is
-a poor standalone query, \textsc{Basic} \emph{contextualizes} it by combining it
-with a subject term derived from the query: concretely, it forms the two
-orderings ``\{subject\} \{text\}'' and ``\{text\} \{subject\}'', embeds both, and
-averages the embeddings. This is the step that the target caption of
+\paragraph{Contextualization of text queries.} Because CLIP is trained on full
+captions, bare single-word or fragmentary text queries (e.g.\ ``sculpture'',
+``during sunset'') are out-of-distribution and produce poorly aligned text
+features. \textsc{Basic} therefore \emph{contextualizes} $\qt$ into caption-like
+phrases by inserting random terms from the object corpus $\mathcal{C}^+$ before
+and after it (e.g.\ ``dog during the sunset'', ``sculpture dog''), embedding all
+variants, centering them, and averaging the result into a single, more robust
+text feature. This is the step that the target caption of
 Section~\ref{sect:method_caption} is designed to replace with a stronger,
 self-contained textual signal.
 
-\paragraph{Score fusion.} \textsc{Basic} combines the image and text
-similarities into a single score (the components above feed into this fused
-score). This defines the \emph{duplet} baseline used throughout the thesis.
+\paragraph{Score normalisation and fusion.} For a database image $\xdb$ with
+centered feature $\bar{x}^v$, and given the centered image query $\bar{q}^v$ and
+the contextualized centered text query $\bar{q}^t$, the per-modality similarities
+are
+\begin{equation}\label{eq:basic_scores}
+  \sv = \big\langle P^{\top}\bar{x}^v,\; P^{\top}\bar{q}^v\big\rangle,
+  \qquad
+  \st = \big\langle \bar{x}^v,\; \bar{q}^t\big\rangle ,
+\end{equation}
+and are fused multiplicatively, $s = \sv\,\st$, reflecting the \textsc{and}
+assumption. To correct the range imbalance between modalities, each similarity
+is affinely rescaled using its empirical minimum $s_{\min}<0$ (estimated on an
+external dataset), so that $s_{\min}\!\mapsto\!0$ and $0\!\mapsto\!1$:
+\begin{equation}\label{eq:basic_minnorm}
+  \tilde{s} = \frac{s - s_{\min}}{|s_{\min}|}.
+\end{equation}
+The normalised scores are finally fused with a regulariser inspired by the
+Harris corner detector,
+\begin{equation}\label{eq:basic_harris}
+  \tilde{s}^{f} = \tilde{s}^{v}\,\tilde{s}^{t}
+  - \lambda\big(\tilde{s}^{v} + \tilde{s}^{t}\big)^{2},
+\end{equation}
+whose first term rewards items jointly relevant to both modalities and whose
+second term penalises items activated by only one modality, thereby suppressing
+single-modality false positives; the scalar $\lambda$ is fixed across all
+experiments.
+
+\paragraph{Efficiency.} The entire pipeline is (deep-network) training-free and
+scales near-linearly with the database, since scoring reduces to inner products
+that off-the-shelf similarity-search libraries handle efficiently. Moreover,
+centering and projection can be folded into the query side and applied on the fly
+over a stored index of \emph{raw} features, so the mean and the projection matrix
+can be swapped -- for example with domain-specific knowledge -- without touching
+the stored index, which makes \textsc{Basic} well-suited to large-scale
+deployment with no adaptation, fine-tuning, or backpropagation.
 
 \subsection{Feature Centering}\label{subsect:method_centering}
 Centering subtracts a fixed mean $\mu$ from each embedding and re-normalises, as
@@ -272,9 +410,12 @@ pairwise similarities; whether the source of the mean matters in practice is a
 question we answer empirically in Section~\ref{sect:res_centering}.
 
 \subsection{Duplet Baseline Score}\label{subsect:method_duplet}
-The \textsc{Basic} pipeline, stripped of the caption, defines the \emph{duplet}
-baseline: each candidate is scored by combining its image similarity $\sv$ and
-its (contextualized) text similarity $\st$ by a clamped product,
+Throughout this thesis we refer to the two-modality \textsc{Basic} score --
+image fused with (contextualized) text -- as the \emph{duplet} baseline, against
+which the triplet method of Section~\ref{sect:method_fusion} is compared. For
+consistency with the triplet fusion, we instantiate \textsc{Basic}'s
+multiplicative \textsc{and} (Equation~\eqref{eq:basic_harris}) in the simpler
+clamped-product form
 \begin{equation}\label{eq:duplet}
     s_{\text{duplet}}(q, \xdb) =
     \clamp(\st)\cdot\clamp(\sv),
@@ -282,6 +423,9 @@ its (contextualized) text similarity $\st$ by a clamped product,
 where $\clamp(\cdot)$ maps negative similarities to zero
 (Section~\ref{sect:method_fusion}). The triplet score of this thesis extends
 Equation~\eqref{eq:duplet} with the caption term.
+% HIGHLIGHT: confirm that the reproduced "BASIC (img x txt)" duplet uses this
+% clamped product, NOT the paper's min-norm + Harris fusion (eq:basic_harris).
+% If the reproduction follows the paper exactly, replace eq:duplet accordingly.
 
 % =====================================================================
 \section{Target-Caption Generation}\label{sect:method_caption}
@@ -313,32 +457,63 @@ confidence (otherwise to list distinctive attributes for retrieval), and to be
 concise and factual.
 
 \paragraph{Instruction design.} A short, retrieval-oriented description of an
-imagined image is sensitive to how the model is prompted, so we designed a space
-of nine instruction variants that share the core ``imagine the modification
-applied, then describe the target instance'' contract but differ in emphasis,
-summarised in Table~\ref{tab:instructions}. The variants range from the base
-instance-focused rule set, through versions that handle identifiable named
-entities differently or remove incidental details of the original image, to
-two-stage variants that first identify the instance and then apply the
-modification, and a variant that decomposes the modification into atomic
-constraints with a self-check. One variant emits two captions of differing
-length. The per-instruction comparison is reported in
+imagined image is sensitive to how the model is prompted. We therefore designed
+a space of five instruction variants, summarised in
+Table~\ref{tab:instructions}, that share a common contract -- recognise the
+single main instance, apply the modification, and emit a concise caption free of
+scene and aesthetic noise -- but differ in how they enforce it.
+\textsc{F} (\emph{adaptive precision}) gates instance recognition on a
+confidence threshold, naming a well-known entity only when highly confident and
+otherwise falling back to distinctive visual traits.
+\textsc{G} (\emph{constraint-priority}) first decomposes the modification into
+atomic constraints to guarantee full coverage, then binds them to the instance
+identity.
+\textsc{H} (\emph{anti-noise contract}) enforces an explicit quality contract
+with a forbidden-vocabulary list that blocks background, lighting, and aesthetic
+descriptors.
+\textsc{I} (\emph{slot-fill template}) imposes a rigid
+``[instance phrase] [modification phrase]'' template that suppresses noise
+structurally.
+\textsc{J} (\emph{draft--refine}) drafts a caption and then silently self-checks
+it against the identity, constraint-coverage, noise, and length requirements
+before emitting a refined version.
+The per-instruction comparison is reported in
 Section~\ref{subsect:res_ablation_instr}.
+
+\paragraph{Why these five.} The variants were not chosen arbitrarily: they were
+designed from an analysis of an earlier, larger pool of prompts evaluated on the
+development subset, which exposed three recurring failure modes. Concise,
+step-by-step prompts recognised well-known named entities accurately but produced
+captions that were \emph{too sparse} for unrecognisable instances (e.g.\
+collapsing a specific bridge to ``a bridge''); richer, more descriptive prompts
+improved coverage but injected \emph{scene and aesthetic noise} (lighting,
+background, mood); and prompts that decomposed the modification into atomic parts
+ensured \emph{constraint coverage} but often lost the instance's visual identity.
+Each of the five variants in Table~\ref{tab:instructions} is a targeted remedy
+that keeps the conciseness that works for named entities, forces richer
+distinctive traits for unnamed ones, requires every modification constraint to
+appear, and adds explicit anti-patterns that block scene and aesthetic noise.
+They differ only in \emph{how} they enforce this shared contract -- confidence
+gating (F), constraint-first decomposition (G), an explicit forbidden-vocabulary
+contract (H), a rigid fill-in template (I), or an internal draft-and-self-check
+loop (J) -- so that embedding-space averaging over them (\texttt{avg-5}) can
+exploit their complementary strengths. The verbatim prompts are reproduced in
+Appendix~\ref{app:prompts}.
 
 \paragraph{Robustness via averaging.} Rather than commit to a single
 instruction, we reduce caption variance by \emph{averaging in embedding space}.
-Let $\qc^{(1)}, \dots, \qc^{(9)}$ be the captions produced by the nine
+Let $\qc^{(1)}, \dots, \qc^{(5)}$ be the captions produced by the five
 instructions for a given query. The default caption embedding, denoted
-\texttt{avg-9}, is the $\ell_2$-normalised mean of their individual text
+\texttt{avg-5}, is the $\ell_2$-normalised mean of their individual text
 embeddings,
-\begin{equation}\label{eq:avg9}
+\begin{equation}\label{eq:avg5}
     \enct(\qc) \;=\; \frac{\bar{e}}{\lVert \bar{e}\rVert},
     \qquad
-    \bar{e} \;=\; \frac{1}{9}\sum_{j=1}^{9}\enct\!\big(\qc^{(j)}\big).
+    \bar{e} \;=\; \frac{1}{5}\sum_{j=1}^{5}\enct\!\big(\qc^{(j)}\big).
 \end{equation}
 Averaging the embeddings (not the texts) keeps the signal that is consistent
 across instructions and attenuates the idiosyncrasies of any single prompt. We
-use \texttt{avg-9} as the default and compare it against the best single
+use \texttt{avg-5} as the default and compare it against the best single
 instruction in Chapter~\ref{chapt:results}.
 
 % HIGHLIGHT: insert one qualitative example: reference image + modification
@@ -358,23 +533,17 @@ image, which is then embedded and used as a third retrieval signal.
 \begin{tabular}{l l}
 \toprule
 ID & Instruction (summary) \\ \midrule
-1\_8b   & shared core; full instance-focused rules \\
-2\_8b   & core + explicit identifiable-name handling / generic fallback \\
-3\_8b   & core; one-paragraph caption; stricter naming rule \\
-4\_8b   & core + removes incidental original-image details (more general) \\
-5\_8b   & two-stage: identify instance, then apply modification \\
-6\_A\_8b & two-caption variant, A = more informative (best single) \\
-6\_B\_8b & two-caption variant, B = short, instance + modification only \\
-7\_8b   & two-stage + preserves explicit visual identifiers \\
-8\_8b   & atomic-constraint decomposition + coverage + self-check \\
+\textsc{F} & \emph{adaptive precision}: confidence-gated naming, else distinctive traits; all constraints; $\le 25$ words \\
+\textsc{G} & \emph{constraint-priority}: atomic-constraint decomposition first, then instance identity; $\le 30$ words \\
+\textsc{H} & \emph{anti-noise contract}: explicit quality contract + forbidden-vocabulary list; $10$--$25$ words \\
+\textsc{I} & \emph{slot-fill template}: rigid ``[instance] [modification]'' template; $8$--$22$ words \\
+\textsc{J} & \emph{draft--refine}: draft, silent self-check, refined caption; $\le 25$ words \\
 \bottomrule
 \end{tabular}
-\caption[Caption-generation instruction variants.]{The nine instruction
-variants used to prompt the MLLM. \texttt{avg-9} averages the text embeddings of
-all nine (Equation~\eqref{eq:avg9}); the verbatim prompts are reproduced in
-Appendix~\ref{...}.\label{tab:instructions}}
-% HIGHLIGHT: decide whether to include the verbatim prompts as an appendix.
-% The full text is in artifacts/caption_files_Amin/prompts/internvl_instructions.md
+\caption[Caption-generation instruction variants.]{The five instruction
+variants used to prompt the MLLM. \texttt{avg-5} averages the text embeddings of
+all five (Equation~\eqref{eq:avg5}); the verbatim prompts are reproduced in
+Appendix~\ref{app:prompts}.\label{tab:instructions}}
 \end{table}
 
 % =====================================================================
@@ -383,11 +552,16 @@ Appendix~\ref{...}.\label{tab:instructions}}
 
 The three branches of Section~\ref{sect:method_overview} produce, for a query
 $q = (\qv, \qt)$ with generated caption $\qc$ and a candidate database image
-$\xdb$, the three cosine similarities
+$\xdb$, three cosine similarities -- the \emph{image similarity} $\sv$, the
+\emph{text similarity} $\st$, and the \emph{caption similarity} $\sc$ --
+defined as
 \begin{align}
-  \sv &= \simop\!\big(\encv(\qv),\, \encv(\xdb)\big), \label{eq:s_img}\\
-  \st &= \simop\!\big(\enct(\qt),\, \encv(\xdb)\big), \label{eq:s_txt}\\
-  \sc &= \simop\!\big(\enct(\qc),\, \encv(\xdb)\big). \label{eq:s_cap}
+  \sv &= \simop\!\big(\encv(\qv),\, \encv(\xdb)\big),
+        && \text{(image similarity)} \label{eq:s_img}\\
+  \st &= \simop\!\big(\enct(\qt),\, \encv(\xdb)\big),
+        && \text{(text similarity)} \label{eq:s_txt}\\
+  \sc &= \simop\!\big(\enct(\qc),\, \encv(\xdb)\big).
+        && \text{(caption similarity)} \label{eq:s_cap}
 \end{align}
 We fuse them by the \emph{clamped triplet product}
 \begin{equation}\label{eq:triplet}
@@ -431,13 +605,16 @@ modality; Chapter~\ref{chapt:results} measures the gain this term provides.
 PyTorch. Contrastive backbones are loaded through OpenCLIP and HuggingFace
 Transformers, and the InternVL caption generator runs through HuggingFace
 Transformers. All large-scale embedding and retrieval jobs run on a SLURM-managed
-HPC cluster with NVIDIA GPUs (A5000 and A100 nodes).
+HPC cluster, distributed across whichever NVIDIA GPU nodes were available for a
+given job depending on the task, node availability, and the memory it required;
+the heavier caption-generation and full-database embedding jobs were scheduled on
+the higher-memory nodes.
 % HIGHLIGHT: state the exact GPUs/driver/CUDA you want on record, and the
 % library versions (openclip, transformers, torch) for reproducibility.
 
 \paragraph{Caption generation settings.} Captions are generated with
 InternVL-3.5-8B using its high-resolution tiling input and a fixed decoding
-configuration shared across all nine instructions.
+configuration shared across all five instructions.
 % HIGHLIGHT: fill in the EXACT InternVL-8B generation settings you used
 % (temperature, max new tokens, number of tiles). The 4B REPL used
 % temp=0.7 / 12 tiles / 512 tokens -- confirm the 8B batch run matches.
