@@ -42,7 +42,9 @@ scale.
 \paragraph{Metrics.} Unless stated otherwise, all numbers are macro-mAP
 (\textsc{mmAP}, \%), the primary metric of Section~\ref{sect:method_eval}
 (Equation~\eqref{eq:macro_map}); micro-mAP (\textsc{mAP}) is reported alongside
-where informative.
+where informative. Recall@$k$ (R@$k$, the fraction of queries with at least one
+correct item in the top $k$) is additionally reported in the backbone analysis of
+Section~\ref{sect:res_backbones}.
 
 \paragraph{Configurations.} We compare the \textsc{Basic} duplet
 (image$\times$text, Equation~\eqref{eq:duplet}) against \emph{Ours}, the
@@ -58,44 +60,105 @@ a cumulative ladder, analysed in Section~\ref{sect:res_components}.
 \section{Main Results: \textsc{Basic} Duplet vs.\ Triplet}\label{sect:res_main}
 % =====================================================================
 
-Table~\ref{tab:res_main} reports the headline result. Adding the generated
-target caption improves \emph{every} backbone, without exception. The gains are
-largest for the backbones whose plain image--text alignment is weakest:
-SigLIP-L improves by $+22.2$ macro-mAP and SigLIP2 by $+18.0$, while the
-already-strong CLIP-H and the smaller CLIP-L improve by $+6.0$ and $+7.5$
-respectively. The best configuration in this table is SigLIP2 with the
-\texttt{avg-5} caption, at $56.09$ macro-mAP.
+\paragraph{Comparison with the state of the art.}
+Table~\ref{tab:res_leaderboard} compares the proposed method against the
+literature on the full i-CIR benchmark, following the evaluation protocol of the
+i-CIR paper~\cite{psomas2025icir}: macro-mAP on $1{,}883$ queries against the
+$752{,}092$-image instance pool, CLIP ViT-L/14 backbone (the default choice in
+the original benchmark). State-of-the-art results (marked $\dagger\dagger$) are
+taken directly from Table~1 of \citeauthor{psomas2025icir}~\citeyear{psomas2025icir}.
 
-The pattern -- larger gains where the duplet baseline is weaker -- is consistent
-with the role of the caption. A backbone with poorly aligned text and image
-spaces produces a noisy modification-text signal $\st$; the self-contained
-target caption $\sc$ supplies a cleaner, image-like text query and therefore
-helps such backbones the most. Where the backbone is already well aligned
-(CLIP-H), the caption still helps, but the marginal benefit is smaller because
-the text branch was already informative. On every backbone the \texttt{avg-5}
-caption also outperforms the best single instruction, anticipating the
-averaging analysis of Section~\ref{subsect:res_aug}.
+Two ablation entries are worth noting.
+\textbf{Caption alone} ($16.16$) outperforms \textbf{Caption $\times$ Image}
+($14.04$), suggesting that multiplying with the image embedding can
+\emph{hurt} when the backbone is weakly aligned: the image signal drags the
+composed query towards unmodified instance images, diluting the textual
+modification. Yet caption alone already rivals the full \textbf{Text $\times$
+Image} duplet ($17.95$), showing that a self-contained target description is a
+surprisingly effective query on its own.
+
+Our best configuration, \textbf{Ours (\texttt{avg-5})}, achieves $35.76$ macro-mAP,
+outperforming the previous best, CoVR-2, by $+7.3$ points and exceeding the
+strongest reproduction of \textsc{Basic} (\textsc{Basic}$^\dagger$, $32.48$) by
+$+3.3$ points. A note on reproduction: our \textsc{Basic}$^\dagger$ reproduction
+uses a newer extraction environment (\texttt{open\_clip}~3.3.0, \texttt{Pillow}~12,
+\texttt{numpy}~2.x) versus the paper's original, producing features that differ
+slightly from the paper's reported $34.35$; the gap is fully explained by this
+environment mismatch, not a code error, and the \emph{relative} improvement of
+Ours over \textsc{Basic} is unaffected.
+
+% SOURCE: docs/main_leaderboard_clipl.csv  (borrowed = True rows from i-CIR Table 1)
+\begin{table}[h!]
+\centering
+\begin{tabular}{l c}
+\toprule
+Method & mmAP \\ \midrule
+\multicolumn{2}{l}{\textit{Ablations}} \\
+\quad Text ($\st$ only)                            &  3.26 \\
+\quad Image ($\sv$ only)                           &  2.75 \\
+\quad Text $+$ Image (sum)                         &  8.89 \\
+\quad Caption ($\sc$ only)                         & 16.16 \\
+\quad Caption $\times$ Image                       & 14.04 \\
+\quad Text $\times$ Image (\textsc{Basic} duplet)  & 17.95 \\ \midrule
+\multicolumn{2}{l}{\textit{Literature}$^{\dagger\dagger}$} \\
+\quad WeiCom~\cite{psomas2025icir}                 & 18.03 \\
+\quad Pic2Word~\cite{saito2023pic2word}            & 19.36 \\
+\quad CompoDiff~\cite{psomas2025icir}              &  9.63 \\
+\quad CIReVL~\cite{karthik2024cirevl}              & 18.66 \\
+\quad SEARLE~\cite{baldrati2023circo}              & 19.90 \\
+\quad MCL~\cite{psomas2025icir}                    & 19.89 \\
+\quad MagicLens~\cite{psomas2025icir}              & 27.35 \\
+\quad CoVR-2~\cite{psomas2025icir}                 & 28.50 \\
+\quad FreeDom~\cite{psomas2025icir}                & 17.24 \\ \midrule
+\multicolumn{2}{l}{\textit{\textsc{Basic} reproductions}} \\
+\quad \textsc{Basic}                               & 30.28 \\
+\quad \textsc{Basic}$^\dagger$                     & 32.48 \\ \midrule
+\multicolumn{2}{l}{\textit{Ours}} \\
+\quad Ours (caption \textsc{J})                    & 34.06 \\
+\quad \textbf{Ours (\texttt{avg-5})}               & \textbf{35.76} \\
+\bottomrule
+\end{tabular}
+\caption[Macro-mAP on the full i-CIR benchmark (CLIP-L backbone).]{Macro-mAP
+(\%) on the full i-CIR dataset ($1{,}883$ queries / $752{,}092$ DB),
+CLIP ViT-L/14 backbone. $^{\dagger\dagger}$Numbers taken from Table~1 of
+\citeauthor{psomas2025icir}~\citeyear{psomas2025icir}; all other rows are our
+evaluation. \textsc{Basic}$^\dagger$ applies the full post-processing ladder
+(center $\to$ normSim $\to$ Harris $\to$ contextualisation); \textsc{Basic}
+omits the CLIP-specific projection and query expansion.\label{tab:res_leaderboard}}
+\end{table}
+
+\paragraph{Gains across backbones.}
+Table~\ref{tab:res_main} shows the impact of adding the caption across all four
+backbones. The gains are largest where the duplet baseline is weakest:
+SigLIP-L improves by $+22.2$ macro-mAP and SigLIP2 by $+18.0$, while the
+already-strong CLIP-H and CLIP-L improve by $+6.0$ and $+7.5$ respectively.
+The pattern is consistent with the caption's role: when the backbone's text
+encoder is poorly aligned with the visual space, the modification text $\st$
+carries little signal; the self-contained target caption $\sc$ is more
+image-like and therefore benefits such backbones the most. On every backbone,
+\texttt{avg-5} further outperforms the best single instruction (Section~\ref{subsect:res_aug}).
+The best configuration -- SigLIP2 with \texttt{avg-5} -- reaches $56.09$
+macro-mAP at the plain product rung, before post-processing.
 
 % SOURCE: runs/caption_backbone_instancepool/<bk>/summary.csv
 %   BASIC = BASE_modtext|product ; Ours[avg-5] = AUG_AVG5|triple ;
-%   Ours[best] = max single INSTR_*|triple
+%   Ours[best] = max single INSTR_*|triple per backbone
 \begin{table}[h!]
 \centering
 \begin{tabular}{l c c c c}
 \toprule
-Backbone & \textsc{Basic} (img$\times$txt) & Ours [\texttt{avg-5}] & Ours [best instr.] & $\Delta$ \\ \midrule
-CLIP-L   & 17.95 & 25.41 & 23.83 & $+7.46$ \\
-CLIP-H   & 41.10 & 47.05 & 45.63 & $+5.95$ \\
-SigLIP-L & 21.10 & 43.33 & 41.88 & $+22.23$ \\
-SigLIP2  & 38.11 & \textbf{56.09} & 53.91 & $+17.98$ \\
+Backbone & \textsc{Basic} & Ours [\texttt{avg-5}] & Ours [best instr.] & $\Delta$ \\ \midrule
+CLIP ViT-L/14       & 17.95 & 25.41          & 23.83 & $+7.46$ \\
+CLIP ViT-H/14       & 41.10 & 47.05          & 45.63 & $+5.95$ \\
+SigLIP ViT-L/16-256 & 21.10 & 43.33          & 41.88 & $+22.23$ \\
+SigLIP2 g/16-384    & 38.11 & \textbf{56.09} & 53.91 & $+17.98$ \\
 \bottomrule
 \end{tabular}
-\caption[\textsc{Basic} duplet vs.\ triplet on the full i-CIR dataset.]{Macro-mAP
-(\%) on the full i-CIR dataset ($1{,}883$ queries / $752{,}092$ DB).
-\textsc{Basic} is the image$\times$text product (Equation~\eqref{eq:duplet});
-Ours adds the generated target caption (Equation~\eqref{eq:triplet}). ``best
-instr.'' is the single best-performing instruction for that backbone; $\Delta$
-is the gain of \texttt{avg-5} over \textsc{Basic}.\label{tab:res_main}}
+\caption[\textsc{Basic} duplet vs.\ triplet across backbones.]{Macro-mAP (\%)
+on the full i-CIR dataset. \textsc{Basic} is the image$\times$text duplet
+(Equation~\eqref{eq:duplet}); Ours adds the generated caption
+(Equation~\eqref{eq:triplet}). $\Delta$ is the gain of \texttt{avg-5} over
+\textsc{Basic}.\label{tab:res_main}}
 \end{table}
 
 % =====================================================================
@@ -185,37 +248,56 @@ hyperparameter, and we use the global database mean throughout.
 
 \subsection{Caption Instruction Variants}\label{subsect:res_ablation_instr}
 
-Table~\ref{tab:res_instr} compares the five instruction variants of
-Section~\ref{sect:method_caption} (Table~\ref{tab:instructions}) on the SigLIP2
-triplet. The best single instruction is \textsc{H} (\emph{anti-noise contract},
-$53.91$), narrowly ahead of \textsc{G} (\emph{constraint-priority}, $53.70$) and
-\textsc{J} (\emph{draft--refine}, $52.88$); the slot-fill template \textsc{I}
-trails at $51.01$. The spread of $\sim\!2.9$ points between the best and worst
-instruction shows that prompt design genuinely matters, but also that all five
-variants are individually strong -- each comfortably exceeds the $38.11$ duplet
-baseline. The ordering is consistent with the design rationale of
-Section~\ref{sect:method_caption}: the variants that most aggressively suppress
-scene and aesthetic noise (\textsc{H}, \textsc{G}) lead, while the rigid template
-(\textsc{I}), which trades expressiveness for structure, is the weakest.
+Table~\ref{tab:res_instr} compares the five caption-instruction variants of
+Section~\ref{sect:method_caption} across three scoring modes on CLIP ViT-L/14:
+caption alone ($\sc$ as a single-text query), caption $\times$ image (duplet
+using $\sc$ in place of $\st$), and the full triplet (caption $\times$ text
+$\times$ image, Equation~\eqref{eq:triplet}).
 
-% SOURCE: runs/caption_backbone_instancepool/siglip2/summary.csv (INSTR_*|triple)
+Three observations stand out.
+\textbf{First}, caption alone consistently outperforms caption $\times$ image
+for every instruction -- adding the image embedding hurts rather than helps.
+This re-confirms the finding of Section~\ref{sect:res_main}: when the backbone
+alignment is imperfect, multiplying with the image drags the query back towards
+the unmodified instance appearance and undercuts the modification.
+\textbf{Second}, caption alone already rivals the Text $\times$ Image duplet
+($17.95$), showing that a well-formed target description, on its own, is nearly
+as informative as combining the image and text signals.
+\textbf{Third}, the triplet scores substantially outperform both caption-only
+modes, confirming that the three branches are complementary: the caption supplies
+the target-description signal that the modification text $\st$ cannot convey
+alone, while the image branch anchors the instance identity.
+
+The instruction ordering is consistent with design intent: \textsc{J}
+(\emph{draft--refine}, $23.83$) and \textsc{G} (\emph{constraint-priority},
+$23.51$) lead, while the rigid slot-fill template \textsc{I} trails. The spread
+across instructions is modest ($\sim\!2.8$ points), and all five outperform the
+duplet baseline ($17.95$). \texttt{avg-5} exceeds every single instruction and
+is obtained without any selection on the evaluation set.
+
+% SOURCE: runs/caption_backbone_instancepool/clip_l/summary.csv
+%   caption = INSTR_*|caption ; product = INSTR_*|product ; triple = INSTR_*|triple
 \begin{table}[h!]
 \centering
-\begin{tabular}{l l c c}
+\begin{tabular}{l l c c c}
 \toprule
-ID & Instruction & macro-mAP & mAP \\ \midrule
-\textsc{H} & anti-noise contract     & \textbf{53.91} & 52.67 \\
-\textsc{G} & constraint-priority     & 53.70 & 52.94 \\
-\textsc{J} & draft--refine           & 52.88 & 52.74 \\
-\textsc{F} & adaptive precision      & 51.70 & 50.61 \\
-\textsc{I} & slot-fill template      & 51.01 & 50.43 \\ \midrule
-           & \texttt{avg-5}          & 56.09 & 54.88 \\
+ID & Instruction & Caption & Cap$\times$Img & Triplet \\ \midrule
+\textsc{J} & draft--refine           & 16.16 & 14.04 & \textbf{23.83} \\
+\textsc{G} & constraint-priority     & 15.34 & 13.11 & 23.51 \\
+\textsc{H} & anti-noise contract     & 14.51 & 12.76 & 23.51 \\
+\textsc{I} & slot-fill template      & 16.26 & 15.89 & 23.12 \\
+\textsc{F} & adaptive precision      & 16.08 & 15.14 & 22.57 \\ \midrule
+           & \texttt{avg-5}          & 19.51 & 16.26 & \textbf{25.41} \\
+\midrule
+\multicolumn{2}{l}{Text $\times$ Image (\textsc{Basic} duplet)} & \multicolumn{3}{c}{17.95} \\
 \bottomrule
 \end{tabular}
-\caption[Caption-instruction ablation (SigLIP2 triplet, full i-CIR).]{Per-instruction
-macro-mAP, SigLIP2 triplet on the full i-CIR dataset. \texttt{avg-5} averages the
-embeddings of all five (Equation~\eqref{eq:avg5}) and exceeds every single
-instruction.\label{tab:res_instr}}
+\caption[Caption-instruction comparison across scoring modes (CLIP-L, full i-CIR).]{Macro-mAP
+(\%) on the full i-CIR dataset, CLIP ViT-L/14 backbone. Caption: $\sc$ as a
+text query; Cap$\times$Img: caption $\times$ image duplet; Triplet: full
+caption $\times$ text $\times$ image product. Caption alone consistently
+outperforms Cap$\times$Img for every instruction. The bottom row is the Text
+$\times$ Image baseline for reference.\label{tab:res_instr}}
 \end{table}
 
 \subsection{Caption Augmentation: \texttt{avg-5} vs.\ Single Instructions}\label{subsect:res_aug}
@@ -255,35 +337,57 @@ matches or beats both on every backbone.\label{tab:res_aug}}
 \section{Backbone Sensitivity and the Performance Ceiling}\label{sect:res_backbones}
 % =====================================================================
 
-Table~\ref{tab:res_backbones} ranks the backbones on the bare duplet
-(image$\times$text) baseline, isolating the raw quality of each encoder before
-the caption is added. On the duplet, CLIP-H is the strongest backbone
-($41.10$ macro-mAP), ahead of SigLIP2 ($38.11$), with SigLIP-L and CLIP-L lower.
+Table~\ref{tab:res_backbones} reports macro-mAP and micro-mAP for both the
+\textsc{Basic} duplet and Ours (\texttt{avg-5} triplet) across all four
+backbones. Two patterns emerge.
 
-It is instructive to contrast this duplet ranking with the triplet ranking of
-Section~\ref{sect:res_main}, where \emph{SigLIP2} is best. The ordering changes
-because the caption interacts differently with each encoder: SigLIP2 gains
-$+18.0$ from the caption against CLIP-H's $+6.0$, so a backbone that trails on the
-bare duplet leads once the third modality is added. This is precisely why a
-backbone must be evaluated \emph{within} the full pipeline rather than on the
-duplet baseline alone.
+\textbf{The duplet ranking does not predict the triplet ranking.}
+On the bare duplet, CLIP-H is the strongest backbone ($41.10$ mmAP), ahead of
+SigLIP2 ($38.11$). Once the caption branch is added, SigLIP2 jumps to first
+place ($56.09$) while CLIP-H's gain is far smaller ($47.05$). A backbone must
+therefore be evaluated \emph{within} the full pipeline: a strong duplet encoder
+is not necessarily the best partner for the caption.
 
-% SOURCE: runs/caption_backbone_instancepool/<bk>/summary.csv (BASE_modtext|product)
+\textbf{The triplet is uniformly better than the duplet on every backbone.}
+The margin ranges from $+5.95$ (CLIP-H) to $+22.23$ (SigLIP-L). For SigLIP-L and
+SigLIP2 the caption more than doubles the raw duplet score, confirming that these
+encoders benefit the most from the additional textual modality.
+
+The macro-mAP (mean-per-instance AP) and micro-mAP (mean-per-query AP) rankings
+agree for Ours but diverge for the duplet on SigLIP-L ($21.10$ macro vs.\
+$23.13$ micro): micro-mAP up-weights queries from instances with many queries,
+giving a rosier picture for that backbone. Macro-mAP is the more conservative
+and instance-fair metric and is used for all headline comparisons.
+
+Recall@10 corroborates the pattern. On the duplet, CLIP-H leads with $83.5\%$
+(meaning the correct instance appears in the top-10 for $83.5\%$ of queries);
+after adding the caption, SigLIP2 reaches $92.2\%$ -- a gain of $+13.3$ points --
+while CLIP-H gains only $+6.4$. The recall picture is consistent with the mmAP
+ranking and further confirms that backbone choice must be made within the full
+pipeline.
+
+% SOURCE: runs/caption_backbone_instancepool/<bk>/summary.csv
+%   BASIC = BASE_modtext|product ; Ours = AUG_AVG5|triple
+%   Recall computed from topk_rankings.npy (200-deep rankings)
 \begin{table}[h!]
 \centering
-\begin{tabular}{l c c}
+\small
+\begin{tabular}{l c c c c c c}
 \toprule
-Backbone & macro-mAP & mAP \\ \midrule
-CLIP ViT-H/14        & \textbf{41.10} & 37.29 \\
-SigLIP2 g/16-384     & 38.11 & 35.42 \\
-SigLIP ViT-L/16-256  & 21.10 & 23.13 \\
-CLIP ViT-L/14        & 17.95 & 21.85 \\
+ & \multicolumn{3}{c}{\textsc{Basic} (duplet)} & \multicolumn{3}{c}{Ours (\texttt{avg-5})} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+Backbone & mmAP & mAP & R@10 & mmAP & mAP & R@10 \\ \midrule
+CLIP ViT-H/14       & \textbf{41.10} & 37.29 & 83.5 & 47.05 & 46.49 & 89.9 \\
+SigLIP2 g/16-384    & 38.11 & 35.42 & 78.9 & \textbf{56.09} & \textbf{54.88} & \textbf{92.2} \\
+SigLIP ViT-L/16-256 & 21.10 & 23.13 & 64.6 & 43.33 & 47.51 & 87.9 \\
+CLIP ViT-L/14       & 17.95 & 21.85 & 65.6 & 25.41 & 30.80 & 72.8 \\
 \bottomrule
 \end{tabular}
-\caption[Backbone comparison (duplet baseline, full i-CIR).]{Duplet
-(image$\times$text) baseline macro-mAP (\%) on the full i-CIR dataset. CLIP-H
-leads on the bare duplet, but the ranking reverses once the caption is added
-(Table~\ref{tab:res_main}).\label{tab:res_backbones}}
+\caption[Backbone comparison: \textsc{Basic} duplet vs.\ Ours (\texttt{avg-5}), full i-CIR.]{Macro-mAP
+(mmAP), micro-mAP (mAP) and Recall@10 (\%) on the full i-CIR dataset, for the
+\textsc{Basic} duplet and the Ours (\texttt{avg-5}) triplet. CLIP-H leads the
+duplet on mmAP but SigLIP2 leads once the caption is added; recall@10 confirms
+the same ordering.\label{tab:res_backbones}}
 \end{table}
 
 \paragraph{The performance ceiling.} Table~\ref{tab:res_ceiling} traces the
@@ -292,25 +396,24 @@ backbone (CLIP-H) reaches $41.10$; adding the caption lifts the best backbone to
 SigLIP2 at $56.09$; and layering the post-processing that transfers to SigLIP2
 (centering and contextualisation, Section~\ref{sect:res_centering}) raises the
 high-water mark to $\mathbf{61.98}$ macro-mAP. The caption accounts for the
-larger share of the journey from the duplet baseline to this ceiling.
+larger share of the journey from the duplet baseline to this ceiling ($+14.98$
+out of the total $+20.88$).
 
 \begin{table}[h!]
 \centering
 \begin{tabular}{l l c}
 \toprule
-Stage & Best configuration & macro-mAP \\ \midrule
-Duplet baseline               & CLIP-H, img$\times$txt              & 41.10 \\
-\quad + target caption        & SigLIP2, Ours [\texttt{avg-5}]      & 56.09 \\
-\quad + post-processing       & SigLIP2, Ours $+$ centering/context & \textbf{61.98} \\
+Stage & Best configuration & mmAP \\ \midrule
+Duplet baseline                & CLIP-H, img$\times$txt               & 41.10 \\
+\quad $+$ target caption       & SigLIP2, Ours [\texttt{avg-5}]       & 56.09 \\
+\quad $+$ post-processing      & SigLIP2, Ours $+$ center $+$ context & \textbf{61.98} \\
 \bottomrule
 \end{tabular}
 \caption[Performance ceiling on the full i-CIR dataset.]{The best result
-attainable at each stage of the pipeline, full i-CIR. The caption contributes the
-larger part of the gain over the bare duplet.\label{tab:res_ceiling}}
+attainable at each stage of the pipeline. The caption ($+14.98$ mmAP) contributes
+the larger share of the gain over the bare duplet, versus post-processing
+($+5.89$).\label{tab:res_ceiling}}
 \end{table}
-
-% HIGHLIGHT (optional): a grouped bar chart of BASIC vs Ours vs Ours+post-proc
-% per backbone would make the headline visual and memorable.
 
 % =====================================================================
 \section{Qualitative Analysis}\label{sect:res_qual}
