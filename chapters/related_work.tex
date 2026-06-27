@@ -1,155 +1,272 @@
 %!TEX root = ../dissertation.tex
 \chapter{Related Work}\label{chapt:related}
 
-% =====================================================================
-%  DRAFT v1 (Asma) -- full prose. ~10 pages target.
-%  HIGHLIGHT markers = citations to verify / optional additions.
-% =====================================================================
-
-This chapter situates the thesis within the literature.
-Section~\ref{sect:rel_supervised} reviews supervised composed image retrieval
-and its benchmarks. Section~\ref{sect:rel_zeroshot} surveys zero-shot CIR.
-Section~\ref{sect:rel_icir} introduces instance-level retrieval and the i-CIR
-benchmark. Section~\ref{sect:rel_caption} discusses caption- and LLM-based
-approaches that, like ours, route the query through language.
-Section~\ref{sect:rel_backbones} reviews the vision--language backbones used
-for retrieval. The chapter closes with the gap this thesis addresses
-(Section~\ref{sect:rel_gap}).
+This chapter situates the proposed method within the composed image retrieval
+literature. Section~\ref{sect:rel_benchmarks} traces the evolution of CIR
+benchmarks from semantic-level datasets to the instance-level evaluation
+protocol, and examines the unimodal shortcuts that pervade existing benchmarks.
+Section~\ref{sect:rel_zeroshot} surveys the main families of zero-shot and
+training-free methods. Section~\ref{sect:rel_discussion} discusses cross-cutting
+open challenges, and Section~\ref{sect:rel_gap} identifies the specific gap this
+thesis addresses.
 
 % =====================================================================
-\section{Supervised Composed Image Retrieval}\label{sect:rel_supervised}
+\section{Benchmarks and Their Limitations}\label{sect:rel_benchmarks}
 % =====================================================================
+
+\subsection{Semantic-Level Datasets}\label{sect:rel_semantic}
 
 The composed image retrieval task was popularised by TIRG (Text Image Residual
-Gating)~\cite{vo2019tirg}, which framed retrieval with a (reference image,
-modification text) query and proposed an \emph{early-fusion} network that
-combines the image and text features into a single composed embedding via a
-gated residual connection. TIRG established the now-standard training recipe:
-supervise a fusion module with a metric-learning loss on annotated triplets so
-that the composed query embedding is pulled towards the target-image embedding.
+Gating)~\cite{vo2019tirg}, which proposed an \emph{early-fusion} network that
+combines reference-image and modification-text features through a gated residual
+connection, trained with a metric-learning loss on annotated triplets. TIRG
+established the benchmark-plus-supervised-fusion recipe that defined the field
+for several years.
 
-Subsequent work scaled the task to more realistic data and introduced the
-benchmarks that the field still uses. \emph{Fashion-IQ}~\cite{wu2021fashioniq}
-targets fashion product retrieval with natural-language relative feedback,
-while \emph{CIRR}~\cite{liu2021cirr} moved to open-domain real-life images and
-explicitly highlighted the need for models that reason about fine-grained
-visual differences rather than matching on global appearance. A recurring
-limitation of these benchmarks is that relevance is judged at the
-\emph{category} or single-target level, and the modification language is often
-correlated with easy visual cues, which inflates measured performance -- an
-observation that directly motivates the instance-level protocol discussed in
-Section~\ref{sect:rel_icir}.
+The most widely used benchmarks that followed are evaluated at a
+\emph{semantic} level: a retrieved image is correct if it belongs to the same
+broad category as the intended target.
+Fashion-IQ~\cite{wu2021fashioniq} targets fashion product retrieval with
+natural-language relative feedback; CIRR~\cite{liu2021cirr} moves to
+open-domain images and highlights fine-grained visual differences;
+CIRCO~\cite{baldrati2023circo} provides multiple validated ground-truth targets
+per query to reduce annotation noise. A recurring limitation of all three is
+that they are constructed by automatically pairing visually similar images and
+then generating or crowdsourcing a description of their difference -- a process
+that produces ambiguous or redundant modification texts~\cite{psomas2025icir}.
+Because relevance is defined at the category level, evaluation pools contain few
+challenging negatives and exhibit high false-negative rates, which inflate the
+apparent performance of CIR systems.
 
-% =====================================================================
-\section{Zero-Shot Composed Image Retrieval}\label{sect:rel_zeroshot}
-% =====================================================================
+\subsection{Unimodal Shortcuts: the CIRCUS Audit}\label{sect:rel_circus}
 
-Because triplet supervision is expensive and does not transfer well across
-domains, a line of work removes CIR-specific training entirely and builds on
-frozen vision--language models. \emph{Pic2Word}~\cite{saito2023pic2word}
-introduced \emph{textual inversion} for CIR: it learns, using only image data
-(no triplets), a mapping that converts a reference image into a single
-pseudo-word token; the modification text is then written as a prompt containing
-this token (e.g. ``a photo of $[\ast]$, but red''), and the composed prompt is
-embedded by the frozen CLIP text encoder. SEARLE and the CIRCO
-benchmark~\cite{baldrati2023circo} refined this idea, optimising the inverted
-token to be close to a set of descriptive words and providing a CIR test set
-with multiple validated ground-truth targets to reduce annotation noise.
-LinCIR~\cite{gu2024lincir} pushed efficiency further by training the inversion
-using \emph{language only}, without any images.
+The severity of these problems is quantified by CIRCUS~\cite{attimonelli2026circus},
+a systematic audit of four widely used CIR benchmarks (CIRR, Fashion-IQ, LaSCo,
+and CIRCO) evaluated across eleven generalist multimodal embedding models. The
+study finds that between 32.2\,\% and 83.6\,\% of queries can be solved using
+only the text or only the image; high benchmark performance can therefore arise
+from unimodal signals rather than genuine multimodal composition.
+Human validation of 4\,741 shortcut-free queries reveals that only 1\,689
+(35.6\,\%) are well-formed: the remainder contain ambiguous edits or mismatched
+targets. Performance drops sharply on this cleaned subset -- the Recall on CIRR
+falls from 70.1 to 24.1 for a state-of-the-art model -- confirming that much of
+the apparent progress in CIR is attributable to exploiting shortcuts rather than
+learning to compose modalities.
 
-These textual-inversion methods share the philosophy of this thesis -- express
-the composed query as \emph{text} so that the frozen text encoder can handle it
--- but differ in mechanism. They compress the reference image into a single
-opaque token and still rely on the user's short modification phrase as the rest
-of the prompt. In contrast, this thesis uses a generative MLLM to produce a
-\emph{full, human-readable description of the imagined target}, which captures
-the composition explicitly rather than relegating the reference to one learned
-token.
+\subsection{Instance-Level CIR: the i-CIR Benchmark}\label{sect:rel_icir}
 
-% =====================================================================
-\section{Instance-Level Retrieval and the i-CIR Benchmark}\label{sect:rel_icir}
-% =====================================================================
+To address the limitations of semantic-level evaluation, i-CIR~\cite{psomas2025icir}
+defines correctness at the level of a specific object \emph{instance}: a
+retrieved image is correct only if it depicts the \emph{same instance} as the
+reference image, modified as the query text requests. The benchmark is
+deliberately engineered around three types of hard negatives -- \emph{visual}
+negatives (the same or similar instance under a different modification),
+\emph{textual} negatives (images that satisfy the modification text but show a
+different instance), and \emph{composed} negatives (the correct instance under a
+different modification) -- so that a model which exploits only one modality is
+systematically penalised. The detailed dataset statistics and evaluation protocol
+are described in Chapter~\ref{chapt:method}.
 
-Instance-level retrieval -- finding images of a \emph{specific} object instance
-rather than its category -- has a long tradition in classical image
-retrieval~\cite{philbin2007oxford}, where evaluation pools deliberately contain
-visually similar distractors of the same category. The i-CIR
-benchmark~\cite{psomas2025icir} brings this rigour to composed image retrieval.
-In i-CIR a retrieval is correct only if it returns the \emph{same instance}
-modified as the query specifies, and each query's evaluation is conducted
-against a pool engineered to contain hard negatives: the same instance under a
-different modification, visually similar but text-violating images, and
-text-satisfying images of a different instance. This design penalises models
-that exploit only one modality and demands genuine composition.
-
-Alongside the benchmark, i-CIR contributes a strong zero-shot baseline,
-\textsc{Basic} (a ``Baseline Approach for SurprIsingly strong Composition'').
-\textsc{Basic} combines a frozen vision--language backbone with a sequence of
-training-free post-processing steps -- feature centering, dimensionality
-reduction, query expansion, and a \emph{contextualization} of the modification
-text that prepends or appends a subject term to the raw phrase -- and fuses the
-image and text similarities into a final score. \textsc{Basic} demonstrates
-that careful use of frozen features is a deceptively strong baseline, and it is
-the method this thesis builds upon and compares against. The present work keeps
-the late-fusion philosophy of \textsc{Basic} but argues that an MLLM-generated
-target caption is a more effective way to inject the textual signal than
-contextualizing the bare modification phrase.
+Alongside the benchmark, i-CIR contributes \textsc{Basic}, a training-free
+zero-shot baseline that combines feature centering, dimensionality reduction,
+query expansion, and contextualization of the modification text into a
+late-fusion multiplicative score. \textsc{Basic} demonstrates that careful use
+of frozen features alone is a deceptively strong baseline, and it is the method
+this thesis extends (Chapter~\ref{chapt:method}).
 
 % =====================================================================
-\section{Caption- and LLM-Based Composed Retrieval}\label{sect:rel_caption}
+\section{Zero-Shot and Training-Free Methods}\label{sect:rel_zeroshot}
 % =====================================================================
 
-A complementary family of zero-shot methods routes the query through
-\emph{generated language}. CIReVL (Compositional Image Retrieval via
-Vision-by-Language)~\cite{karthik2024cirevl} is the closest in spirit to this
-thesis: it is training-free and uses a captioner to describe the reference
-image, then prompts a large language model to rewrite that caption according to
-the modification, yielding a target description that is embedded by the frozen
-CLIP text encoder. This confirms the central intuition -- that an explicit
-textual description of the intended target is a powerful zero-shot query -- but
-CIReVL operates in two stages (caption the reference, then edit the caption with
-a separate LLM) and was evaluated on category-level benchmarks.
+Because supervised fusion requires expensive triplet annotation and generalises
+poorly across domains, a substantial line of work removes CIR-specific training
+entirely. We group these methods into four families.
 
-This thesis differs in three respects. First, it uses a single
-\emph{multimodal} model that sees the reference image and the modification
-\emph{together} and writes the target caption in one step, rather than
-captioning and editing in separate text-only stages. Second, it does not
-\emph{replace} the image and text signals with the caption; it \emph{adds} the
-caption as a third modality and fuses all three by a clamped product, so the
-visual identity of the instance is preserved -- which is essential at the
-instance level. Third, it is evaluated on the demanding i-CIR instance-level
-benchmark and on the full 752K-image database, rather than on category-level
-test sets.
+\subsection{Textual Inversion}\label{sect:rel_textual_inv}
+
+Textual inversion methods avoid triplet supervision by learning a mapping --
+using only image--caption data -- that converts a reference image into a
+\emph{pseudo-word token}. The modification text is then combined with this token
+in a natural-language prompt, which the frozen text encoder of a
+vision--language model embeds as a composed query.
+Pic2Word~\cite{saito2023pic2word} introduced this idea for CIR, showing that a
+lightweight mapping network trained on image--caption pairs enables zero-shot
+retrieval without any annotated triplets. SEARLE~\cite{baldrati2023circo} refines
+the inversion by optimising the pseudo-token to be close to a set of descriptive
+words, and it is released alongside the CIRCO benchmark as a more challenging
+evaluation. LinCIR~\cite{gu2024lincir} takes the idea further by training the
+mapping using language only, without any images.
+
+These methods share the philosophy of routing the query through the text branch
+so that a frozen text encoder can handle it -- the same philosophy this thesis
+adopts -- but they compress the reference into a single learned token. That
+single slot must carry all relevant visual context, which limits expressiveness
+for novel instances or fine-grained modifications. By contrast, this thesis uses
+a frozen MLLM to produce a full, human-readable description of the imagined
+target, making the composed signal explicit rather than opaque.
+
+\subsection{Self-Supervised and Diffusion-Based Methods}\label{sect:rel_generative}
+
+\paragraph{MagicLens.}
+MagicLens~\cite{zhang2024magiclens} extends CIR to open-ended instructions by
+exploiting image pairs that naturally co-occur on the same web page. Such pairs
+share implicit semantic relations (e.g.\ ``inside view of'' or ``charger of a
+product''); foundation models (PaLI and PaLM\,2) are used to synthesise
+instructions describing these relations, yielding a dataset of 36.7 million
+triplets with diverse, naturally occurring semantics. Trained on this corpus,
+MagicLens achieves state-of-the-art performance across eight retrieval
+benchmarks and handles search intents that go beyond visual similarity.
+Its success demonstrates that large-scale self-supervision can provide
+diverse compositional instructions without any manual triplet annotation.
+
+\paragraph{CompoDiff.}
+CompoDiff~\cite{gu2024compodiff} frames CIR as a conditional latent-diffusion
+problem: a diffusion model learns to translate the embedding of the reference
+image into the embedding of the target, guided by the text condition. To supply
+training data, the authors construct SynthTriplets18M, a dataset of 18.8
+million automatically generated triplets, which supports versatile conditions
+including negative text and image masks. The diffusion formulation offers
+controllability -- the relative influence of the image and text can be adjusted
+at inference time -- but it requires running a generative process for every
+query and training on a large synthetic dataset, which may introduce a domain
+gap relative to real images.
+
+\subsection{Vision-by-Language and MLLM Reasoning}\label{sect:rel_caption}
+
+\paragraph{CIReVL.}
+CIReVL~\cite{karthik2024cirevl} pioneered the \emph{vision-by-language}
+paradigm for CIR: it uses a generative VLM (e.g.\ BLIP-2 or CoCa) to caption
+the reference image, prompts a separate LLM to rewrite that caption according to
+the modification text, and retrieves images using a frozen CLIP encoder applied
+to the rewritten caption. The pipeline is entirely training-free and modular, and
+its intermediate representation -- a natural-language description of the intended
+target -- is human interpretable. CIReVL confirms that an explicit textual
+description of the target is a powerful zero-shot query; however, the sequential
+two-stage design means the captioner has no access to the modification text, and
+the LLM has no direct access to the image, so information can be lost at each
+handoff.
+
+\paragraph{MCoT-RE.}
+MCoT-RE~\cite{park2025mcot} addresses the information-loss problem of sequential
+pipelines by guiding an MLLM through a \emph{multi-faceted chain-of-thought}
+(CoT) process that jointly attends to the modification instruction and the
+broader visual context. The MLLM generates two distinct captions: a
+\emph{modification-focused} caption describing the explicitly stated change, and
+an \emph{integration-focused} caption that also incorporates contextual visual
+cues. Candidates are first filtered using the modification-focused caption; a
+multi-grained re-ranking step then uses both captions together with the reference
+image to produce the final ranking. MCoT-RE achieves state-of-the-art results
+among training-free methods, improving Recall@10 on FashionIQ by 6.24\,\% and
+Recall@1 on CIRR by 8.58\,\% over prior work. Among all surveyed methods,
+MCoT-RE is the most closely related to this thesis: both use a frozen MLLM to
+generate caption-based retrieval signals rather than a pseudo-token. The key
+differences are that this thesis feeds the reference image and modification text
+\emph{jointly} to the MLLM in a single step, uses the generated caption as a
+\emph{primary retrieval modality} fused at query time rather than for reranking,
+and is evaluated on the instance-level i-CIR benchmark rather than on
+category-level datasets.
+
+\paragraph{MCL.}
+MCL (Multimodal Composition Learning)~\cite{li2024mcl} takes a training-based
+approach to improving cross-modal context understanding in MLLMs. Rather than
+translating one modality into the other, MCL introduces two tasks --
+Multimodal-Context Captioning (MC-Cap) and Multimodal-Context Retrieval
+(MC-Ret) -- that require the model to generate or retrieve information
+conditioned on both modalities simultaneously. A MultiModal Composition dataset
+of 2.7 million tuples is constructed to supply supervision. The resulting model
+performs zero-shot CIR as well as visual storytelling and visual dialogue,
+demonstrating that improved cross-modal composition generalises broadly.
+
+\subsection{Domain Conversion}\label{sect:rel_domain}
+
+FREEDOM~\cite{efthymiadis2025freedom} addresses image-domain conversion --
+retrieving the content of a query image in a new domain specified by text --
+without any task-specific training. Rather than mapping the reference image to a
+continuous pseudo-word token, FREEDOM performs nearest-neighbour search in a
+discrete word vocabulary and treats the result as a soft distribution over
+words; the mapped words are combined with the domain text as a weighted ensemble
+query embedded by CLIP's text encoder. Evaluated on three new domain-conversion
+benchmarks, FREEDOM outperforms continuous pseudo-word methods and confirms that
+a frozen VLM contains sufficient knowledge for open-domain retrieval when paired
+with simple, principled post-processing.
+
+For remote-sensing retrieval, WEICOM~\cite{psomas2024rscir} introduces a CIR
+benchmark covering modifications such as colour, context, and density, and
+balances image and text similarities via a scalar weighting parameter
+$\lambda \in [0,1]$; it appears as a comparison point in
+Chapter~\ref{chapt:results}.
 
 % =====================================================================
-\section{Vision--Language Backbones for Retrieval}\label{sect:rel_backbones}
+\section{Discussion}\label{sect:rel_discussion}
 % =====================================================================
 
-The choice of frozen backbone strongly determines zero-shot retrieval quality.
-CLIP~\cite{radford2021clip} and its open reproductions trained on
-LAION~\cite{ilharco2021openclip,schuhmann2022laion5b} remain the default
-encoders for zero-shot CIR. SigLIP~\cite{zhai2023siglip} and
-SigLIP2~\cite{tschannen2025siglip2} provide more strongly aligned image--text
-spaces through the sigmoid objective and improved training, and are
-increasingly adopted for retrieval. This thesis compares CLIP ViT-L/14, CLIP
-ViT-H/14, SigLIP ViT-L/16, and SigLIP2 g/16-384 on the full i-CIR benchmark
-under an identical pipeline, isolating the effect of the backbone
-(Section~\ref{sect:res_backbones}).
+\subsection{Dataset Quality and Unimodal Shortcuts}\label{sect:rel_disc_datasets}
+
+A central lesson from the CIRCUS audit~\cite{attimonelli2026circus} is that
+apparent progress in CIR does not necessarily reflect genuine multimodal
+composition. When datasets are constructed from automatic image similarity
+search and modifications that correlate with category-level cues, high retrieval
+scores are achievable without any cross-modal fusion. Human validation further
+reveals that many queries in existing datasets are ill-formed, making benchmark
+improvement unreliable. These findings motivate instance-level evaluation with
+deliberately designed hard negatives of each type, as i-CIR~\cite{psomas2025icir}
+provides: a method cannot succeed by latching onto either modality alone because
+each modality's hard negatives are present in the pool.
+
+\subsection{Joint Multimodal Processing and Modality Balance}\label{sect:rel_disc_joint}
+
+A recurring limitation of sequential pipelines is the loss of cross-modal
+context at each handoff. When a captioner describes the reference image without
+knowing the modification, and an LLM edits that caption without seeing the
+image, neither step has the full picture~\cite{karthik2024cirevl}. MCoT-RE~\cite{park2025mcot}
+mitigates this by using a single MLLM that attends to both modalities; this
+thesis adopts the same principle. The \textsc{Basic}~\cite{psomas2025icir}
+late-fusion approach sidesteps the issue differently by keeping image and text
+signals separate and combining their scores multiplicatively, but at the cost of
+a weak textual signal: a short, contextualised modification phrase is a poor
+standalone text query compared to a full description of the intended target.
+
+A related challenge is modality balance. WEICOM's scalar
+$\lambda$~\cite{psomas2024rscir} and CompoDiff's~\cite{gu2024compodiff}
+controllable conditioning both allow the relative weight of image versus text to
+be tuned. This thesis instead adopts a fixed clamped triplet product
+$\clamp(\sv)\cdot\clamp(\st)\cdot\clamp(\sc)$, which imposes a soft logical
+\textsc{and}: a candidate must agree with the reference image, the modification
+text, \emph{and} the generated caption to score highly, without requiring any
+manual tuning of weights.
+
+Computational cost is also a practical consideration. Diffusion-based
+methods~\cite{gu2024compodiff} and MLLM reasoning pipelines run heavy models at
+inference time; \textsc{Basic}~\cite{psomas2025icir} and
+FREEDOM~\cite{efthymiadis2025freedom} represent the lightweight extreme of pure
+post-processing. The caption generation step of this thesis is heavier than
+pure post-processing but is run once per query offline, after which retrieval
+reduces to the same inner-product computation as \textsc{Basic}.
 
 % =====================================================================
 \section{Positioning and Gap}\label{sect:rel_gap}
 % =====================================================================
 
-In summary, supervised CIR requires expensive triplet annotation and transfers
-poorly; zero-shot textual-inversion methods express the query as text but
-compress the reference into a single learned token and still depend on the bare
-modification phrase; and the strongest zero-shot baseline on the new
-instance-level benchmark, \textsc{Basic}, injects the textual signal by
-contextualizing the modification rather than describing the target. The gap
-this thesis addresses is therefore the following: \emph{in the zero-shot,
-instance-level setting, can an MLLM-generated description of the imagined
-target, fused as a third modality with the image and text signals, provide a
-stronger and simpler textual signal than the elaborate preprocessing of
-\textsc{Basic}?} The remainder of the thesis answers this question
-affirmatively.
+In summary, the literature presents a spectrum from supervised fusion methods
+(expensive annotation, poor transfer) through textual-inversion methods (no
+triplets needed, but the reference is compressed into a single opaque token)
+to training-free, language-mediated methods (the reference is described in full
+text). The strongest training-free baseline on the instance-level benchmark,
+\textsc{Basic}~\cite{psomas2025icir}, contextualises the bare modification phrase
+rather than describing the intended target, leaving the textual signal weak for
+short or fragmentary queries. The closest competing method,
+MCoT-RE~\cite{park2025mcot}, also uses an MLLM to generate caption-based signals,
+but is evaluated only on category-level benchmarks and uses the captions for
+candidate filtering and reranking rather than as a primary retrieval modality
+fused at query time; it provides no evidence that the approach generalises to
+instance-level retrieval, where both visual identity and precise modification
+must be respected simultaneously.
+
+The gap this thesis addresses is therefore: \emph{in the zero-shot, instance-level
+setting, can a frozen MLLM that jointly reads the reference image and modification
+text generate a target caption that, when fused as a third retrieval modality
+alongside the image and text signals, provides a stronger and simpler textual
+signal than the elaborate contextualisation of \textsc{Basic}}? The remainder of
+the thesis answers this question affirmatively, and the ablation studies in
+Chapter~\ref{chapt:results} quantify the contribution of each component of the
+proposed pipeline.
