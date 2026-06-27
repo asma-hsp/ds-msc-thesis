@@ -5,10 +5,12 @@ This chapter situates the proposed method within the composed image retrieval
 literature. Section~\ref{sect:rel_benchmarks} traces the evolution of CIR
 benchmarks from semantic-level datasets to the instance-level evaluation
 protocol, and examines the unimodal shortcuts that pervade existing benchmarks.
-Section~\ref{sect:rel_zeroshot} surveys the main families of zero-shot and
-training-free methods. Section~\ref{sect:rel_discussion} discusses cross-cutting
-open challenges, and Section~\ref{sect:rel_gap} identifies the specific gap this
-thesis addresses.
+Section~\ref{sect:rel_basic} describes \textsc{Basic}, the training-free
+zero-shot pipeline introduced alongside i-CIR and the direct foundation of this
+thesis. Section~\ref{sect:rel_zeroshot} surveys the main families of zero-shot
+and training-free methods beyond \textsc{Basic}.
+Section~\ref{sect:rel_discussion} discusses cross-cutting open challenges, and
+Section~\ref{sect:rel_gap} identifies the specific gap this thesis addresses.
 
 % =====================================================================
 \section{Benchmarks and Their Limitations}\label{sect:rel_benchmarks}
@@ -68,11 +70,202 @@ systematically penalised. The detailed dataset statistics and evaluation protoco
 are described in Chapter~\ref{chapt:method}.
 
 Alongside the benchmark, i-CIR contributes \textsc{Basic}, a training-free
-zero-shot baseline that combines feature centering, dimensionality reduction,
-query expansion, and contextualization of the modification text into a
-late-fusion multiplicative score. \textsc{Basic} demonstrates that careful use
-of frozen features alone is a deceptively strong baseline, and it is the method
-this thesis extends (Chapter~\ref{chapt:method}).
+zero-shot baseline that serves as the direct foundation of the method proposed
+in this thesis. Section~\ref{sect:rel_basic} describes the pipeline in full
+detail.
+
+% =====================================================================
+\section{The \textsc{Basic} Baseline}\label{sect:rel_basic}
+% =====================================================================
+
+Alongside the i-CIR benchmark, Psomas~et~al.~\cite{psomas2025icir} introduce
+\textsc{Basic}, a training-free zero-shot baseline that achieves strong
+performance on both category-level and instance-level CIR benchmarks purely
+through principled post-processing of frozen vision--language features such as
+CLIP\@. This section explains every component of the pipeline in the detail
+needed to understand this thesis, because our method builds directly on top of
+\textsc{Basic}.
+
+\subsection{Fusion Design: a Soft Logical \textsc{and}}\label{sect:rel_basic_fusion}
+
+The fundamental design choice in \textsc{Basic} is the fusion strategy. Because
+the correct target image must simultaneously respect the reference image's
+visual identity \emph{and} the modification demanded by the text, retrieval is
+analogous to a logical conjunction: an image is a good candidate only if it
+satisfies \emph{both} conditions. This motivates a multiplicative combination
+of the per-modality similarity scores rather than an additive one. Summing
+similarities rewards images that are very strong on one modality while weak on
+the other, whereas multiplying forces both scores to be non-negligible.
+
+Let $\encv$ and $\enct$ denote the frozen visual and text encoders respectively,
+and let $\xdb$ range over all images in the database $\DB$. \textsc{Basic}
+computes, for each database image, an image similarity $\sv(\xdb)$ and a text
+similarity $\st(\xdb)$ via dot products in the shared embedding space, then
+combines them as $\sv(\xdb)\cdot\st(\xdb)$. Several post-processing steps
+(centering, semantic projection, query expansion, text contextualization, and
+score normalization) refine these scores before fusion.
+
+\subsection{Centering}\label{sect:rel_basic_center}
+
+Raw embeddings from a vision--language model carry modality-specific biases: the
+mean image embedding encodes generic visual patterns (background, lighting,
+common compositions) while the mean text embedding reflects the statistical
+distribution of natural-language captions rather than specific content. These
+biases bias retrieval towards frequently occurring patterns and hinder fusion.
+
+\textsc{Basic} removes them by mean-centering every feature before any further
+computation. For images, the mean vector $\bm{\mu}^{v}$ is precomputed on the
+LAION-1M subset~\cite{schuhmann2022laion5b}, a large and domain-diverse
+reference set. Centered image features are:
+\[
+  \bar{\xdb}^{v} = \encv(\xdb) - \bm{\mu}^{v},
+\]
+and the same shift is applied to the query image embedding. For text, the mean
+$\bm{\mu}^{t}$ is computed over an \emph{object corpus} $\mathcal{C}^{+}$,
+a list of generic subject terms (e.g.\ ``building'', ``dog'') described in
+Section~\ref{sect:rel_basic_proj} below. Centered text embeddings are:
+\[
+  \bar{\qt}^{t} = \enct(\qt) - \bm{\mu}^{t}.
+\]
+Because $\bm{\mu}^{v}$ and $\bm{\mu}^{t}$ are computed once on fixed external
+corpora, centering adds no overhead at query time and scales to arbitrarily
+large databases.
+
+\subsection{Semantic Projection}\label{sect:rel_basic_proj}
+
+CLIP image embeddings mix object-specific information with stylistic and
+contextual variation (viewpoint, lighting, background). For instance-level CIR,
+where the correct target must share a specific object identity, stylistic
+dimensions can mask the identity signal. \textsc{Basic} addresses this by
+projecting centered image features onto a semantic subspace that emphasises
+object content and suppresses style.
+
+The subspace is derived from two text corpora:
+\begin{itemize}
+  \item $\mathcal{C}^{+}$: an \emph{object corpus} of generic subject nouns
+        (e.g.\ ImageNet class names such as ``dog'' or ``building'').
+  \item $\mathcal{C}^{-}$: a \emph{style corpus} of contextual and stylistic
+        terms (e.g.\ ``cartoon'', ``aerial view'', ``in a cloudy day'').
+\end{itemize}
+Centered text embeddings of both corpora are used to build a \emph{contrastive
+covariance} matrix:
+\[
+  \mathbf{C}
+  = (1-\alpha)\,\mathbf{S}^{+} - \alpha\,\mathbf{S}^{-}
+  \;+\; \epsilon\,\mathbf{I},
+  \qquad
+  \mathbf{S}^{\pm}
+  = \frac{1}{|\mathcal{C}^{\pm}|-1}
+    \sum_{x\in\mathcal{C}^{\pm}}
+    (\enct(x)-\bm{\mu}^{t})(\enct(x)-\bm{\mu}^{t})^{\!\top},
+\]
+where $\alpha=0.2$ balances the two terms and $\epsilon$ is a small
+regularizer. The top $k=250$ eigenvectors of $\mathbf{C}$ (those with the
+largest eigenvalues, corresponding to directions maximally associated with
+object content and minimally with style) form a projection matrix
+$\mathbf{P}\in\mathbb{R}^{d\times k}$. Centered image features are projected
+via:
+\[
+  \tilde{x}^{v} = \mathbf{P}\mathbf{P}^{\!\top}\bar{x}^{v},
+\]
+which effectively discards the stylistic directions while retaining the
+object-semantic ones. Crucially, the corpora need not be domain-specific:
+generic terms already transfer across datasets because the stylistic directions
+of CLIP are largely domain-independent.
+
+For efficiency, only the query-side image embedding is transformed;
+the projection of a database image $\bar{x}^v$ is obtained implicitly
+via the bilinear form
+$\tilde{q}^{v\top}\bar{x}^{v} = \bar{q}^{v\top}\mathbf{P}\mathbf{P}^{\!\top}\bar{x}^{v}$,
+so the database index requires no modification.
+
+\subsection{Text Query Contextualization}\label{sect:rel_basic_context}
+
+CLIP's text encoder is trained on full image captions, not on terse attribute
+phrases. Short modification texts such as \emph{``make it red''} or
+\emph{``during sunset''} are therefore out-of-distribution: the encoder cannot
+infer \emph{what} object the modification refers to. \textsc{Basic}
+contextualizes each modification text by embedding it within randomly sampled
+object names.
+
+Concretely, for each modification text $\qt$ and a set of $N=100$ terms drawn
+from $\mathcal{C}^{+}$, the method constructs two groups of augmented phrases:
+$\{w_i\;\qt\}_{i=1}^{N}$ (object name prepended) and $\{\qt\;w_i\}_{i=1}^{N}$
+(object name appended). All $2N$ phrases are embedded with $\enct$, centered,
+and averaged to yield a single contextualized query embedding
+$\bar{q}^{t}_{\mathrm{ctx}}$. This averaging approximates the distribution of
+how CLIP would read the modification if it appeared in a natural caption,
+substantially improving text-side retrieval.
+
+\subsection{Image Query Expansion}\label{sect:rel_basic_qe}
+
+Standard image retrieval often improves with \emph{query expansion}: the query
+embedding is augmented with features of top-retrieved neighbours, which pulls
+it towards the dense cluster of relevant images in feature space. \textsc{Basic}
+applies an \emph{alpha-QE} variant: after computing initial image similarities,
+the top-25 database embeddings are combined with the query via exponentially
+weighted averaging,
+\[
+  q^{v}_{\mathrm{exp}}
+  = \sum_{i=0}^{25} w_i\,\bar{x}^{v}_{r_i},
+  \quad
+  w_i \propto \exp(0.1\cdot s_i),
+\]
+where $r_0$ is the original query (with weight $s_0=1$ by convention) and
+$r_1,\dots,r_{25}$ are the top-25 retrieved items ranked by initial similarity.
+The expanded query is then projected and used in place of the original for the
+final similarity computation.
+
+\subsection{Score Normalisation and the Harris Criterion}\label{sect:rel_basic_harris}
+
+Before fusion, the raw dot-product scores $\sv$ and $\st$ are on different scales
+because the image and text branches use different (projected vs.\ centered-only)
+representations. \textsc{Basic} calibrates them with a \emph{min-based
+normalisation}: minimum similarity values $s^{v}_{\min}$ and $s^{t}_{\min}$
+are estimated once on a held-out synthetic dataset, and scores are shifted and
+rescaled so that the minimum maps to 0:
+\[
+  \tilde{s}^{v} = \frac{\sv - s^{v}_{\min}}{|s^{v}_{\min}|},
+  \qquad
+  \tilde{s}^{t} = \frac{\st - s^{t}_{\min}}{|s^{v}_{\min}|}.
+\]
+(Both denominators use $|s^{v}_{\min}|$ to keep the same scale.) Any remaining
+negative residuals are then clamped to zero, yielding non-negative scores.
+
+The final fusion score is computed via a \emph{Harris-inspired criterion}:
+\[
+  s_{\mathrm{final}}
+  = \tilde{s}^{v}\,\tilde{s}^{t}
+  - \lambda\,(\tilde{s}^{v}+\tilde{s}^{t})^{2},
+  \quad \lambda = 0.1.
+\]
+The product term $\tilde{s}^{v}\tilde{s}^{t}$ rewards images that score
+highly on both modalities; the subtracted penalty term
+$\lambda(\tilde{s}^{v}+\tilde{s}^{t})^{2}$ reduces the score of candidates
+that are very strong on one modality but merely average on the other
+(analogous to how the Harris corner detector penalises responses dominated by
+a single edge direction). The scalar $\lambda$ is fixed across all
+experiments.
+
+\subsection{Ablation of Components}\label{sect:rel_basic_ablation}
+
+Psomas~et~al.\ quantify the contribution of each step via an ablation that
+progressively adds components to a simple text$\times$image product baseline.
+Starting from the clamped product of raw cosine similarities (mAP
+$\approx$18\,\% on i-CIR with CLIP ViT-L/14), centering alone raises
+performance by nearly 10 points. Adding normalization and the Harris criterion
+reaches $\approx$28\,\%; text contextualization then provides the single
+largest jump, pushing mAP to $\approx$32\,\%, confirming that aligning terse
+modification texts with CLIP's training distribution is the most impactful
+step. Semantic projection adds modest further gains; query expansion
+marginally improves recall at the cost of some precision.
+
+The ablation reveals a clear hierarchy of importance:
+text contextualization $\gg$ centering $>$ Harris normalisation
+$\gtrsim$ semantic projection $\geq$ query expansion. This ordering suggests
+that the textual channel is the principal bottleneck in the BASIC pipeline,
+and motivates the thesis's approach of replacing contextualization with a
+richer MLLM-generated target caption.
 
 % =====================================================================
 \section{Zero-Shot and Training-Free Methods}\label{sect:rel_zeroshot}
