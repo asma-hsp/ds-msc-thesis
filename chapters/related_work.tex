@@ -55,6 +55,27 @@ falls from 70.1 to 24.1 for a state-of-the-art model -- confirming that much of
 the apparent progress in CIR is attributable to exploiting shortcuts rather than
 learning to compose modalities.
 
+% TODO-TABLE: populate columns from Tables 1--2 of Attimonelli et al.\ (2026)
+\begin{table}[htbp]
+  \centering
+  \caption{%
+    Proportion of queries solvable from a single modality and
+    annotation quality across four CIR benchmarks, as measured by
+    the CIRCUS audit~\cite{attimonelli2026circus}.%
+  }
+  \label{tab:circus_shortcuts}
+  \begin{tabular}{lccc}
+    \toprule
+    Benchmark  & Text-only (\%) & Image-only (\%) & Well-formed (\%) \\
+    \midrule
+    CIRR       & -- & -- & -- \\
+    Fashion-IQ & -- & -- & -- \\
+    LaSCo      & -- & -- & -- \\
+    CIRCO      & -- & -- & -- \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
 \subsection{Instance-Level CIR: the i-CIR Benchmark}\label{sect:rel_icir}
 
 To address the limitations of semantic-level evaluation, i-CIR~\cite{psomas2025icir}
@@ -68,6 +89,25 @@ different instance), and \emph{composed} negatives (the correct instance under a
 different modification) -- so that a model which exploits only one modality is
 systematically penalised. The detailed dataset statistics and evaluation protocol
 are described in Chapter~\ref{chapt:method}.
+
+% TODO-FIGURE: example i-CIR query showing reference, modification text,
+%              correct target, and all three hard-negative types
+\begin{figure}[htbp]
+  \centering
+  \rule{\linewidth}{0.4pt}\\[36pt]
+  {\large\bfseries [FIGURE PLACEHOLDER]}\\[6pt]
+  Example query: reference image and modification text (inputs), correct
+  target, and the three hard negatives -- visual (same instance, different
+  modification), textual (different instance, correct modification), and
+  composed (different instance, different modification).\\[36pt]
+  \rule{\linewidth}{0.4pt}
+  \caption{%
+    Structure of an i-CIR query. The hard-negative pool prevents a model
+    from succeeding by relying on either modality alone.
+    Adapted from Psomas~et~al.~\cite{psomas2025icir}.%
+  }
+  \label{fig:icir_query}
+\end{figure}
 
 Alongside the benchmark, i-CIR contributes \textsc{Basic}, a training-free
 zero-shot baseline that serves as the direct foundation of the method proposed
@@ -85,6 +125,25 @@ through principled post-processing of frozen vision--language features such as
 CLIP\@. This section explains every component of the pipeline in the detail
 needed to understand this thesis, because our method builds directly on top of
 \textsc{Basic}.
+
+% TODO-FIGURE: end-to-end schematic of the BASIC post-processing pipeline
+\begin{figure}[htbp]
+  \centering
+  \rule{\linewidth}{0.4pt}\\[36pt]
+  {\large\bfseries [FIGURE PLACEHOLDER]}\\[6pt]
+  End-to-end schematic of \textsc{Basic}: LAION-mean centering, contrastive
+  PCA projection, text contextualization ($N\!=\!100$ prefix/suffix phrases),
+  alpha-QE (top-25 neighbours), min-based score normalization, clamping,
+  and Harris fusion of $\sv$ and $\st$.\\[36pt]
+  \rule{\linewidth}{0.4pt}
+  \caption{%
+    Overview of the \textsc{Basic} post-processing pipeline applied to
+    frozen CLIP/SigLIP features. Five sequential refinement steps precede
+    the Harris-inspired score fusion
+    (Section~\ref{sect:rel_basic_harris}).%
+  }
+  \label{fig:basic_pipeline}
+\end{figure}
 
 \subsection{Fusion Design: a Soft Logical \textsc{and}}\label{sect:rel_basic_fusion}
 
@@ -197,6 +256,26 @@ $\bar{q}^{t}_{\mathrm{ctx}}$. This averaging approximates the distribution of
 how CLIP would read the modification if it appeared in a natural caption,
 substantially improving text-side retrieval.
 
+% TODO-FIGURE: schematic of the prefix/suffix contextualization process
+\begin{figure}[htbp]
+  \centering
+  \rule{\linewidth}{0.4pt}\\[36pt]
+  {\large\bfseries [FIGURE PLACEHOLDER]}\\[6pt]
+  For modification text $\qt$, $N\!=\!100$ object names from
+  $\mathcal{C}^{+}$ are prepended and appended, producing
+  $2N\!=\!200$ augmented phrases. Their centered CLIP embeddings
+  are averaged to one contextualized query vector
+  $\bar{q}^{t}_{\mathrm{ctx}}$.\\[36pt]
+  \rule{\linewidth}{0.4pt}
+  \caption{%
+    Text query contextualization in \textsc{Basic}. Embedding a terse
+    modification phrase in $2N$ object-name contexts and averaging
+    approximates the distribution of how the phrase would appear in
+    a natural image caption seen during CLIP pre-training.%
+  }
+  \label{fig:basic_context}
+\end{figure}
+
 \subsection{Image Query Expansion}\label{sect:rel_basic_qe}
 
 Standard image retrieval often improves with \emph{query expansion}: the query
@@ -247,7 +326,52 @@ that are very strong on one modality but merely average on the other
 a single edge direction). The scalar $\lambda$ is fixed across all
 experiments.
 
+% TODO-FIGURE: 2D contour plot of the Harris fusion score over (s_v, s_t) in [0,1]^2
+\begin{figure}[htbp]
+  \centering
+  \rule{\linewidth}{0.4pt}\\[36pt]
+  {\large\bfseries [FIGURE PLACEHOLDER]}\\[6pt]
+  2D contour plot of
+  $\tilde{s}^{v}\tilde{s}^{t} - \lambda(\tilde{s}^{v}+\tilde{s}^{t})^{2}$
+  over $[0,1]\times[0,1]$ for $\lambda=0.1$.
+  High scores arise only when both $\tilde{s}^{v}$ and $\tilde{s}^{t}$
+  are simultaneously large, confirming the soft \textsc{and} behavior.\\[36pt]
+  \rule{\linewidth}{0.4pt}
+  \caption{%
+    Response surface of the Harris fusion criterion
+    ($\lambda=0.1$). The function rewards candidates that score
+    highly on \emph{both} modalities and penalises those dominated
+    by a single channel.%
+  }
+  \label{fig:harris_surface}
+\end{figure}
+
 \subsection{Ablation of Components}\label{sect:rel_basic_ablation}
+
+% TODO-TABLE: replace $\approx$ values with exact numbers from the i-CIR paper
+\begin{table}[htbp]
+  \centering
+  \caption{%
+    Step-by-step ablation of \textsc{Basic} on i-CIR with CLIP
+    ViT-L/14 (mean average precision, \%).
+    Values are approximate; verify against the official ablation in
+    Psomas~et~al.~\cite{psomas2025icir}.%
+  }
+  \label{tab:basic_ablation}
+  \begin{tabular}{lc}
+    \toprule
+    Configuration & mAP (\%) \\
+    \midrule
+    Image$\times$Text product (baseline)     & $\approx$18 \\
+    $+$~Centering                            & $\approx$28 \\
+    $+$~Score normalisation                  & $\approx$28 \\
+    $+$~Harris criterion                     & $\approx$28 \\
+    $+$~Text contextualization               & $\approx$32 \\
+    $+$~Semantic projection                  & $\approx$32 \\
+    $+$~Query expansion (full \textsc{Basic}) & $\approx$32 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 Psomas~et~al.\ quantify the contribution of each step via an ablation that
 progressively adds components to a simple text$\times$image product baseline.
@@ -388,6 +512,41 @@ benchmark covering modifications such as colour, context, and density, and
 balances image and text similarities via a scalar weighting parameter
 $\lambda \in [0,1]$; it appears as a comparison point in
 Chapter~\ref{chapt:results}.
+
+% TODO-TABLE: add a recall/mAP column on a common benchmark (e.g.\ CIRR R@1)
+\begin{table}[htbp]
+  \centering
+  \caption{%
+    Summary of zero-shot and training-free CIR methods surveyed in
+    this chapter. ``Reference repr.''\ indicates how the reference
+    image enters the composed query; ``Joint'' indicates whether
+    image and modification are attended to simultaneously.%
+  }
+  \label{tab:zeroshot_comparison}
+  \begin{tabular}{llccc}
+    \toprule
+    Method & Reference repr. & Joint & Training data & MLLM \\
+    \midrule
+    Pic2Word~\cite{saito2023pic2word}
+      & Pseudo-token   & No  & Image--caption  & No  \\
+    LinCIR~\cite{gu2024lincir}
+      & Pseudo-token   & No  & Language-only   & No  \\
+    MagicLens~\cite{zhang2024magiclens}
+      & Contrastive    & Yes & Self-supervised & Yes \\
+    CompoDiff~\cite{gu2024compodiff}
+      & Diffusion      & Yes & Synthetic       & No  \\
+    CIReVL~\cite{karthik2024cirevl}
+      & Caption (seq.) & No  & None            & Yes \\
+    MCoT-RE~\cite{park2025mcot}
+      & Caption (CoT)  & Yes & None            & Yes \\
+    \textsc{Basic}~\cite{psomas2025icir}
+      & Raw features   & No  & None            & No  \\
+    \midrule
+    Ours (this thesis)
+      & Caption + feat.& Yes & None            & Yes \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 % =====================================================================
 \section{Discussion}\label{sect:rel_discussion}
