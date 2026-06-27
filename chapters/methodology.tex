@@ -435,6 +435,9 @@ This section describes the central contribution: generating, for each query, a
 caption of the \emph{imagined target} image and using its embedding as a third
 retrieval signal.
 
+% TODO: Add a paragraph (before or after the Idea paragraph) justifying the
+% choice of InternVL-3.5-8B: open-source, strong multimodal instruction-following,
+% high-resolution tiling, practical size (8B) for cluster inference.
 \paragraph{Idea.} The modification text $\qt$ is a \emph{relative} instruction
 and a weak standalone query: a phrase such as ``make it red'' is meaningless to
 a text encoder without knowing what should become red. We instead give a frozen
