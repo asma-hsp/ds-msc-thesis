@@ -5,6 +5,7 @@
 \usepackage{titlesec}
 \usepackage{fontspec}
 \usepackage{amsbsy}
+\usepackage{bm}
 \usepackage[export]{adjustbox}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,shapes.geometric,positioning,calc,backgrounds}
@@ -23,7 +24,7 @@
 \newcommand{\clamp}{\mathrm{clamp}}
 \newcommand{\sv}{s_{v}}           % image (visual) similarity score
 \newcommand{\st}{s_{t}}           % text similarity score
-\newcommand{\sc}{s_{c}}           % caption similarity score
+\renewcommand{\sc}{s_{c}}         % caption similarity score (overrides old \sc font cmd)
 % --- legacy aliases (kept so older drafts still compile) -------------
 \newcommand{\Iq}{q^{v}}
 \newcommand{\tq}{q^{t}}

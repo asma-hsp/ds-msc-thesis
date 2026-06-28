@@ -63,7 +63,6 @@
 \usepackage{ragged2e}
 %\RaggedRight
 \RequirePackage{graphicx}
-\usepackage{fixltx2e}
 \parindent 12pt
 \RequirePackage{lettrine}
 \RequirePackage{setspace}
@@ -93,7 +92,7 @@
 \setmonofont[Scale=MatchLowercase]{Source Code Pro}
 \RequirePackage[labelfont={bf,sf,footnotesize,singlespacing},
                 textfont={sf,footnotesize,singlespacing},
-                justification={justified,RaggedRight},
+                justification=RaggedRight,
                 singlelinecheck=false,
                 margin=0pt,
                 figurewithin=chapter,
@@ -117,7 +116,6 @@
 \usepackage{afterpage}
 \usepackage{tabulary}
 \newcommand{\ra}[1]{\renewcommand{\arraystretch}{#1}}
-\usepackage[table,xcdraw]{xcolor}
 
 % Pseudocode
 \usepackage{algorithm}
@@ -289,7 +287,7 @@
 	  \vspace{6pt}
 	  \textit{Co-supervisor} \\
 	  \@coadvisorOne \\
-	  \@coadvisorOneUniversity\\
+	  \ifx\@coadvisorOneUniversity\empty\else\@coadvisorOneUniversity\\\fi
 	\vspace{30pt}
 	\centering
 	\large{\textit{Academic Year} \\ \@academicYear}
