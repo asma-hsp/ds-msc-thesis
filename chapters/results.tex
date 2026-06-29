@@ -150,8 +150,7 @@ the i-CIR paper~\cite{psomas2025icir}; all other rows are our own evaluation.
 \textsc{Basic} is the complete published pipeline (all post-processing steps,
 ending in query expansion); \textsc{Basic}$^\dagger$ is the same pipeline at its
 best-performing rung on CLIP-L, with the final query-expansion step removed
-(cf.\ the component ladder in Table~\ref{tab:res_ladder}). The best value is in
-\textbf{bold}.\label{tab:res_leaderboard}}
+(cf.\ the component ladder in Table~\ref{tab:res_ladder}).\label{tab:res_leaderboard}}
 \end{table}
 
 % HIGHLIGHT-FIG: horizontal bar chart of this leaderboard, Ours highlighted.
@@ -237,7 +236,7 @@ product (no post-processing)   & 17.95 & 25.41          & 23.83 \\
 \caption[Component ladder on CLIP-L (full i-CIR).]{Macro-mAP (\%) on the full
 i-CIR dataset, building the pipeline one component at a time on CLIP ViT-L/14.
 All three columns share the same post-processing; only the caption term differs.
-The best CLIP-L result ($35.76$, in \textbf{bold}) is Ours~[\texttt{avg-5}] at
+The best CLIP-L result ($35.76$) is Ours~[\texttt{avg-5}] at
 the contextualisation rung; the CLIP-specific projection and query expansion
 reduce it from there.\label{tab:res_ladder}}
 \end{table}
@@ -351,7 +350,7 @@ ID & Instruction & Caption & Cap$\times$Img & Triplet \\ \midrule
 text query; Cap$\times$Img: caption $\times$ image duplet; Triplet: full
 caption $\times$ text $\times$ image product. Caption alone consistently
 outperforms Cap$\times$Img for every instruction. \texttt{avg-5} is best in every
-mode (\textbf{bold}); the bottom row is the Img\,$\times$\,Txt duplet for
+mode; the bottom row is the Img\,$\times$\,Txt duplet for
 reference.\label{tab:res_instr}}
 \end{table}
 
@@ -401,7 +400,7 @@ SigLIP2  & 52.88 & 53.91 & 55.63 & \textbf{56.09} \\
 macro-mAP (\%) on the full i-CIR dataset. \textsc{J} is our fixed
 single-instruction variant; $^\dagger$``best single'' and ``best-4'' are
 \emph{oracle} baselines that select the instruction(s) per backbone on the
-evaluation set. The unconditional \texttt{avg-5} (\textbf{bold}) is best on every
+evaluation set. The unconditional \texttt{avg-5} is best on every
 backbone, beating even the oracle single instruction.\label{tab:res_aug}}
 \end{table}
 
@@ -462,9 +461,9 @@ CLIP ViT-L/14       & 17.95 & 21.85 & 65.6 & 25.41 & 30.80 & 72.8 \\
 \end{tabular}
 \caption[Backbone comparison: \textsc{Basic} duplet vs.\ Ours (\texttt{avg-5}), full i-CIR.]{Macro-mAP
 (mmAP), micro-mAP (mAP) and Recall@10 (\%) on the full i-CIR dataset, for the
-\textsc{Basic} duplet and the Ours (\texttt{avg-5}) triplet. The best value in
-each column is in \textbf{bold}: CLIP-H leads the duplet but SigLIP2 leads once
-the caption is added; Recall@10 confirms the same ordering.\label{tab:res_backbones}}
+\textsc{Basic} duplet and the Ours (\texttt{avg-5}) triplet. CLIP-H leads the
+duplet but SigLIP2 leads once the caption is added; Recall@10 confirms the same
+ordering.\label{tab:res_backbones}}
 \end{table}
 
 % HIGHLIGHT-FIG: grouped bars, BASIC vs Ours per backbone (mmAP).
@@ -529,8 +528,8 @@ product (no post-processing)   & 38.12 & 56.09 \\
 \caption[Component ladder on SigLIP2 (full i-CIR).]{Macro-mAP (\%) on the full
 i-CIR dataset, building the pipeline one component at a time on SigLIP2
 g/16-384. The caption alone ($+17.97$ at the product rung) exceeds the entire
-\textsc{Basic} post-processing stack; the thesis-best result ($61.98$, in
-\textbf{bold}) is Ours~[\texttt{avg-5}] at the contextualisation
+\textsc{Basic} post-processing stack; the thesis-best result ($61.98$) is
+Ours~[\texttt{avg-5}] at the contextualisation
 rung.\label{tab:res_siglip2_ladder}}
 \end{table}
 

@@ -86,7 +86,10 @@
 \AtBeginEnvironment{tabular}{\addfontfeature{RawFeature=+tnum}}
 \widowpenalty=300
 \clubpenalty=300
-\setromanfont[Numbers=OldStyle, Ligatures={Common, TeX}, Scale=1.0]{EB Garamond}
+% EB Garamond ships no bold weight, so \textbf would silently fall back to the
+% regular face. AutoFakeBold synthesises a bold so \textbf (e.g. best values in
+% tables) renders visibly bold.
+\setromanfont[Numbers=OldStyle, Ligatures={Common, TeX}, Scale=1.0, AutoFakeBold=2.0]{EB Garamond}
 \newfontfamily{\smallcaps}[RawFeature={+c2sc,+scmp}]{EB Garamond}
 \setsansfont[Scale=MatchLowercase, BoldFont={Lato Bold}]{Lato Regular}
 \setmonofont[Scale=MatchLowercase]{Source Code Pro}
