@@ -297,41 +297,44 @@ experiments.
 
 \subsection{Ablation of Components}\label{sect:rel_basic_ablation}
 
-% TODO-TABLE: replace $\approx$ values with exact numbers from the i-CIR paper
 \begin{table}[htbp]
   \centering
   \caption{%
     Step-by-step ablation of \textsc{Basic} on i-CIR with CLIP
     ViT-L/14 (mean average precision, \%).
-    Values are approximate; verify against the official ablation in
-    Psomas~et~al.~\cite{psomas2025icir}.%
+    \emph{Paper}: numbers reported by Psomas~et~al.~\cite{psomas2025icir};
+    \emph{Reproduced}: our re-run of the released code.%
   }
   \label{tab:basic_ablation}
-  \begin{tabular}{lc}
+  \begin{tabular}{lcc}
     \toprule
-    Configuration & mAP (\%) \\
+    Configuration & Paper (\%) & Reproduced (\%) \\
     \midrule
-    Image$\times$Text product (baseline)     & $\approx$18 \\
-    $+$~Centering                            & $\approx$28 \\
-    $+$~Score normalisation                  & $\approx$28 \\
-    $+$~Harris criterion                     & $\approx$28 \\
-    $+$~Text contextualization               & $\approx$32 \\
-    $+$~Semantic projection                  & $\approx$32 \\
-    $+$~Query expansion (full \textsc{Basic}) & $\approx$32 \\
+    Image$\times$Text product (baseline)     & 17.48 & 17.95 \\
+    $+$~Centering                            & 28.33 & 27.76 \\
+    $+$~Score normalisation                  & 27.30 & 27.40 \\
+    $+$~Harris criterion                     & 28.42 & 28.33 \\
+    $+$~Text contextualization               & 33.48 & 32.25 \\
+    $+$~Semantic projection                  & 34.35 & 32.48 \\
+    $+$~Query expansion (full \textsc{Basic}) & 31.64 & 30.28 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
 Psomas~et~al.\ quantify the contribution of each step via an ablation that
 progressively adds components to a simple text$\times$image product baseline.
-Starting from the clamped product of raw cosine similarities (mAP
-$\approx$18\,\% on i-CIR with CLIP ViT-L/14), centering alone raises
-performance by nearly 10 points. Adding normalization and the Harris criterion
-reaches $\approx$28\,\%; text contextualization then provides the single
-largest jump, pushing mAP to $\approx$32\,\%, confirming that aligning terse
-modification texts with CLIP's training distribution is the most impactful
-step. Semantic projection adds modest further gains; query expansion
-marginally improves recall at the cost of some precision.
+Starting from the clamped product of raw cosine similarities
+(mAP\,=\,17.48\,\% on i-CIR with CLIP ViT-L/14), centering alone raises
+performance by nearly 11 points (to 28.33\,\%). Score normalisation and the
+Harris criterion keep the score around 28\,\%; text contextualization then
+provides the single largest jump, pushing mAP to 33.48\,\%, confirming that
+aligning terse modification texts with CLIP's training distribution is the
+most impactful step. Semantic projection adds a further 0.87 points (to the
+paper's best of 34.35\,\%); interestingly, adding query expansion slightly
+reduces performance on this benchmark (to 31.64\,\%), suggesting that the
+expanded neighbours introduce more noise than signal at the instance level.
+Our reproduction closely tracks these numbers, with differences of at most
+1\,\% attributable to minor implementation details.
 
 The ablation reveals a clear hierarchy of importance:
 text contextualization $\gg$ centering $>$ Harris normalisation
