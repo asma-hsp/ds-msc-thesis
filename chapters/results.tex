@@ -622,10 +622,7 @@ $86\%$ mean AP) show that the triplet excels when the modification is concretely
 expressible in language and the target images exist in the database.
 Figure~\ref{fig:failure} illustrates two representative failure cases;
 further panels and the domain-transfer mode are shown in
-Appendix~\ref{app:qual_analysis}. The pattern confirms that the remaining
-errors are concentrated in modifications that exceed the database coverage,
-pointing to dataset augmentation rather than caption improvement as the primary
-avenue for further gains.
+Appendix~\ref{app:qual_analysis}.
 
 \begin{figure}[htbp]
 \centering
@@ -634,8 +631,7 @@ avenue for further gains.
 \caption[Qualitative failure cases.]{Two failure modes, one per panel: \textbf{(i)}
 state-change target absent from the database (modification: ``being deflated'');
 \textbf{(ii)} context-breaking wearable modification (``worn by a dog'').
-In both cases AP$\approx 0\%$ for every method, confirming the failure is due
-to database coverage rather than retrieval quality. A third mode (domain-transfer,
+In both cases AP$\approx 0\%$ for every method. A third mode (domain-transfer,
 e.g.\ ``as a painting'') and additional cases are in
 Appendix~\ref{app:qual_analysis}.\label{fig:failure}}
 \end{figure}
@@ -658,6 +654,6 @@ selection-free improvement that beats even an oracle single-instruction baseline
 not the strongest bare-duplet encoder (Section~\ref{sect:res_backbones}), and the
 best result of the thesis -- $61.98$ macro-mAP -- combines the caption with the
 two post-processing steps that transfer to SigLIP2, with the CLIP-specific
-projection and query expansion discarded. The residual failures trace back to
-caption quality rather than to the retrieval mechanism
-(Section~\ref{subsect:res_failure}).
+projection and query expansion discarded. Section~\ref{subsect:res_failure}
+analyses the lowest-AP queries and the linguistic patterns that correlate with
+failure.
