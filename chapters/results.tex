@@ -621,23 +621,24 @@ By contrast, highly distinctive instance terms such as \textit{lego} (35 queries
 $0\%$ failures, $88.6\%$ win rate at AP$\ge$50\%) and \textit{fog} (27 queries,
 $86\%$ mean AP) show that the triplet excels when the modification is concretely
 expressible in language and the target images exist in the database.
-Figure~\ref{fig:failure} illustrates one query per failure mode; the pattern
-confirms that the remaining errors are concentrated in modifications that exceed
-the database coverage, pointing to dataset augmentation rather than caption
-improvement as the primary avenue for further gains.
+Figure~\ref{fig:failure} illustrates two representative failure cases;
+further panels and the domain-transfer mode are shown in
+Appendix~\ref{app:qual_analysis}. The pattern confirms that the remaining
+errors are concentrated in modifications that exceed the database coverage,
+pointing to dataset augmentation rather than caption improvement as the primary
+avenue for further gains.
 
-\begin{figure}[!p]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=\textwidth]{figures/qualitative_failure_q861.png}\\[0.5em]
-\includegraphics[width=\textwidth]{figures/qualitative_failure_q1100.png}\\[0.5em]
 \includegraphics[width=\textwidth]{figures/qualitative_failure_q1496.png}
-\caption[Qualitative failure cases.]{Three failure modes, one per panel (top to
-bottom): \textbf{(i)} state-change target absent from the database
-(modification: ``being deflated''); \textbf{(ii)} domain-transfer with no
-database counterpart (``as a painting''); \textbf{(iii)} context-breaking
-wearable modification (``worn by a dog''). In all three cases AP$\approx 0\%$
-for every method, confirming the failure is due to database coverage rather than
-retrieval quality.\label{fig:failure}}
+\caption[Qualitative failure cases.]{Two failure modes, one per panel: \textbf{(i)}
+state-change target absent from the database (modification: ``being deflated'');
+\textbf{(ii)} context-breaking wearable modification (``worn by a dog'').
+In both cases AP$\approx 0\%$ for every method, confirming the failure is due
+to database coverage rather than retrieval quality. A third mode (domain-transfer,
+e.g.\ ``as a painting'') and additional cases are in
+Appendix~\ref{app:qual_analysis}.\label{fig:failure}}
 \end{figure}
 
 % =====================================================================
