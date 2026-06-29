@@ -273,8 +273,8 @@ The product term $\tilde{s}^{v}\tilde{s}^{t}$ rewards images that score
 highly on both modalities; the subtracted penalty term
 $\lambda(\tilde{s}^{v}+\tilde{s}^{t})^{2}$ reduces the score of candidates
 that are very strong on one modality but merely average on the other
-(analogous to how the Harris corner detector penalises responses dominated by
-a single edge direction). The scalar $\lambda$ is fixed across all
+(analogous to how the Harris corner detector~\cite{harris1988corner} penalises
+responses dominated by a single edge direction). The scalar $\lambda$ is fixed across all
 experiments.
 
 \begin{figure}[htbp]
@@ -405,7 +405,8 @@ gap relative to real images.
 
 \paragraph{CIReVL.}
 CIReVL~\cite{karthik2024cirevl} pioneered the \emph{vision-by-language}
-paradigm for CIR: it uses a generative VLM (e.g.\ BLIP-2 or CoCa) to caption
+paradigm for CIR: it uses a generative VLM (e.g.\ BLIP-2~\cite{li2023blip2} or
+CoCa~\cite{yu2022coca}) to caption
 the reference image, prompts a separate LLM to rewrite that caption according to
 the modification text, and retrieves images using a frozen CLIP encoder applied
 to the rewritten caption. The pipeline is entirely training-free and modular, and

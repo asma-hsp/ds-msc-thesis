@@ -381,7 +381,7 @@ external dataset), so that $s_{\min}\!\mapsto\!0$ and $0\!\mapsto\!1$:
   \tilde{s} = \frac{s - s_{\min}}{|s_{\min}|}.
 \end{equation}
 The normalised scores are finally fused with a regulariser inspired by the
-Harris corner detector,
+Harris corner detector~\cite{harris1988corner},
 \begin{equation}\label{eq:basic_harris}
   \tilde{s}^{f} = \tilde{s}^{v}\,\tilde{s}^{t}
   - \lambda\big(\tilde{s}^{v} + \tilde{s}^{t}\big)^{2},
@@ -519,16 +519,14 @@ across instructions and attenuates the idiosyncrasies of any single prompt. We
 use \texttt{avg-5} as the default and compare it against the best single
 instruction in Chapter~\ref{chapt:results}.
 
-% HIGHLIGHT: insert one qualitative example: reference image + modification
-% text -> generated caption. Pick a clean, convincing example from the
-% canonical CSV (answers_with_final_caption_8b_split6_clean.csv).
 \begin{figure}[h!]
 \centering
-% \includegraphics[width=\textwidth]{figures/caption_example.png}
-\caption[Example of target-caption generation.]{Given the reference image and
-the modification text, the MLLM generates a description of the intended target
-image, which is then embedded and used as a third retrieval signal.
-\label{fig:caption_example}}
+\includegraphics[width=\textwidth]{figures/caption_example}
+\caption[Example of target-caption generation.]{Given the reference image $q^v$
+and the modification text $q^t$ (here \emph{``as a plushie''}), the frozen MLLM
+generates a self-contained description of the intended target image; its
+embedding is then used as the third retrieval signal $s_c$, which here ranks the
+correct plushie of the same instance first.\label{fig:caption_example}}
 \end{figure}
 
 \begin{table}[h!]

@@ -65,14 +65,6 @@
   primaryClass  = {cs.CV}
 }
 
-@misc{bai2025qwen3vl,
-  title         = {Qwen3-VL Technical Report},
-  author        = {Bai, Shuai and others},
-  year          = {2025},
-  note          = {Alibaba Qwen Team},
-  howpublished  = {\url{https://github.com/QwenLM/Qwen3-VL}}
-}
-
 % ---- Composed image retrieval: supervised + benchmarks --------------
 @inproceedings{vo2019tirg,
   title     = {Composing Text and Image for Image Retrieval -- An Empirical Odyssey},
@@ -134,14 +126,6 @@
   year      = {2024}
 }
 
-@article{song2024cirsurvey,
-  title   = {Composed Image Retrieval: A Survey},
-  author  = {Song, and others},
-  journal = {arXiv preprint},
-  year    = {2024},
-  note    = {Survey of composed image retrieval}
-}
-
 % ---- Zero-shot CIR: self-supervised + diffusion ---------------------
 @inproceedings{zhang2024magiclens,
   title     = {{MagicLens}: Self-Supervised Image Retrieval with Open-Ended Instructions},
@@ -194,23 +178,6 @@
   note      = {arXiv:2405.15587}
 }
 
-% ---- Self-supervised visual features (reranking) --------------------
-@article{oquab2024dinov2,
-  title   = {{DINOv2}: Learning Robust Visual Features without Supervision},
-  author  = {Oquab, Maxime and Darcet, Timoth{\'e}e and Moutakanni, Th{\'e}o and Vo, Huy and Szafraniec, Marc and Khalidov, Vasil and Fernandez, Pierre and Haziza, Daniel and Massa, Francisco and El-Nouby, Alaaeldin and others},
-  journal = {Transactions on Machine Learning Research (TMLR)},
-  year    = {2024}
-}
-
-@misc{simeoni2025dinov3,
-  title         = {{DINOv3}},
-  author        = {Sim{\'e}oni, Oriane and others},
-  year          = {2025},
-  eprint        = {2508.10104},
-  archivePrefix = {arXiv},
-  primaryClass  = {cs.CV}
-}
-
 % ---- Retrieval post-processing --------------------------------------
 @inproceedings{radenovic2018finetuning,
   title     = {Fine-tuning {CNN} Image Retrieval with No Human Annotation},
@@ -226,7 +193,53 @@
   year      = {2007}
 }
 
+@inproceedings{harris1988corner,
+  title     = {A Combined Corner and Edge Detector},
+  author    = {Harris, Chris and Stephens, Mike},
+  booktitle = {Proceedings of the Alvey Vision Conference},
+  pages     = {147--151},
+  year      = {1988}
+}
+
+% ---- Generative / captioning vision--language models ----------------
+@inproceedings{li2023blip2,
+  title     = {{BLIP-2}: Bootstrapping Language-Image Pre-training with Frozen Image Encoders and Large Language Models},
+  author    = {Li, Junnan and Li, Dongxu and Savarese, Silvio and Hoi, Steven},
+  booktitle = {Proceedings of the International Conference on Machine Learning (ICML)},
+  year      = {2023}
+}
+
+@article{yu2022coca,
+  title   = {{CoCa}: Contrastive Captioners are Image-Text Foundation Models},
+  author  = {Yu, Jiahui and Wang, Zirui and Vasudevan, Vijay and Yeung, Legg and Seyedhosseini, Mojtaba and Wu, Yonghui},
+  journal = {Transactions on Machine Learning Research (TMLR)},
+  year    = {2022}
+}
+
+% ---- Composed video retrieval (leaderboard comparison) --------------
+@article{ventura2024covr,
+  title     = {{CoVR-2}: Automatic Data Construction for Composed Video Retrieval},
+  author    = {Ventura, Lucas and Yang, Antoine and Schmid, Cordelia and Varol, G{\"u}l},
+  journal   = {IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  volume    = {46},
+  number    = {12},
+  pages     = {11409--11421},
+  year      = {2024},
+  month     = dec,
+  publisher = {IEEE},
+  issn      = {1939-3539},
+  doi       = {10.1109/TPAMI.2024.3463799},
+  url       = {http://dx.doi.org/10.1109/TPAMI.2024.3463799}
+}
+
 % ---- Transformers / backbones (background ch.) ----------------------
+@inproceedings{he2016resnet,
+  title     = {Deep Residual Learning for Image Recognition},
+  author    = {He, Kaiming and Zhang, Xiangyu and Ren, Shaoqing and Sun, Jian},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2016}
+}
+
 @inproceedings{vaswani2017attention,
   title     = {Attention Is All You Need},
   author    = {Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and Uszkoreit, Jakob and Jones, Llion and Gomez, Aidan N. and Kaiser, {\L}ukasz and Polosukhin, Illia},

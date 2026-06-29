@@ -125,7 +125,7 @@ or text to an embedding, differing only in how they were trained.
 
 CLIP (Contrastive Language--Image Pretraining)~\cite{radford2021clip} is the
 canonical example of a \emph{dual-encoder} (also called \emph{dual-tower} or
-\emph{two-tower}) model. A vision encoder $\encv$ (a ViT or a ResNet) maps an
+\emph{two-tower}) model. A vision encoder $\encv$ (a ViT or a ResNet~\cite{he2016resnet}) maps an
 image to an embedding, and a \emph{separate} text encoder $\enct$ (a
 Transformer) maps a text string to an embedding in the \emph{same}
 $d$-dimensional space. The encoders share no weights; matching is simply a dot
@@ -199,9 +199,8 @@ more flexible than CLIP.
 
 SigLIP2~\cite{tschannen2025siglip2} extends SigLIP with several independently
 developed enhancements. It adds captioning-based pretraining (using a small
-decoder), self-distillation and masked-prediction losses (following the DINO
-line of work), and a more diverse data mixture with online
-curation~\cite{tschannen2025siglip2}. These additions improve multilingual
+decoder), self-distillation and masked-prediction losses, and a more diverse
+data mixture with online curation~\cite{tschannen2025siglip2}. These additions improve multilingual
 understanding, dense prediction, and localisation. SigLIP2 models outperform
 SigLIP at all scales on zero-shot classification, retrieval, and representation
 learning~\cite{tschannen2025siglip2}. They also support multiple input
@@ -225,7 +224,7 @@ backbones evaluated, as Chapter~\ref{chapt:results} shows.
     \midrule
     CLIP     & InfoNCE (softmax) & ---                                  & No           \\
     SigLIP   & Sigmoid           & ---                                  & No           \\
-    SigLIP2  & Sigmoid           & Captioning, self-distillation, DINO  & Yes          \\
+    SigLIP2  & Sigmoid           & Captioning, self-distillation        & Yes          \\
     \bottomrule
   \end{tabular}
   \caption{Summary of pretraining design choices for CLIP, SigLIP, and
@@ -275,19 +274,15 @@ respect to the composed retrieval task. The choice of InternVL-3.5 over other
 MLLMs is discussed in Section~\ref{sect:method_caption}.
 
 % =====================================================================
-% PLACEHOLDER: Figure showing the MLLM caption-generation pipeline
 \begin{figure}[t]
   \centering
-  % TODO: create and insert MLLM architecture / caption-generation flow diagram.
-  % Suggested content: reference image + modification text -> ViT (tiled) ->
-  %   MLP connector -> LLM -> target caption text.
-  % \includegraphics[width=0.85\textwidth]{figures/mllm_caption_pipeline.pdf}
-  \fbox{\rule{0pt}{5cm}\rule{0.85\textwidth}{0pt}}
+  \resizebox{0.95\textwidth}{!}{\input{figures/mllm_caption}}
   \caption{Schematic of caption generation with a multimodal large language
-    model. A reference image (tiled for high resolution) and a modification text
-    are fed to the vision encoder and language model respectively; the model
-    generates a target caption used as the caption retrieval
-    signal.}\label{fig:bg_mllm}
+    model. A reference image (tiled for high resolution) is processed by the
+    vision encoder and projected through an MLP connector into the language
+    model's token space, while the modification text enters as the text prompt;
+    conditioned on both, the model generates a target caption used as the caption
+    retrieval signal.}\label{fig:bg_mllm}
 \end{figure}
 % =====================================================================
 

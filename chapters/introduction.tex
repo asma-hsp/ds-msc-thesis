@@ -10,10 +10,14 @@
 \section{Motivation}\label{sect:intro_motivation}
 
 Searching a large image collection for one specific picture is a task that
-text alone, or an example image alone, often cannot express. A user who
-remembers \emph{a particular handbag, but in black instead of brown}, or
-\emph{this building, photographed at night}, has a target in mind that is
-naturally described as an existing image together with a desired change. This
+text alone, or an example image alone, often cannot express. A shopper who has
+seen \emph{this exact sneaker, but in the high-top version}, a collector looking
+for \emph{this porcelain vase, but with the floral pattern in blue}, or a tourist
+who recalls \emph{this landmark, rendered as a vintage engraving}, all have a
+target in mind that is naturally described as an existing image together with a
+desired change. Neither modality suffices on its own: the words do not pin down
+which sneaker or which vase, and the example image does not capture the change the
+user wants. This
 is the setting of \emph{composed image retrieval} (CIR): the query is a pair
 $(\qv, \qt)$ consisting of a reference image $\qv$ and a short text $\qt$ that
 specifies how the desired result differs from it, and the system must return,
@@ -117,9 +121,6 @@ The contributions of this thesis are the following:
         the single largest contributor -- adding it to a plain text$\times$image
         baseline reaches, and with a strong backbone exceeds, the full
         \textsc{Basic} preprocessing stack (Chapter~\ref{chapt:results}).
-  \item \textbf{An honest negative result.} We show that reranking the
-        top-ranked candidates with self-supervised visual features
-        (DINOv2/DINOv3) \emph{hurts} retrieval quality, and explain why.
 \end{itemize}
 
 % HIGHLIGHT (optional but recommended): add a small "teaser" figure here --
