@@ -1,33 +1,41 @@
 %!TEX root = ../dissertation.tex
 
 % =====================================================================
-%  CHAPTER 5 — EXPERIMENTAL RESULTS   (DRAFT v2: five instructions, avg-5,
-%  full i-CIR throughout, SigLIP2 post-processing ladder)
+%  CHAPTER 5 — EXPERIMENTAL RESULTS   (DRAFT v3: five instructions, avg-5,
+%  full i-CIR throughout. Component analysis on CLIP-L (default backbone);
+%  backbone sweep + SigLIP2 ladder in the backbone-sensitivity section.)
 % ---------------------------------------------------------------------
-%  Numbers sourced from thesis_cir/runs/caption_backbone_instancepool/
-%  (per-backbone summary.csv) and .../siglip2_ladder/summary_ladder.csv.
+%  Numbers sourced from:
+%   - leaderboard / CLIP-L ladder: thesis_cir/runs/final_experiments/
+%       ablation_clip_l/summary_ladder.csv  (= docs/final_ablation_clip_l.csv)
+%   - per-backbone (instr/aug/backbone tables): runs/caption_backbone_instancepool/
+%       <bk>/summary.csv  ; recall: docs/backbone_recall.csv
+%   - SigLIP2 ladder: runs/caption_backbone_instancepool/siglip2_ladder/
+%       summary_ladder.csv
 %  All headline numbers are macro-mAP (%) on the FULL i-CIR dataset
 %  (1,883 queries / 752,092 DB), instance-pool protocol.
-%  HIGHLIGHT markers = figures/examples to insert.
+%  Figures rendered by notebooks/final_experimental_results.ipynb -> figures/.
 % =====================================================================
 
 \chapter{Experimental Results}\label{chapt:results}
 
 This chapter reports and discusses the experiments that evaluate the proposed
 pipeline. Section~\ref{sect:res_setup} describes the experimental setup.
-Section~\ref{sect:res_main} reports the main result -- the \textsc{Basic} duplet
-versus our triplet -- across all four backbones on the full i-CIR benchmark.
-Section~\ref{sect:res_components} then dissects the pipeline: it isolates the
-contribution of each component on a cumulative ladder
+Section~\ref{sect:res_main} reports the main result -- \emph{Ours} versus
+\textsc{Basic} -- on the default CLIP ViT-L/14 backbone, together with a
+comparison against the published state of the art on the full i-CIR benchmark.
+Section~\ref{sect:res_components} then dissects the pipeline on the same backbone:
+it builds the method one component at a time on a cumulative ladder
 (Section~\ref{subsect:res_ladder}), studies the effect of feature centering and
 the remaining \textsc{Basic} post-processing
 (Section~\ref{sect:res_centering}), compares the five caption-generation
 instructions (Section~\ref{subsect:res_ablation_instr}), and quantifies the
 benefit of embedding-space averaging
-(Section~\ref{subsect:res_aug}). Section~\ref{sect:res_backbones} analyses the
-backbones and establishes the best result attainable.
-Section~\ref{sect:res_qual} presents a qualitative and failure analysis, and
-Section~\ref{sect:res_summary} summarises the findings.
+(Section~\ref{subsect:res_aug}). Section~\ref{sect:res_backbones} then varies the
+backbone, showing that the ranking changes once the caption is added and
+establishing the best result attainable. Section~\ref{sect:res_qual} presents a
+qualitative and failure analysis, and Section~\ref{sect:res_summary} summarises
+the findings.
 
 % =====================================================================
 \section{Experimental Setup}\label{sect:res_setup}
@@ -50,14 +58,17 @@ Section~\ref{sect:res_backbones}.
 (image$\times$text, Equation~\eqref{eq:duplet}) against \emph{Ours}, the
 clamped triplet image$\times$text$\times$caption of
 Equation~\eqref{eq:triplet}. The caption signal uses the \texttt{avg-5} setting
-(Equation~\eqref{eq:avg5}) by default; ``Ours~[best instr.]'' denotes the
-triplet using the single best-performing instruction of
-Table~\ref{tab:instructions} instead of \texttt{avg-5}. Feature centering and the
-\textsc{Basic} post-processing of Section~\ref{sect:method_basic} are applied as
-a cumulative ladder, analysed in Section~\ref{sect:res_components}.
+(Equation~\eqref{eq:avg5}) by default; where a single prompt is required we fix
+it to instruction~\textsc{J} (\emph{draft--refine}), the best-performing
+instruction on the default backbone (Section~\ref{subsect:res_ablation_instr}),
+and write ``Ours~[\textsc{J}]''. Unless a backbone sweep is stated
+(Section~\ref{sect:res_backbones}), all results use CLIP ViT-L/14, the default
+encoder of the original benchmark. Feature centering and the \textsc{Basic}
+post-processing of Section~\ref{sect:method_basic} are applied as a cumulative
+ladder, analysed in Section~\ref{sect:res_components}.
 
 % =====================================================================
-\section{Main Results: \textsc{Basic} Duplet vs.\ Triplet}\label{sect:res_main}
+\section{Main Result: Ours vs.\ \textsc{Basic}}\label{sect:res_main}
 % =====================================================================
 
 \paragraph{Comparison with the state of the art.}
@@ -65,186 +76,226 @@ Table~\ref{tab:res_leaderboard} compares the proposed method against the
 literature on the full i-CIR benchmark, following the evaluation protocol of the
 i-CIR paper~\cite{psomas2025icir}: macro-mAP on $1{,}883$ queries against the
 $752{,}092$-image instance pool, CLIP ViT-L/14 backbone (the default choice in
-the original benchmark). State-of-the-art results (marked $\dagger\dagger$) are
-taken directly from Table~1 of \citeauthor{psomas2025icir}~\citeyear{psomas2025icir}.
+the original benchmark). Published results (marked $\dagger\dagger$) are taken
+directly from Table~1 of the i-CIR paper~\cite{psomas2025icir}; all other rows
+are our own evaluation. The full result is also shown as a bar chart in
+Figure~\ref{fig:res_leaderboard}.
 
 Two ablation entries are worth noting.
 \textbf{Caption alone} ($16.16$) outperforms \textbf{Caption $\times$ Image}
 ($14.04$), suggesting that multiplying with the image embedding can
 \emph{hurt} when the backbone is weakly aligned: the image signal drags the
 composed query towards unmodified instance images, diluting the textual
-modification. Yet caption alone already rivals the full \textbf{Text $\times$
-Image} duplet ($17.95$), showing that a self-contained target description is a
-surprisingly effective query on its own.
+modification. Yet caption alone already rivals the full
+\textbf{Img\,$\times$\,Txt} duplet ($17.95$), showing that a self-contained
+target description is a surprisingly effective query on its own.
 
-Our best configuration, \textbf{Ours (\texttt{avg-5})}, achieves $35.76$ macro-mAP,
-outperforming the previous best, CoVR-2, by $+7.3$ points and exceeding the
-strongest reproduction of \textsc{Basic} (\textsc{Basic}$^\dagger$, $32.48$) by
-$+3.3$ points. A note on reproduction: our \textsc{Basic}$^\dagger$ reproduction
-uses a newer extraction environment (\texttt{open\_clip}~3.3.0, \texttt{Pillow}~12,
-\texttt{numpy}~2.x) versus the paper's original, producing features that differ
-slightly from the paper's reported $34.35$; the gap is fully explained by this
-environment mismatch, not a code error, and the \emph{relative} improvement of
-Ours over \textsc{Basic} is unaffected.
+Our best configuration, \textbf{Ours (\texttt{avg-5})}, achieves $35.76$
+macro-mAP. The strongest baseline on this benchmark is \textsc{Basic} itself: our
+full reproduction \textsc{Basic}$^\dagger$ reaches $32.48$, already ahead of
+every published method (the best of which, CoVR-2, scores $28.50$). Ours improves
+on this strongest baseline by $+3.3$ macro-mAP, and on the best prior
+\emph{published} method by $+7.3$.
+
+\paragraph{A note on the \textsc{Basic} reproduction.}
+Our \textsc{Basic}$^\dagger$ reaches $32.48$ rather than the $34.35$ reported in
+the i-CIR paper~\cite{psomas2025icir}. The gap is an \emph{environment} effect,
+not a code error: we re-extracted all features in a newer stack
+(\texttt{open\_clip}~3.3.0, \texttt{Pillow}~12, \texttt{numpy}~2.x), and the
+difference is concentrated in the image branch -- the image-only score is $2.75$
+here versus $3.04$ in the paper, a $\sim\!10\%$ relative drop in the weakest
+signal that is consistent with differences in image decoding and resizing across
+\texttt{Pillow} versions. The text branch is unaffected, and because
+\textsc{Basic}$^\dagger$ and Ours are evaluated in the \emph{same} environment,
+the \emph{relative} improvement of Ours over \textsc{Basic} is independent of
+this gap.
 
 % SOURCE: docs/main_leaderboard_clipl.csv  (borrowed = True rows from i-CIR Table 1)
 \begin{table}[h!]
 \centering
 \begin{tabular}{l c}
 \toprule
-Method & mmAP \\ \midrule
-\multicolumn{2}{l}{\textit{Ablations}} \\
-\quad Text ($\st$ only)                            &  3.26 \\
-\quad Image ($\sv$ only)                           &  2.75 \\
-\quad Text $+$ Image (sum)                         &  8.89 \\
-\quad Caption ($\sc$ only)                         & 16.16 \\
-\quad Caption $\times$ Image                       & 14.04 \\
-\quad Text $\times$ Image (\textsc{Basic} duplet)  & 17.95 \\ \midrule
-\multicolumn{2}{l}{\textit{Literature}$^{\dagger\dagger}$} \\
-\quad WeiCom~\cite{psomas2025icir}                 & 18.03 \\
-\quad Pic2Word~\cite{saito2023pic2word}            & 19.36 \\
-\quad CompoDiff~\cite{psomas2025icir}              &  9.63 \\
-\quad CIReVL~\cite{karthik2024cirevl}              & 18.66 \\
-\quad SEARLE~\cite{baldrati2023circo}              & 19.90 \\
-\quad MCL~\cite{psomas2025icir}                    & 19.89 \\
-\quad MagicLens~\cite{psomas2025icir}              & 27.35 \\
-\quad CoVR-2~\cite{psomas2025icir}                 & 28.50 \\
-\quad FreeDom~\cite{psomas2025icir}                & 17.24 \\ \midrule
-\multicolumn{2}{l}{\textit{\textsc{Basic} reproductions}} \\
-\quad \textsc{Basic}                               & 30.28 \\
-\quad \textsc{Basic}$^\dagger$                     & 32.48 \\ \midrule
-\multicolumn{2}{l}{\textit{Ours}} \\
-\quad Ours (caption \textsc{J})                    & 34.06 \\
-\quad \textbf{Ours (\texttt{avg-5})}               & \textbf{35.76} \\
+Method & mmAP \\
+\midrule
+\multicolumn{2}{@{}l}{\textit{Single- and dual-signal ablations}}\\
+\quad Text                            &  3.26 \\
+\quad Image                           &  2.75 \\
+\quad Text\,$+$\,Image                &  8.89 \\
+\quad Caption                         & 16.16 \\
+\quad Caption\,$\times$\,Image        & 14.04 \\
+\quad Img\,$\times$\,Txt              & 17.95 \\
+\addlinespace
+\multicolumn{2}{@{}l}{\textit{Published methods}$^{\dagger\dagger}$}\\
+\quad CompoDiff~\cite{gu2024compodiff}     &  9.63 \\
+\quad FreeDom~\cite{efthymiadis2025freedom} & 17.24 \\
+\quad WeiCom~\cite{psomas2024rscir}        & 18.03 \\
+\quad CIReVL~\cite{karthik2024cirevl}      & 18.66 \\
+\quad Pic2Word~\cite{saito2023pic2word}    & 19.36 \\
+\quad MCL~\cite{li2024mcl}                 & 19.89 \\
+\quad SEARLE~\cite{baldrati2023circo}      & 19.90 \\
+\quad MagicLens~\cite{zhang2024magiclens}  & 27.35 \\
+\quad CoVR-2~\cite{psomas2025icir}         & 28.50 \\
+\midrule
+\multicolumn{2}{@{}l}{\textit{This work}}\\
+\quad \textsc{Basic} (reproduction)        & 30.28 \\
+\quad \textsc{Basic}$^\dagger$ (reproduction) & 32.48 \\
+\quad Ours~[\textsc{J}]                     & 34.06 \\
+\quad \textbf{Ours~(\texttt{avg-5})}       & \textbf{35.76} \\
 \bottomrule
 \end{tabular}
 \caption[Macro-mAP on the full i-CIR benchmark (CLIP-L backbone).]{Macro-mAP
-(\%) on the full i-CIR dataset ($1{,}883$ queries / $752{,}092$ DB),
-CLIP ViT-L/14 backbone. $^{\dagger\dagger}$Numbers taken from Table~1 of
-\citeauthor{psomas2025icir}~\citeyear{psomas2025icir}; all other rows are our
-evaluation. \textsc{Basic}$^\dagger$ applies the full post-processing ladder
-(center $\to$ normSim $\to$ Harris $\to$ contextualisation); \textsc{Basic}
-omits the CLIP-specific projection and query expansion.\label{tab:res_leaderboard}}
+(\%) on the full i-CIR dataset ($1{,}883$ queries / $752{,}092$ DB), CLIP
+ViT-L/14 backbone. $^{\dagger\dagger}$Published numbers are taken from Table~1 of
+the i-CIR paper~\cite{psomas2025icir}; all other rows are our own evaluation.
+\textsc{Basic} is the complete published pipeline (all post-processing steps,
+ending in query expansion); \textsc{Basic}$^\dagger$ is the same pipeline at its
+best-performing rung on CLIP-L, with the final query-expansion step removed
+(cf.\ the component ladder in Table~\ref{tab:res_ladder}). The best value is in
+\textbf{bold}.\label{tab:res_leaderboard}}
 \end{table}
 
-\paragraph{Gains across backbones.}
-Table~\ref{tab:res_main} shows the impact of adding the caption across all four
-backbones. The gains are largest where the duplet baseline is weakest:
-SigLIP-L improves by $+22.2$ macro-mAP and SigLIP2 by $+18.0$, while the
-already-strong CLIP-H and CLIP-L improve by $+6.0$ and $+7.5$ respectively.
-The pattern is consistent with the caption's role: when the backbone's text
-encoder is poorly aligned with the visual space, the modification text $\st$
-carries little signal; the self-contained target caption $\sc$ is more
-image-like and therefore benefits such backbones the most. On every backbone,
-\texttt{avg-5} further outperforms the best single instruction (Section~\ref{subsect:res_aug}).
-The best configuration -- SigLIP2 with \texttt{avg-5} -- reaches $56.09$
-macro-mAP at the plain product rung, before post-processing.
-
-% SOURCE: runs/caption_backbone_instancepool/<bk>/summary.csv
-%   BASIC = BASE_modtext|product ; Ours[avg-5] = AUG_AVG5|triple ;
-%   Ours[best] = max single INSTR_*|triple per backbone
-\begin{table}[h!]
+% HIGHLIGHT-FIG: horizontal bar chart of this leaderboard, Ours highlighted.
+% SOURCE: notebooks/final_experimental_results.ipynb -> figures/leaderboard_clipl
+\begin{figure}[h!]
 \centering
-\begin{tabular}{l c c c c}
-\toprule
-Backbone & \textsc{Basic} & Ours [\texttt{avg-5}] & Ours [best instr.] & $\Delta$ \\ \midrule
-CLIP ViT-L/14       & 17.95 & 25.41          & 23.83 & $+7.46$ \\
-CLIP ViT-H/14       & 41.10 & 47.05          & 45.63 & $+5.95$ \\
-SigLIP ViT-L/16-256 & 21.10 & 43.33          & 41.88 & $+22.23$ \\
-SigLIP2 g/16-384    & 38.11 & \textbf{56.09} & 53.91 & $+17.98$ \\
-\bottomrule
-\end{tabular}
-\caption[\textsc{Basic} duplet vs.\ triplet across backbones.]{Macro-mAP (\%)
-on the full i-CIR dataset. \textsc{Basic} is the image$\times$text duplet
-(Equation~\eqref{eq:duplet}); Ours adds the generated caption
-(Equation~\eqref{eq:triplet}). $\Delta$ is the gain of \texttt{avg-5} over
-\textsc{Basic}.\label{tab:res_main}}
-\end{table}
+\includegraphics[width=0.92\textwidth]{figures/leaderboard_clipl}
+\caption[Main leaderboard on the full i-CIR dataset (CLIP-L).]{Macro-mAP (\%) on
+the full i-CIR benchmark with the CLIP ViT-L/14 backbone, grouped into ablations,
+published methods (from the i-CIR paper~\cite{psomas2025icir}), and this work.
+Our triplet (\texttt{avg-5}) is highlighted.\label{fig:res_leaderboard}}
+\end{figure}
+
+\paragraph{Headline.}
+On the default backbone, adding the generated caption lifts macro-mAP from the
+$17.95$ \textsc{Basic} duplet to $25.41$ at the plain product rung
+(Section~\ref{subsect:res_ladder}), and to $35.76$ once the post-processing of
+Section~\ref{sect:method_basic} is applied -- the best CLIP-L result and the
+strongest entry in Table~\ref{tab:res_leaderboard}. The remainder of the chapter
+dissects this gain component by component (Section~\ref{sect:res_components}) and
+then shows how it grows on stronger backbones (Section~\ref{sect:res_backbones}).
 
 % =====================================================================
 \section{Component Analysis}\label{sect:res_components}
 % =====================================================================
 
-This section isolates the contribution of each component of the pipeline. We
-work on the best backbone, SigLIP2, where the full \textsc{Basic} post-processing
-stack of Section~\ref{sect:method_basic} can be layered on top of the triplet.
+This section isolates the contribution of each component of the pipeline on the
+default CLIP ViT-L/14 backbone, where the full \textsc{Basic} post-processing
+stack of Section~\ref{sect:method_basic} -- including the CLIP-specific
+projection and query expansion -- was originally designed and tuned. The
+corresponding analysis on the best-performing backbone (SigLIP2) is deferred to
+Section~\ref{sect:res_backbones}.
 
 \subsection{Building the Pipeline: a Component Ladder}\label{subsect:res_ladder}
 
 Table~\ref{tab:res_ladder} builds the pipeline up one component at a time, as a
 cumulative ladder, for three configurations that share the \emph{exact same}
 post-processing so the caption is the only isolated variable: \textsc{Basic}
-(no caption), Ours~[\texttt{avg-5}], and Ours~[\textsc{H}] (the best single
-instruction for SigLIP2). The first row is the plain product score; each
-subsequent row adds one preprocessing step -- feature centering, similarity
-min-normalisation, the Harris-style fusion penalty, query
-contextualisation, the contrastive projection, and query
-expansion.\footnote{SigLIP2 has no synthetic calibration set of the kind used to
-fit the original \textsc{Basic} statistics for CLIP; the min-normalisation
-constants are therefore estimated empirically from a database sample, and
-centering uses the global database mean (Section~\ref{subsect:method_centering}).}
+(no caption), Ours~[\texttt{avg-5}], and Ours~[\textsc{J}] (the fixed
+single-instruction variant). The first row is the plain product score; each
+subsequent row adds one step of the \textsc{Basic} stack -- feature centering,
+similarity min-normalisation, the Harris-style fusion penalty, query
+contextualisation, the contrastive projection, and query expansion. The same
+ladder is plotted in Figure~\ref{fig:res_ladder}, and the per-step deltas in
+Figure~\ref{fig:res_ladder_delta}.
 
-The single largest jump comes from the \textbf{caption}. At the product level,
-adding the \texttt{avg-5} caption raises macro-mAP from $38.12$ (\textsc{Basic})
-to $56.09$ -- a $+17.97$ gain that is larger than the entire post-processing
-stack contributes on top of it. This is the core empirical message of the thesis:
-\emph{a single generated target caption injects the textual signal more
-effectively than the multi-step \textsc{Basic} preprocessing it is designed to
-replace}, and it does so as a simple additive branch. The two ideas are
-nonetheless complementary -- centering and contextualisation lift Ours a further
-$+5.9$ to the ceiling of $61.98$ -- but the caption is unambiguously the dominant
-component.
+\textbf{The caption is a major, complementary signal.} At the plain product
+level, replacing the duplet with the triplet (i.e.\ adding the \texttt{avg-5}
+caption) raises macro-mAP from $17.95$ to $25.41$, a $+7.46$ gain before any
+post-processing. Crucially, this gain does \emph{not} vanish once the
+\textsc{Basic} stack is applied: at the contextualisation rung Ours reaches
+$35.76$ against \textsc{Basic}'s $32.25$, and the best \textsc{Basic} rung
+($32.48$) is still $+3.28$ below the best Ours rung ($35.76$). The caption
+therefore supplies information that \textsc{Basic}'s own text contextualisation
+cannot recover -- the two are complementary rather than redundant.
 
-% SOURCE: runs/caption_backbone_instancepool/siglip2_ladder/summary_ladder.csv
+\textbf{Centering and contextualisation carry the post-processing.} On CLIP-L,
+the largest single post-processing step is \textbf{centering}: it lifts the
+\textsc{Basic} duplet by $+9.81$ ($17.95\!\to\!27.76$) and Ours by $+6.46$
+($25.41\!\to\!31.87$), confirming a strong embedding-space bias.
+\textbf{Contextualisation} is the next largest, adding $+3.92$ to \textsc{Basic}
+and $+2.94$ to Ours. The min-normalisation and Harris steps roughly cancel. Note
+that on CLIP-L the \textsc{Basic} post-processing stack (total $+14.53$ over the
+product) is larger than the caption's raw $+7.46$; the picture reverses on
+better-aligned backbones, where the caption dominates the entire stack
+(Section~\ref{sect:res_backbones}).
+
+% SOURCE: runs/final_experiments/ablation_clip_l/summary_ladder.csv (= docs/final_ablation_clip_l.csv)
 \begin{table}[h!]
 \centering
 \begin{tabular}{l c c c}
 \toprule
-Cumulative step & \textsc{Basic} & Ours [\texttt{avg-5}] & Ours [\textsc{H}] \\ \midrule
-product (no post-processing)   & 38.12 & 56.09 & 53.91 \\
-\quad + centering              & 49.96 & 55.51 & 54.39 \\
-\quad + min-normalisation      & 45.49 & 53.70 & 51.40 \\
-\quad + Harris fusion          & 47.64 & 55.87 & 54.04 \\
-\quad + contextualisation      & 57.69 & \textbf{61.98} & 60.31 \\
-\quad + projection             & 52.67 & 59.02 & 57.17 \\
-\quad + query expansion        & 49.56 & 57.29 & 55.35 \\
+Cumulative step & \textsc{Basic} & Ours~[\texttt{avg-5}] & Ours~[\textsc{J}] \\ \midrule
+product (no post-processing)   & 17.95 & 25.41          & 23.83 \\
+\quad + centering              & 27.76 & 31.87          & 31.02 \\
+\quad + min-normalisation      & 27.40 & 31.97          & 30.28 \\
+\quad + Harris fusion          & 28.33 & 32.82          & 31.25 \\
+\quad + contextualisation      & 32.25 & \textbf{35.76} & 34.06 \\
+\quad + projection             & 32.48 & 33.80          & 32.58 \\
+\quad + query expansion        & 30.28 & 32.39          & 31.53 \\
 \bottomrule
 \end{tabular}
-\caption[Component ladder on SigLIP2 (full i-CIR).]{Macro-mAP (\%) on the full
-i-CIR dataset, building the pipeline one component at a time on SigLIP2. All
-three columns share the same post-processing; only the caption term differs.
-The best result of the thesis ($61.98$) is Ours~[\texttt{avg-5}] at the
-contextualisation rung.\label{tab:res_ladder}}
+\caption[Component ladder on CLIP-L (full i-CIR).]{Macro-mAP (\%) on the full
+i-CIR dataset, building the pipeline one component at a time on CLIP ViT-L/14.
+All three columns share the same post-processing; only the caption term differs.
+The best CLIP-L result ($35.76$, in \textbf{bold}) is Ours~[\texttt{avg-5}] at
+the contextualisation rung; the CLIP-specific projection and query expansion
+reduce it from there.\label{tab:res_ladder}}
 \end{table}
+
+% HIGHLIGHT-FIG: ladder line plot + per-step delta bars.
+% SOURCE: notebooks/final_experimental_results.ipynb
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.78\textwidth]{figures/ladder_clipl}
+\caption[Component ladder on CLIP-L.]{Macro-mAP (\%) versus cumulative pipeline
+step on CLIP ViT-L/14, for \textsc{Basic}, Ours~[\texttt{avg-5}], and
+Ours~[\textsc{J}]. The triplet sits above the duplet at every step; both peak at
+contextualisation and decline once the CLIP-specific projection and query
+expansion are added.\label{fig:res_ladder}}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.78\textwidth]{figures/ladder_delta_clipl}
+\caption[Per-step contributions on CLIP-L.]{Marginal change in macro-mAP (\%)
+contributed by each pipeline step on CLIP ViT-L/14, for \textsc{Basic} and
+Ours~[\texttt{avg-5}]. Centering and contextualisation are the largest positive
+steps; projection and query expansion are flat or negative.\label{fig:res_ladder_delta}}
+\end{figure}
 
 \subsection{Feature Centering and Post-Processing}\label{sect:res_centering}
 
 Reading Table~\ref{tab:res_ladder} down the rungs reveals which parts of the
-\textsc{Basic} stack actually help once the caption is present.
-\textbf{Centering} is the second most important component after the caption: for
-the \textsc{Basic} duplet it alone lifts macro-mAP from $38.12$ to $49.96$
-($+11.8$), confirming a strong embedding-space bias in SigLIP2 that subtracting
-the mean removes. \textbf{Contextualisation} is the other clear winner, providing
-the largest single post-processing jump for every configuration (e.g.\ Ours rises
-from $55.87$ to $61.98$). The intermediate steps are minor: min-normalisation
-slightly \emph{lowers} the score before the Harris fusion penalty recovers it,
-so the two roughly cancel.
+\textsc{Basic} stack actually help on CLIP-L once the caption is present.
+\textbf{Centering} is the single most important post-processing step: for the
+\textsc{Basic} duplet it alone lifts macro-mAP from $17.95$ to $27.76$
+($+9.81$), and Ours from $25.41$ to $31.87$ ($+6.46$), confirming a strong
+embedding-space bias that subtracting the mean removes.
+\textbf{Contextualisation} is the next clear winner, adding $+3.92$ to
+\textsc{Basic} and $+2.94$ to Ours. The intermediate steps are minor:
+min-normalisation slightly \emph{lowers} the score before the Harris fusion
+penalty recovers it, so the two roughly cancel.
 
-The most striking observation is that the two final \textsc{Basic} steps --
+The most informative observation concerns the two final \textsc{Basic} steps,
 the contrastive \textbf{projection} (Equation~\eqref{eq:basic_proj}) and
-\textbf{query expansion} -- \emph{hurt} every configuration on SigLIP2: Ours
-falls from its $61.98$ peak to $59.02$ and then $57.29$. These two steps were
-designed and tuned for CLIP and do not transfer to the SigLIP2 embedding space.
-The practical consequence is that the optimal pipeline on the best backbone
-stops at contextualisation; the elaborate tail of the \textsc{Basic} stack can be
-discarded.
+\textbf{query expansion}. The projection was designed and tuned specifically for
+CLIP, and indeed it helps the \textsc{Basic} duplet here -- marginally, from
+$32.25$ to $32.48$ -- but it \emph{hurts} the caption-augmented pipeline, pulling
+Ours down from its $35.76$ peak to $33.80$. Query expansion then lowers every
+configuration further ($-2.20$ for \textsc{Basic}, $-1.41$ for Ours). In other
+words, once the caption is present even the CLIP-tuned tail of the stack becomes
+counterproductive: the optimal pipeline for Ours stops at contextualisation, and
+the projection and query expansion can be discarded. The same two steps are
+strictly harmful on the other backbones (Section~\ref{sect:res_backbones}), so we
+omit them from the default pipeline throughout.
 
 \paragraph{Source of the centering mean.} A natural question
-(Section~\ref{subsect:method_centering}) is whether the \emph{source} of the
-mean matters. We find it does not: centering with the global database mean and
-with a generic LAION-1M mean differ by at most $\sim\!0.55$ macro-mAP, and
-usually by less. The choice of centering corpus is therefore not a material
-hyperparameter, and we use the global database mean throughout.
+(Section~\ref{subsect:method_centering}) is whether the \emph{source} of the mean
+matters. We find it does not: on CLIP-L, centering with the global database mean
+and with a generic LAION-1M mean differ by only $\sim\!0.09$ macro-mAP, and by at
+most $\sim\!0.55$ across all four backbones. The choice of centering corpus is
+therefore not a material hyperparameter, and we use the global database mean
+throughout.
 
 \subsection{Caption Instruction Variants}\label{subsect:res_ablation_instr}
 
@@ -271,9 +322,12 @@ alone, while the image branch anchors the instance identity.
 The instruction ordering is consistent with design intent: \textsc{J}
 (\emph{draft--refine}, $23.83$) and \textsc{G} (\emph{constraint-priority},
 $23.51$) lead, while the rigid slot-fill template \textsc{I} trails. The spread
-across instructions is modest ($\sim\!2.8$ points), and all five outperform the
-duplet baseline ($17.95$). \texttt{avg-5} exceeds every single instruction and
-is obtained without any selection on the evaluation set.
+across instructions is modest ($\sim\!1.3$ points on the triplet), and all five
+outperform the duplet baseline ($17.95$). Because \textsc{J} is the best single
+instruction on this default backbone, we fix it as the named single-instruction
+variant Ours~[\textsc{J}] throughout the thesis; \texttt{avg-5} exceeds it
+(Section~\ref{subsect:res_aug}) without any per-instruction selection. The three
+scoring modes are visualised in Figure~\ref{fig:res_instr}.
 
 % SOURCE: runs/caption_backbone_instancepool/clip_l/summary.csv
 %   caption = INSTR_*|caption ; product = INSTR_*|product ; triple = INSTR_*|triple
@@ -282,64 +336,84 @@ is obtained without any selection on the evaluation set.
 \begin{tabular}{l l c c c}
 \toprule
 ID & Instruction & Caption & Cap$\times$Img & Triplet \\ \midrule
-\textsc{J} & draft--refine           & 16.16 & 14.04 & \textbf{23.83} \\
+\textsc{J} & draft--refine           & 16.16 & 14.04 & 23.83 \\
 \textsc{G} & constraint-priority     & 15.34 & 13.11 & 23.51 \\
 \textsc{H} & anti-noise contract     & 14.51 & 12.76 & 23.51 \\
 \textsc{I} & slot-fill template      & 16.26 & 15.89 & 23.12 \\
 \textsc{F} & adaptive precision      & 16.08 & 15.14 & 22.57 \\ \midrule
-           & \texttt{avg-5}          & 19.51 & 16.26 & \textbf{25.41} \\
+           & \texttt{avg-5}          & \textbf{19.51} & \textbf{16.26} & \textbf{25.41} \\
 \midrule
-\multicolumn{2}{l}{Text $\times$ Image (\textsc{Basic} duplet)} & \multicolumn{3}{c}{17.95} \\
+\multicolumn{2}{l}{Img\,$\times$\,Txt (duplet)} & \multicolumn{3}{c}{17.95} \\
 \bottomrule
 \end{tabular}
 \caption[Caption-instruction comparison across scoring modes (CLIP-L, full i-CIR).]{Macro-mAP
 (\%) on the full i-CIR dataset, CLIP ViT-L/14 backbone. Caption: $\sc$ as a
 text query; Cap$\times$Img: caption $\times$ image duplet; Triplet: full
 caption $\times$ text $\times$ image product. Caption alone consistently
-outperforms Cap$\times$Img for every instruction. The bottom row is the Text
-$\times$ Image baseline for reference.\label{tab:res_instr}}
+outperforms Cap$\times$Img for every instruction. \texttt{avg-5} is best in every
+mode (\textbf{bold}); the bottom row is the Img\,$\times$\,Txt duplet for
+reference.\label{tab:res_instr}}
 \end{table}
+
+% HIGHLIGHT-FIG: grouped bars, 5 instructions x {caption, cap x img, triplet}.
+% SOURCE: notebooks/final_experimental_results.ipynb -> figures/instructions_modes_clipl
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/instructions_modes_clipl}
+\caption[Caption scoring modes across instructions (CLIP-L).]{Macro-mAP (\%) for
+each caption instruction under the three scoring modes on CLIP ViT-L/14. For
+every instruction, caption-alone (left bar) beats caption$\times$image (middle
+bar); the full triplet (right bar) is best. The dashed line marks the
+Img\,$\times$\,Txt duplet baseline ($17.95$).\label{fig:res_instr}}
+\end{figure}
 
 \subsection{Caption Augmentation: \texttt{avg-5} vs.\ Single Instructions}\label{subsect:res_aug}
 
 Rather than commit to one prompt, the default caption embedding averages all
-five instructions in embedding space (\texttt{avg-5},
-Equation~\eqref{eq:avg5}). Table~\ref{tab:res_aug} shows this is a consistent
-improvement: on \emph{every} backbone, \texttt{avg-5} exceeds both the best
-single instruction and a selective average of the best four. The gain over the
-best single instruction is small but reliable ($+0.9$ to $+2.2$ macro-mAP), and
-crucially it is obtained \emph{without selecting} anything on the evaluation set
--- \texttt{avg-5} uses all five prompts unconditionally, whereas ``best
-instruction'' and ``best-4'' require an oracle choice. Averaging the embeddings
-keeps the signal that is consistent across instructions and attenuates the
-idiosyncrasies of any single prompt, which is why we adopt it as the default.
+five instructions in embedding space (\texttt{avg-5}, Equation~\eqref{eq:avg5}).
+Table~\ref{tab:res_aug} compares four caption settings on the triplet: our fixed
+single instruction \textsc{J}; the per-backbone \emph{oracle} best single
+instruction; an oracle average of the best four; and the unconditional
+\texttt{avg-5}. The result is unambiguous: \texttt{avg-5} is best on \emph{every}
+backbone. It beats not only our fixed \textsc{J} (by $+0.4$ to $+2.1$ macro-mAP)
+but also the per-backbone oracle, even though that baseline is allowed to inspect
+the evaluation set to pick the winning instruction. In other words, blindly
+averaging all five prompts outperforms an oracle that selects the single best
+one. Averaging keeps the signal that is consistent across instructions and
+attenuates the idiosyncrasies of any single prompt, which is why we adopt it as
+the default and reserve the fixed \textsc{J} only for analyses that need a single
+prompt.
 
 % SOURCE: runs/caption_backbone_instancepool/<bk>/summary.csv (triple):
-%   best single INSTR_*, AUG_AVG5, AUG_BEST4
+%   J = INSTR_J ; best single = max INSTR_* ; best-4 = AUG_BEST4 ; avg-5 = AUG_AVG5
 \begin{table}[h!]
 \centering
-\begin{tabular}{l c c c}
+\begin{tabular}{l c c c c}
 \toprule
-Backbone & best single & best-4 avg & \texttt{avg-5} \\ \midrule
-CLIP-L   & 23.83 & 25.27 & \textbf{25.41} \\
-CLIP-H   & 45.63 & 46.88 & \textbf{47.05} \\
-SigLIP-L & 41.88 & 43.16 & \textbf{43.33} \\
-SigLIP2  & 53.91 & 55.63 & \textbf{56.09} \\
+Backbone & \textsc{J} (fixed) & best single$^\dagger$ & best-4$^\dagger$ & \texttt{avg-5} \\ \midrule
+CLIP-L   & 23.83 & 23.83 & 25.27 & \textbf{25.41} \\
+CLIP-H   & 44.97 & 45.63 & 46.88 & \textbf{47.05} \\
+SigLIP-L & 41.38 & 41.88 & 43.16 & \textbf{43.33} \\
+SigLIP2  & 52.88 & 53.91 & 55.63 & \textbf{56.09} \\
 \bottomrule
 \end{tabular}
 \caption[Caption augmentation: averaging vs.\ single instructions.]{Triplet
-macro-mAP (\%) on the full i-CIR dataset. ``best single'' and ``best-4 avg''
-require selecting instructions on the eval set; the unconditional \texttt{avg-5}
-matches or beats both on every backbone.\label{tab:res_aug}}
+macro-mAP (\%) on the full i-CIR dataset. \textsc{J} is our fixed
+single-instruction variant; $^\dagger$``best single'' and ``best-4'' are
+\emph{oracle} baselines that select the instruction(s) per backbone on the
+evaluation set. The unconditional \texttt{avg-5} (\textbf{bold}) is best on every
+backbone, beating even the oracle single instruction.\label{tab:res_aug}}
 \end{table}
 
 % =====================================================================
 \section{Backbone Sensitivity and the Performance Ceiling}\label{sect:res_backbones}
 % =====================================================================
 
-Table~\ref{tab:res_backbones} reports macro-mAP and micro-mAP for both the
-\textsc{Basic} duplet and Ours (\texttt{avg-5} triplet) across all four
-backbones. Two patterns emerge.
+Having dissected the pipeline on the default backbone, we now vary the encoder.
+Table~\ref{tab:res_backbones} reports macro-mAP, micro-mAP and Recall@10 for both
+the \textsc{Basic} duplet and Ours (\texttt{avg-5} triplet) across all four
+backbones, and Figure~\ref{fig:res_backbones} shows the same comparison as a bar
+chart. Two patterns emerge.
 
 \textbf{The duplet ranking does not predict the triplet ranking.}
 On the bare duplet, CLIP-H is the strongest backbone ($41.10$ mmAP), ahead of
@@ -351,7 +425,10 @@ is not necessarily the best partner for the caption.
 \textbf{The triplet is uniformly better than the duplet on every backbone.}
 The margin ranges from $+5.95$ (CLIP-H) to $+22.23$ (SigLIP-L). For SigLIP-L and
 SigLIP2 the caption more than doubles the raw duplet score, confirming that these
-encoders benefit the most from the additional textual modality.
+encoders benefit the most from the additional textual modality. The pattern is
+consistent with the caption's role: where the text encoder is poorly aligned with
+the visual space, the modification text $\st$ carries little signal, and the
+self-contained target caption $\sc$ supplies what is missing.
 
 The macro-mAP (mean-per-instance AP) and micro-mAP (mean-per-query AP) rankings
 agree for Ours but diverge for the duplet on SigLIP-L ($21.10$ macro vs.\
@@ -362,11 +439,11 @@ and instance-fair metric and is used for all headline comparisons.
 Recall@10 corroborates the pattern. On the duplet, CLIP-H leads with $83.5\%$
 (meaning the correct instance appears in the top-10 for $83.5\%$ of queries);
 after adding the caption, SigLIP2 reaches $92.2\%$ -- a gain of $+13.3$ points --
-while CLIP-H gains only $+6.4$. The recall picture is consistent with the mmAP
-ranking and further confirms that backbone choice must be made within the full
-pipeline.
+while CLIP-H gains only $+6.4$. The recall picture (Figure~\ref{fig:res_recall})
+is consistent with the mmAP ranking and further confirms that backbone choice
+must be made within the full pipeline.
 
-% SOURCE: runs/caption_backbone_instancepool/<bk>/summary.csv
+% SOURCE: docs/backbone_recall.csv ; runs/caption_backbone_instancepool/<bk>/summary.csv
 %   BASIC = BASE_modtext|product ; Ours = AUG_AVG5|triple
 %   Recall computed from topk_rankings.npy (200-deep rankings)
 \begin{table}[h!]
@@ -377,7 +454,7 @@ pipeline.
  & \multicolumn{3}{c}{\textsc{Basic} (duplet)} & \multicolumn{3}{c}{Ours (\texttt{avg-5})} \\
 \cmidrule(lr){2-4}\cmidrule(lr){5-7}
 Backbone & mmAP & mAP & R@10 & mmAP & mAP & R@10 \\ \midrule
-CLIP ViT-H/14       & \textbf{41.10} & 37.29 & 83.5 & 47.05 & 46.49 & 89.9 \\
+CLIP ViT-H/14       & \textbf{41.10} & \textbf{37.29} & \textbf{83.5} & 47.05 & 46.49 & 89.9 \\
 SigLIP2 g/16-384    & 38.11 & 35.42 & 78.9 & \textbf{56.09} & \textbf{54.88} & \textbf{92.2} \\
 SigLIP ViT-L/16-256 & 21.10 & 23.13 & 64.6 & 43.33 & 47.51 & 87.9 \\
 CLIP ViT-L/14       & 17.95 & 21.85 & 65.6 & 25.41 & 30.80 & 72.8 \\
@@ -385,19 +462,98 @@ CLIP ViT-L/14       & 17.95 & 21.85 & 65.6 & 25.41 & 30.80 & 72.8 \\
 \end{tabular}
 \caption[Backbone comparison: \textsc{Basic} duplet vs.\ Ours (\texttt{avg-5}), full i-CIR.]{Macro-mAP
 (mmAP), micro-mAP (mAP) and Recall@10 (\%) on the full i-CIR dataset, for the
-\textsc{Basic} duplet and the Ours (\texttt{avg-5}) triplet. CLIP-H leads the
-duplet on mmAP but SigLIP2 leads once the caption is added; recall@10 confirms
-the same ordering.\label{tab:res_backbones}}
+\textsc{Basic} duplet and the Ours (\texttt{avg-5}) triplet. The best value in
+each column is in \textbf{bold}: CLIP-H leads the duplet but SigLIP2 leads once
+the caption is added; Recall@10 confirms the same ordering.\label{tab:res_backbones}}
 \end{table}
+
+% HIGHLIGHT-FIG: grouped bars, BASIC vs Ours per backbone (mmAP).
+% SOURCE: notebooks/final_experimental_results.ipynb -> figures/backbone_reversal
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/backbone_reversal}
+\caption[Backbone sensitivity: duplet vs.\ triplet.]{Macro-mAP (\%) of the
+\textsc{Basic} duplet and Ours (\texttt{avg-5}) across the four backbones. The
+duplet ranks CLIP-H first, but adding the caption reverses the ranking and SigLIP2
+becomes best; the gain is largest where the duplet is weakest.\label{fig:res_backbones}}
+\end{figure}
+
+% HIGHLIGHT-FIG: Recall@{10,50,100} per backbone, BASIC vs Ours.
+% SOURCE: docs/backbone_recall.csv -> figures/recall_at_k
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/recall_at_k}
+\caption[Recall@$k$ across backbones.]{Recall@$k$ ($k\in\{10,50,100\}$, \%) on
+the full i-CIR dataset for the \textsc{Basic} duplet and Ours (\texttt{avg-5}).
+The caption improves recall on every backbone and at every depth, most strongly
+on SigLIP2 and SigLIP-L.\label{fig:res_recall}}
+\end{figure}
+
+\subsection{Post-Processing on the Best Backbone}\label{subsect:res_siglip2_ladder}
+
+On SigLIP2 the component analysis of Section~\ref{sect:res_components} takes its
+strongest form. Table~\ref{tab:res_siglip2_ladder} repeats the cumulative ladder
+on the best backbone, and Figure~\ref{fig:res_ladder_siglip2} plots it. Here the
+\textbf{caption alone is larger than the entire \textsc{Basic} post-processing
+stack}: at the plain product rung it raises macro-mAP from $38.12$ to $56.09$, a
+$+17.97$ gain, whereas the whole \textsc{Basic} stack lifts the duplet by
+$+19.57$ to its $57.69$ peak -- and the caption-augmented pipeline still leads it
+by a wide margin at every rung. This is the sharpest statement of the central
+empirical message: \emph{a single generated target caption injects the textual
+signal more effectively than the multi-step \textsc{Basic} preprocessing it is
+designed to replace.}
+
+The remaining post-processing is complementary but secondary. Centering and
+contextualisation lift Ours a further $+5.9$ to the thesis-best
+$\mathbf{61.98}$ macro-mAP at the contextualisation rung. As on CLIP-L
+(Section~\ref{sect:res_centering}), the two final \textsc{Basic} steps -- the
+contrastive projection and query expansion -- \emph{hurt}, pulling Ours down to
+$59.02$ and then $57.29$. These steps were tuned for CLIP and transfer to neither
+backbone, so the optimal pipeline stops at contextualisation.
+
+% SOURCE: runs/caption_backbone_instancepool/siglip2_ladder/summary_ladder.csv
+\begin{table}[h!]
+\centering
+\begin{tabular}{l c c}
+\toprule
+Cumulative step & \textsc{Basic} & Ours~[\texttt{avg-5}] \\ \midrule
+product (no post-processing)   & 38.12 & 56.09 \\
+\quad + centering              & 49.96 & 55.51 \\
+\quad + min-normalisation      & 45.49 & 53.70 \\
+\quad + Harris fusion          & 47.64 & 55.87 \\
+\quad + contextualisation      & 57.69 & \textbf{61.98} \\
+\quad + projection             & 52.67 & 59.02 \\
+\quad + query expansion        & 49.56 & 57.29 \\
+\bottomrule
+\end{tabular}
+\caption[Component ladder on SigLIP2 (full i-CIR).]{Macro-mAP (\%) on the full
+i-CIR dataset, building the pipeline one component at a time on SigLIP2
+g/16-384. The caption alone ($+17.97$ at the product rung) exceeds the entire
+\textsc{Basic} post-processing stack; the thesis-best result ($61.98$, in
+\textbf{bold}) is Ours~[\texttt{avg-5}] at the contextualisation
+rung.\label{tab:res_siglip2_ladder}}
+\end{table}
+
+% HIGHLIGHT-FIG: SigLIP2 ladder line plot, BASIC vs Ours, annotate 61.98 ceiling.
+% SOURCE: notebooks/final_experimental_results.ipynb -> figures/ladder_siglip2
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.78\textwidth]{figures/ladder_siglip2}
+\caption[Component ladder on SigLIP2.]{Macro-mAP (\%) versus cumulative pipeline
+step on SigLIP2, for \textsc{Basic} and Ours~[\texttt{avg-5}]. The caption opens
+a large gap at the product rung that the \textsc{Basic} post-processing never
+closes; both peak at contextualisation ($61.98$ for Ours) and decline once
+projection and query expansion are added.\label{fig:res_ladder_siglip2}}
+\end{figure}
 
 \paragraph{The performance ceiling.} Table~\ref{tab:res_ceiling} traces the
 best result attainable as the pipeline is completed. The best bare-duplet
 backbone (CLIP-H) reaches $41.10$; adding the caption lifts the best backbone to
 SigLIP2 at $56.09$; and layering the post-processing that transfers to SigLIP2
-(centering and contextualisation, Section~\ref{sect:res_centering}) raises the
-high-water mark to $\mathbf{61.98}$ macro-mAP. The caption accounts for the
-larger share of the journey from the duplet baseline to this ceiling ($+14.98$
-out of the total $+20.88$).
+(centering and contextualisation, Section~\ref{subsect:res_siglip2_ladder})
+raises the high-water mark to $\mathbf{61.98}$ macro-mAP. The caption accounts
+for the larger share of the journey from the duplet baseline to this ceiling
+($+14.98$ out of the total $+20.88$).
 
 \begin{table}[h!]
 \centering
@@ -421,58 +577,67 @@ the larger share of the gain over the bare duplet, versus post-processing
 
 \subsection{Representative Successes}
 
-% HIGHLIGHT: assemble Figure from real retrievals (top50_db_paths.npy +
-% caption CSVs). Show 2-3 success cases: reference image q^v | modification
-% text q^t | generated caption c | top-k retrieved (mark ground-truth instance).
-Figure~\ref{fig:qualitative} shows representative queries where the triplet
-succeeds and the duplet does not. In each, the generated caption makes the
+Figure~\ref{fig:qualitative} shows a representative query where the triplet
+succeeds and the duplet baselines fail. The generated caption makes the
 composition explicit -- naming the instance and applying the requested
 modification -- so that the retrieved images match both the instance identity and
-the edit, whereas the duplet retrieval, driven by the fragmentary modification
-text alone, returns visually plausible but semantically wrong candidates.
+the edit. The duplet, driven by the fragmentary modification text alone, returns
+visually plausible but semantically incorrect candidates.
+Additional success cases are shown in Appendix~\ref{app:qual_analysis}.
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
 \centering
-% \includegraphics[width=\textwidth]{figures/qualitative_success.png}
-\caption[Qualitative successes.]{Example queries with the reference image, the
-modification text, the generated target caption, and the top retrieved images
-(ground-truth instance highlighted).\label{fig:qualitative}}
+\includegraphics[width=\textwidth]{figures/qualitative_success_q832.png}
+\caption[Representative retrieval success.]{A query where \emph{Ours} (triplet)
+retrieves the correct instance while both baselines fail. Rows show Img$\times$Txt,
+\textsc{Basic}, \emph{Ours}, and ground truth; correct retrievals are bordered in
+green, incorrect in red. The generated caption bridges the modification text to a
+full target description, enabling precise instance-level retrieval.\label{fig:qualitative}}
 \end{figure}
 
 \subsection{Failure Analysis}\label{subsect:res_failure}
 
-% HIGHLIGHT: build the per-category breakdown from per_query_ap.npy joined to the
-% query metadata (instance category), and pick 3-5 low-AP examples per mode.
-Examining the lowest-AP queries reveals three recurring failure modes, which
-mirror the caption-design trade-offs identified in
-Section~\ref{sect:method_caption}.
-\textbf{(i) Sparse captions for unrecognised instances.} When the MLLM cannot
-identify the specific instance, it falls back to a generic description (e.g.\
-collapsing a particular bridge to ``a bridge''), and the caption loses the
-discriminative detail needed to separate the correct instance from look-alikes.
-\textbf{(ii) Residual scene and aesthetic noise.} When the caption admits
-background, lighting, or mood terms, the text query drifts toward visually
-similar but semantically irrelevant images.
-\textbf{(iii) Lost instance identity under constraint decomposition.} When the
-modification is decomposed into atomic constraints, the caption occasionally
-satisfies the edit while under-specifying the instance, retrieving the right
-modification on the wrong object.
+Examining the lowest-AP queries reveals three dominant failure modes, all rooted
+in a mismatch between the requested modification and the database content.
+\textbf{(i) State-change targets absent from the database.} Modifications such as
+``being deflated'', ``folded'', or ``lying open'' require images of the instance
+in a fundamentally different physical state. Because the i-CIR database indexes
+instances in their canonical presentation, these states are absent or near-absent,
+making retrieval impossible regardless of caption quality.
+\textbf{(ii) Domain-transfer modifications with no database counterpart.} When
+the modification requests the instance in a wholly different visual domain --
+``as a painting'', ``as a film'', ``as a colorful sketch'' -- no such rendered
+version exists in the database, and the retrieval is guaranteed to fail.
+\textbf{(iii) Context-breaking wearable modifications.} Queries such as ``worn by
+a dog'', ``worn by a person'', or ``worn on the ankle'' ask for clothing or
+accessories in an atypical context. The database contains the items in isolation or
+standard wear; the requested context does not appear, so AP collapses to zero.
 
-% HIGHLIGHT: insert (a) a per-category AP table and (b) a figure of 2-3 failure
-% cases, one per mode, with the generated caption and the mis-ranked top-k.
-A per-category breakdown (to be inserted) localises these modes to specific
-instance categories, and the qualitative failure cases of
-Figure~\ref{fig:failure} illustrate each. The analysis confirms that the
-remaining errors are concentrated where caption \emph{quality}, not the retrieval
-mechanism, is the bottleneck -- pointing to caption generation as the most
-promising avenue for further gains.
+A token-level enrichment analysis across all 1,883 queries (Appendix~\ref{app:qual_analysis})
+quantifies these patterns: the token \textit{worn} (23 queries) carries a $91.3\%$
+failure rate -- $3.7\times$ the global rate of $24.9\%$ -- and the bigrams
+\textit{film around} and \textit{colorful sketch} cluster at $100\%$ failure.
+By contrast, highly distinctive instance terms such as \textit{lego} (35 queries,
+$0\%$ failures, $88.6\%$ win rate at AP$\ge$50\%) and \textit{fog} (27 queries,
+$86\%$ mean AP) show that the triplet excels when the modification is concretely
+expressible in language and the target images exist in the database.
+Figure~\ref{fig:failure} illustrates one query per failure mode; the pattern
+confirms that the remaining errors are concentrated in modifications that exceed
+the database coverage, pointing to dataset augmentation rather than caption
+improvement as the primary avenue for further gains.
 
-\begin{figure}[h!]
+\begin{figure}[!p]
 \centering
-% \includegraphics[width=\textwidth]{figures/qualitative_failure.png}
-\caption[Qualitative failure cases.]{One example per failure mode: sparse
-caption, residual scene noise, and lost instance identity, each with the
-generated caption and the mis-ranked retrievals.\label{fig:failure}}
+\includegraphics[width=\textwidth]{figures/qualitative_failure_q861.png}\\[0.5em]
+\includegraphics[width=\textwidth]{figures/qualitative_failure_q1100.png}\\[0.5em]
+\includegraphics[width=\textwidth]{figures/qualitative_failure_q1496.png}
+\caption[Qualitative failure cases.]{Three failure modes, one per panel (top to
+bottom): \textbf{(i)} state-change target absent from the database
+(modification: ``being deflated''); \textbf{(ii)} domain-transfer with no
+database counterpart (``as a painting''); \textbf{(iii)} context-breaking
+wearable modification (``worn by a dog''). In all three cases AP$\approx 0\%$
+for every method, confirming the failure is due to database coverage rather than
+retrieval quality.\label{fig:failure}}
 \end{figure}
 
 % =====================================================================
@@ -481,11 +646,14 @@ generated caption and the mis-ranked retrievals.\label{fig:failure}}
 
 The experiments support the central claim of the thesis. The generated target
 caption is the single most effective component of the pipeline: it improves every
-backbone (Table~\ref{tab:res_main}), contributes a larger gain than the entire
-\textsc{Basic} post-processing stack it replaces (Table~\ref{tab:res_ladder}),
-and does so as a simple additive branch that needs no training. Embedding-space
-averaging over the five instructions (\texttt{avg-5}) is a small but reliable,
-selection-free improvement over any single prompt
+backbone (Table~\ref{tab:res_backbones}), and on the best backbone it contributes
+a larger gain than the entire \textsc{Basic} post-processing stack it replaces
+(Table~\ref{tab:res_siglip2_ladder}) -- all as a simple additive branch that
+needs no training. On the default CLIP-L backbone the caption is complementary to
+that stack, adding $+3.3$ macro-mAP even on top of the fully post-processed
+\textsc{Basic} pipeline (Table~\ref{tab:res_ladder}). Embedding-space averaging
+over the five instructions (\texttt{avg-5}) is a small but reliable,
+selection-free improvement that beats even an oracle single-instruction baseline
 (Table~\ref{tab:res_aug}). The best backbone within the full pipeline is SigLIP2,
 not the strongest bare-duplet encoder (Section~\ref{sect:res_backbones}), and the
 best result of the thesis -- $61.98$ macro-mAP -- combines the caption with the
