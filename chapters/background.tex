@@ -120,7 +120,7 @@ or text to an embedding, differing only in how they were trained.
 % HIGHLIGHT (optional): ViT patch-embedding diagram would help here.
 
 % =====================================================================
-\section{Contrastive Vision--Language Pretraining: CLIP}\label{sect:bg_clip}
+\section{Contrastive Vision--Language Pretraining}\label{sect:bg_clip}
 % =====================================================================
 
 CLIP (Contrastive Language--Image Pretraining)~\cite{radford2021clip} is the
@@ -168,10 +168,10 @@ this thesis operates.
 % HIGHLIGHT (optional): dual-encoder diagram (image tower / text tower / shared space).
 
 % =====================================================================
-\section{SigLIP and SigLIP2}\label{sect:bg_siglip}
+\section{Sigmoid-Loss Vision--Language Pretraining}\label{sect:bg_siglip}
 % =====================================================================
 
-\subsection{SigLIP: Sigmoid Loss for Contrastive Pretraining}
+\subsection{The Sigmoid Pretraining Objective}
 
 SigLIP (Sigmoid Loss for Language--Image
 Pretraining)~\cite{zhai2023siglip} preserves the dual-encoder architecture of
@@ -195,7 +195,7 @@ SigLIP performs better than the softmax loss at small batch sizes and reaches
 competitive quality at moderate sizes~\cite{zhai2023siglip}, making training
 more flexible than CLIP.
 
-\subsection{SigLIP2: Enhanced Training with Captioning and Self-Distillation}
+\subsection{Enhanced Training with Captioning and Self-Distillation}
 
 SigLIP2~\cite{tschannen2025siglip2} extends SigLIP with several independently
 developed enhancements. It adds captioning-based pretraining (using a small
@@ -236,7 +236,7 @@ backbones evaluated, as Chapter~\ref{chapt:results} shows.
 \section{Multimodal Large Language Models}\label{sect:bg_mllm}
 % =====================================================================
 
-\subsection{From LLMs to MLLMs}
+\subsection{From Language Models to Multimodal Models}
 
 A \emph{large language model} (LLM) is a Transformer trained autoregressively
 on massive text corpora to predict the next token; at scale, this yields models

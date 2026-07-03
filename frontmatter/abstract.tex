@@ -1,38 +1,38 @@
 %!TEX root = ../dissertation.tex
 
-Composed image retrieval (CIR) searches an image database with a query made of a
-reference image and a short modification text that states how the desired result
-should differ from it. The recent i-CIR benchmark makes the task markedly harder
-by defining relevance at the level of a specific object \emph{instance} and by
-surrounding every query with hard negatives that defeat any method relying on a
-single modality. Its accompanying baseline, \textsc{Basic}, shows that frozen
-vision--language features combined with careful, training-free post-processing
-are surprisingly competitive; yet it treats the modification text in isolation,
-even though a phrase such as ``make it red'' is meaningless to a text encoder
-without knowing \emph{what} should become red.
+Composed image retrieval searches an image database with a query that pairs a
+reference image with a short modification text specifying how the desired result
+should differ from it. The task is challenging: a system must interpret the
+reference image, apply the requested modification, and identify the single
+matching object among many near-identical distractors. The recent i-CIR
+benchmark intensifies this difficulty by defining relevance at the level of a
+specific object \emph{instance} rather than a general category, and by
+surrounding every query with hard negatives that penalise any method relying on
+a single modality. Its accompanying baseline, \textsc{Basic}, combines frozen
+vision--language features with careful, training-free post-processing and proves
+surprisingly competitive; it nonetheless processes the modification text in
+isolation from the image it is meant to modify, and an instruction such as
+``make it red'' conveys little to a text encoder that cannot determine
+\emph{what} should become red.
 
-This thesis uses language as an explicit bridge between the two modalities.
-A frozen multimodal large language model (InternVL-3.5-8B) reads the reference
-image and the modification \emph{together} and writes a short description of the
-\emph{imagined target} -- effectively performing the edit in language space. This
-self-contained \emph{target caption} is embedded by the frozen text encoder and
-fused with the image and text similarities through a clamped triplet product that
-acts as a soft logical \textsc{and}: a candidate must agree with all three signals
-to rank highly. The pipeline is entirely zero-shot -- every encoder, the caption
-generator, and all fusion and post-processing steps are off-the-shelf and frozen.
-Caption variance is reduced by averaging the embeddings of five complementary
-instruction prompts (\texttt{avg-5}).
+This thesis employs language as an explicit bridge between the two modalities.
+A frozen multimodal large language model reads the reference image and the
+modification instruction \emph{jointly} and produces a short description of the
+\emph{imagined target}, effectively performing the requested edit in language
+rather than in pixels. This self-contained \emph{target caption} is embedded by
+the frozen text encoder and fused with the image and text similarities through a
+clamped triplet product that behaves as a soft logical \textsc{and}: a candidate
+must agree with all three signals to rank highly. The pipeline requires no
+training; every encoder, the caption generator, and all fusion and
+post-processing steps are off-the-shelf and frozen.
 
-The method is developed and ablated on a $20\%$ instance subset of i-CIR and the
-successful configurations are then re-run at full scale ($1{,}883$ queries against
-$752{,}092$ database images) with four backbones (CLIP ViT-L/14, CLIP ViT-H/14,
-SigLIP ViT-L/16, and SigLIP2 g/16-384). The target caption is the single most
-effective component: it improves every backbone, and on the best backbone it
+The method is developed on an instance subset of i-CIR, and the successful
+configurations are re-run at full scale across several vision--language
+backbones. The target caption is consistently the single most effective
+component: it improves every backbone, and on the strongest backbone it
 contributes a larger gain than the entire \textsc{Basic} post-processing stack it
-is designed to replace. A plain text$\times$image baseline augmented with the
-caption reaches, and with a strong backbone exceeds, the fully tuned
-\textsc{Basic} pipeline. On the standard CLIP ViT-L/14 backbone our method
-reaches $35.76$ macro-mAP, surpassing the $34.35$ reported for the original
-\textsc{Basic} pipeline. The caption and feature centering are complementary, and
-the best backbone within the full pipeline is SigLIP2 -- not the strongest
-bare-baseline encoder -- reaching $61.98$ macro-mAP, the best result of the thesis.
+is designed to replace. On the standard CLIP ViT-L/14 backbone of the original
+benchmark, the proposed method reaches $35.76$ macro-mAP, surpassing the $34.35$
+reported for the published \textsc{Basic} pipeline; the best overall
+configuration attains $61.98$ macro-mAP, the strongest result reported in this
+thesis.
