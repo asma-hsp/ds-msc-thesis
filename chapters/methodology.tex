@@ -214,19 +214,19 @@ a space of five instruction variants, summarised in
 Table~\ref{tab:instructions}, that share a common contract -- recognise the
 single main instance, apply the modification, and emit a concise caption free of
 scene and aesthetic noise -- but differ in how they enforce it.
-\textsc{F} (\emph{adaptive precision}) gates instance recognition on a
+\textsc{A} (\emph{adaptive precision}) gates instance recognition on a
 confidence threshold, naming a well-known entity only when highly confident and
 otherwise falling back to distinctive visual traits.
-\textsc{G} (\emph{constraint-priority}) first decomposes the modification into
+\textsc{B} (\emph{constraint-priority}) first decomposes the modification into
 atomic constraints to guarantee full coverage, then binds them to the instance
 identity.
-\textsc{H} (\emph{anti-noise contract}) enforces an explicit quality contract
+\textsc{C} (\emph{anti-noise contract}) enforces an explicit quality contract
 with a forbidden-vocabulary list that blocks background, lighting, and aesthetic
 descriptors.
-\textsc{I} (\emph{slot-fill template}) imposes a rigid
+\textsc{D} (\emph{slot-fill template}) imposes a rigid
 ``[instance phrase] [modification phrase]'' template that suppresses noise
 structurally.
-\textsc{J} (\emph{draft--refine}) drafts a caption and then silently self-checks
+\textsc{E} (\emph{draft--refine}) drafts a caption and then silently self-checks
 it against the identity, constraint-coverage, noise, and length requirements
 before emitting a refined version.
 The per-instruction comparison is reported in
@@ -246,9 +246,9 @@ that keeps the conciseness that works for named entities, forces richer
 distinctive traits for unnamed ones, requires every modification constraint to
 appear, and adds explicit anti-patterns that block scene and aesthetic noise.
 They differ only in \emph{how} they enforce this shared contract -- confidence
-gating (F), constraint-first decomposition (G), an explicit forbidden-vocabulary
-contract (H), a rigid fill-in template (I), or an internal draft-and-self-check
-loop (J) -- so that embedding-space averaging over them (\texttt{avg-5}) can
+gating (A), constraint-first decomposition (B), an explicit forbidden-vocabulary
+contract (C), a rigid fill-in template (D), or an internal draft-and-self-check
+loop (E) -- so that embedding-space averaging over them (\texttt{avg-5}) can
 exploit their complementary strengths. The verbatim prompts are reproduced in
 Appendix~\ref{app:prompts}.
 
@@ -283,11 +283,11 @@ correct plushie of the same instance first.\label{fig:caption_example}}
 \begin{tabular}{l l}
 \toprule
 ID & Instruction (summary) \\ \midrule
-\textsc{F} & \emph{adaptive precision}: confidence-gated naming, else distinctive traits; all constraints; $\le 25$ words \\
-\textsc{G} & \emph{constraint-priority}: atomic-constraint decomposition first, then instance identity; $\le 30$ words \\
-\textsc{H} & \emph{anti-noise contract}: explicit quality contract + forbidden-vocabulary list; $10$--$25$ words \\
-\textsc{I} & \emph{slot-fill template}: rigid ``[instance] [modification]'' template; $8$--$22$ words \\
-\textsc{J} & \emph{draft--refine}: draft, silent self-check, refined caption; $\le 25$ words \\
+\textsc{A} & \emph{adaptive precision}: confidence-gated naming, else distinctive traits; all constraints; $\le 25$ words \\
+\textsc{B} & \emph{constraint-priority}: atomic-constraint decomposition first, then instance identity; $\le 30$ words \\
+\textsc{C} & \emph{anti-noise contract}: explicit quality contract + forbidden-vocabulary list; $10$--$25$ words \\
+\textsc{D} & \emph{slot-fill template}: rigid ``[instance] [modification]'' template; $8$--$22$ words \\
+\textsc{E} & \emph{draft--refine}: draft, silent self-check, refined caption; $\le 25$ words \\
 \bottomrule
 \end{tabular}
 \caption[Caption-generation instruction variants.]{The five instruction

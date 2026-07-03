@@ -59,9 +59,9 @@ Section~\ref{sect:res_backbones}.
 clamped triplet image$\times$text$\times$caption of
 Equation~\eqref{eq:triplet}. The caption signal uses the \texttt{avg-5} setting
 (Equation~\eqref{eq:avg5}) by default; where a single prompt is required we fix
-it to instruction~\textsc{J} (\emph{draft--refine}), the best-performing
+it to instruction~\textsc{E} (\emph{draft--refine}), the best-performing
 instruction on the default backbone (Section~\ref{subsect:res_ablation_instr}),
-and write ``Ours~[\textsc{J}]''. Unless a backbone sweep is stated
+and write ``Ours~[\textsc{E}]''. Unless a backbone sweep is stated
 (Section~\ref{sect:res_backbones}), all results use CLIP ViT-L/14, the default
 encoder of the original benchmark. Feature centering and the \textsc{Basic}
 post-processing of Section~\ref{sect:method_basic} are applied as a cumulative
@@ -73,13 +73,14 @@ ladder, analysed in Section~\ref{sect:res_components}.
 
 \paragraph{Comparison with the state of the art.}
 Table~\ref{tab:res_leaderboard} compares the proposed method against the
-literature on the full i-CIR benchmark, following the evaluation protocol of the
-i-CIR paper~\cite{psomas2025icir}: macro-mAP on $1{,}883$ queries against the
-$752{,}092$-image instance pool, CLIP ViT-L/14 backbone (the default choice in
-the original benchmark). Published results (marked $\dagger\dagger$) are taken
-directly from Table~1 of the i-CIR paper~\cite{psomas2025icir}; all other rows
-are our own evaluation. The full result is also shown as a bar chart in
-Figure~\ref{fig:res_leaderboard}.
+\textsc{Basic} baseline on the full i-CIR benchmark, following the evaluation
+protocol of the i-CIR paper~\cite{psomas2025icir}: macro-mAP on $1{,}883$ queries
+against the $752{,}092$-image instance pool, CLIP ViT-L/14 backbone (the default
+choice in the original benchmark). All rows are our own evaluation in a single
+environment; the previously published methods, which \textsc{Basic} already
+outperforms, are catalogued in Table~1 of the i-CIR paper~\cite{psomas2025icir}
+and omitted here so that every reported number is measured like-for-like. The
+comparison is also shown as a bar chart in Figure~\ref{fig:res_leaderboard}.
 
 Two ablation entries are worth noting.
 \textbf{Caption alone} ($16.16$) outperforms \textbf{Caption $\times$ Image}
@@ -110,47 +111,39 @@ signal that is consistent with differences in image decoding and resizing across
 the \emph{relative} improvement of Ours over \textsc{Basic} is independent of
 this gap.
 
-% SOURCE: docs/main_leaderboard_clipl.csv  (borrowed = True rows from i-CIR Table 1)
+% SOURCE: docs/main_leaderboard_clipl.csv  (published methods omitted; see caption)
 \begin{table}[h!]
 \centering
 \begin{tabular}{l c}
 \toprule
 Method & mmAP \\
 \midrule
-\multicolumn{2}{@{}l}{\textit{Single- and dual-signal ablations}}\\
-\quad Text                            &  3.26 \\
-\quad Image                           &  2.75 \\
-\quad Text\,$+$\,Image                &  8.89 \\
-\quad Caption                         & 16.16 \\
-\quad Caption\,$\times$\,Image        & 14.04 \\
-\quad Img\,$\times$\,Txt              & 17.95 \\
-\addlinespace
-\multicolumn{2}{@{}l}{\textit{Published methods}$^{\dagger\dagger}$}\\
-\quad CompoDiff~\cite{gu2024compodiff}     &  9.63 \\
-\quad FreeDom~\cite{efthymiadis2025freedom} & 17.24 \\
-\quad WeiCom~\cite{psomas2024rscir}        & 18.03 \\
-\quad CIReVL~\cite{karthik2024cirevl}      & 18.66 \\
-\quad Pic2Word~\cite{saito2023pic2word}    & 19.36 \\
-\quad MCL~\cite{li2024mcl}                 & 19.89 \\
-\quad SEARLE~\cite{baldrati2023circo}      & 19.90 \\
-\quad MagicLens~\cite{zhang2024magiclens}  & 27.35 \\
-\quad CoVR-2~\cite{ventura2024covr}        & 28.50 \\
+Text                            &  3.26 \\
+Image                           &  2.75 \\
+Text\,$+$\,Image                &  8.89 \\
+Caption                         & 16.16 \\
+Caption\,$\times$\,Image        & 14.04 \\
+Img\,$\times$\,Txt              & 17.95 \\
 \midrule
-\multicolumn{2}{@{}l}{\textit{This work}}\\
-\quad \textsc{Basic} (reproduction)        & 30.28 \\
-\quad \textsc{Basic}$^\dagger$ (reproduction) & 32.48 \\
-\quad Ours~[\textsc{J}]                     & 34.06 \\
-\quad \textbf{Ours~(\texttt{avg-5})}       & \textbf{35.76} \\
+\textsc{Basic} (reproduction)           & 30.28 \\
+\textsc{Basic}$^\dagger$ (reproduction) & 32.48 \\
+Ours~[\textsc{E}]                       & 34.06 \\
+\textbf{Ours~(\texttt{avg-5})}          & \textbf{35.76} \\
 \bottomrule
 \end{tabular}
 \caption[Macro-mAP on the full i-CIR benchmark (CLIP-L backbone).]{Macro-mAP
-(\%) on the full i-CIR dataset ($1{,}883$ queries / $752{,}092$ DB), CLIP
-ViT-L/14 backbone. $^{\dagger\dagger}$Published numbers are taken from Table~1 of
-the i-CIR paper~\cite{psomas2025icir}; all other rows are our own evaluation.
-\textsc{Basic} is the complete published pipeline (all post-processing steps,
-ending in query expansion); \textsc{Basic}$^\dagger$ is the same pipeline at its
-best-performing rung on CLIP-L, with the final query-expansion step removed
-(cf.\ the component ladder in Table~\ref{tab:res_ladder}).\label{tab:res_leaderboard}}
+(\%) on the full i-CIR dataset ($1{,}883$ queries / $752{,}092$ database images),
+CLIP ViT-L/14 backbone; all rows are our own evaluation in a single environment.
+\textsc{Basic} is the current state of the art on i-CIR, outperforming every
+previously published method (those methods are reported in Table~1 of the i-CIR
+paper~\cite{psomas2025icir} and are omitted here, as they were measured under a
+different software environment and are not directly comparable to our runs).
+\textsc{Basic} denotes the complete published pipeline (all post-processing
+steps, ending in query expansion); \textsc{Basic}$^\dagger$ is the same pipeline
+at its best-performing rung on CLIP-L, with the final query-expansion step
+removed (cf.\ the component ladder in Table~\ref{tab:res_ladder}).
+Ours~[\textsc{E}] uses the single best instruction, whereas Ours~(\texttt{avg-5})
+averages the five instruction prompts.\label{tab:res_leaderboard}}
 \end{table}
 
 % HIGHLIGHT-FIG: horizontal bar chart of this leaderboard, Ours highlighted.
@@ -159,9 +152,11 @@ best-performing rung on CLIP-L, with the final query-expansion step removed
 \centering
 \includegraphics[width=0.92\textwidth]{figures/leaderboard_clipl}
 \caption[Main leaderboard on the full i-CIR dataset (CLIP-L).]{Macro-mAP (\%) on
-the full i-CIR benchmark with the CLIP ViT-L/14 backbone, grouped into ablations,
-published methods (from the i-CIR paper~\cite{psomas2025icir}), and this work.
-Our triplet (\texttt{avg-5}) is highlighted.\label{fig:res_leaderboard}}
+the full i-CIR benchmark with the CLIP ViT-L/14 backbone, for our single- and
+dual-signal baselines, the \textsc{Basic} state-of-the-art baseline, and this
+work; our triplet (\texttt{avg-5}) is highlighted. Previously published methods,
+all weaker than \textsc{Basic}, are omitted for a like-for-like comparison
+(cf.\ Table~\ref{tab:res_leaderboard}).\label{fig:res_leaderboard}}
 \end{figure}
 
 \paragraph{Headline.}
@@ -189,7 +184,7 @@ Section~\ref{sect:res_backbones}.
 Table~\ref{tab:res_ladder} builds the pipeline up one component at a time, as a
 cumulative ladder, for three configurations that share the \emph{exact same}
 post-processing so the caption is the only isolated variable: \textsc{Basic}
-(no caption), Ours~[\texttt{avg-5}], and Ours~[\textsc{J}] (the fixed
+(no caption), Ours~[\texttt{avg-5}], and Ours~[\textsc{E}] (the fixed
 single-instruction variant). The first row is the plain product score; each
 subsequent row adds one step of the \textsc{Basic} stack -- feature centering,
 similarity min-normalisation, the Harris-style fusion penalty, query
@@ -223,7 +218,7 @@ better-aligned backbones, where the caption dominates the entire stack
 \centering
 \begin{tabular}{l c c c}
 \toprule
-Cumulative step & \textsc{Basic} & Ours~[\texttt{avg-5}] & Ours~[\textsc{J}] \\ \midrule
+Cumulative step & \textsc{Basic} & Ours~[\texttt{avg-5}] & Ours~[\textsc{E}] \\ \midrule
 product (no post-processing)   & 17.95 & 25.41          & 23.83 \\
 \quad + centering              & 27.76 & 31.87          & 31.02 \\
 \quad + min-normalisation      & 27.40 & 31.97          & 30.28 \\
@@ -248,7 +243,7 @@ reduce it from there.\label{tab:res_ladder}}
 \includegraphics[width=0.78\textwidth]{figures/ladder_clipl}
 \caption[Component ladder on CLIP-L.]{Macro-mAP (\%) versus cumulative pipeline
 step on CLIP ViT-L/14, for \textsc{Basic}, Ours~[\texttt{avg-5}], and
-Ours~[\textsc{J}]. The triplet sits above the duplet at every step; both peak at
+Ours~[\textsc{E}]. The triplet sits above the duplet at every step; both peak at
 contextualisation and decline once the CLIP-specific projection and query
 expansion are added.\label{fig:res_ladder}}
 \end{figure}
@@ -318,13 +313,13 @@ modes, confirming that the three branches are complementary: the caption supplie
 the target-description signal that the modification text $\st$ cannot convey
 alone, while the image branch anchors the instance identity.
 
-The instruction ordering is consistent with design intent: \textsc{J}
-(\emph{draft--refine}, $23.83$) and \textsc{G} (\emph{constraint-priority},
-$23.51$) lead, while the rigid slot-fill template \textsc{I} trails. The spread
+The performance ranking is consistent with design intent: \textsc{E}
+(\emph{draft--refine}, $23.83$) and \textsc{B} (\emph{constraint-priority},
+$23.51$) lead, while the adaptive-precision variant \textsc{A} ($22.57$) trails. The spread
 across instructions is modest ($\sim\!1.3$ points on the triplet), and all five
-outperform the duplet baseline ($17.95$). Because \textsc{J} is the best single
+outperform the duplet baseline ($17.95$). Because \textsc{E} is the best single
 instruction on this default backbone, we fix it as the named single-instruction
-variant Ours~[\textsc{J}] throughout the thesis; \texttt{avg-5} exceeds it
+variant Ours~[\textsc{E}] throughout the thesis; \texttt{avg-5} exceeds it
 (Section~\ref{subsect:res_aug}) without any per-instruction selection. The three
 scoring modes are visualised in Figure~\ref{fig:res_instr}.
 
@@ -335,11 +330,11 @@ scoring modes are visualised in Figure~\ref{fig:res_instr}.
 \begin{tabular}{l l c c c}
 \toprule
 ID & Instruction & Caption & Cap$\times$Img & Triplet \\ \midrule
-\textsc{J} & draft--refine           & 16.16 & 14.04 & 23.83 \\
-\textsc{G} & constraint-priority     & 15.34 & 13.11 & 23.51 \\
-\textsc{H} & anti-noise contract     & 14.51 & 12.76 & 23.51 \\
-\textsc{I} & slot-fill template      & 16.26 & 15.89 & 23.12 \\
-\textsc{F} & adaptive precision      & 16.08 & 15.14 & 22.57 \\ \midrule
+\textsc{A} & adaptive precision      & 16.08 & 15.14 & 22.57 \\
+\textsc{B} & constraint-priority     & 15.34 & 13.11 & 23.51 \\
+\textsc{C} & anti-noise contract     & 14.51 & 12.76 & 23.51 \\
+\textsc{D} & slot-fill template      & 16.26 & 15.89 & 23.12 \\
+\textsc{E} & draft--refine           & 16.16 & 14.04 & 23.83 \\ \midrule
            & \texttt{avg-5}          & \textbf{19.51} & \textbf{16.26} & \textbf{25.41} \\
 \midrule
 \multicolumn{2}{l}{Img\,$\times$\,Txt (duplet)} & \multicolumn{3}{c}{17.95} \\
@@ -371,25 +366,25 @@ Img\,$\times$\,Txt duplet baseline ($17.95$).\label{fig:res_instr}}
 Rather than commit to one prompt, the default caption embedding averages all
 five instructions in embedding space (\texttt{avg-5}, Equation~\eqref{eq:avg5}).
 Table~\ref{tab:res_aug} compares four caption settings on the triplet: our fixed
-single instruction \textsc{J}; the per-backbone \emph{oracle} best single
+single instruction \textsc{E}; the per-backbone \emph{oracle} best single
 instruction; an oracle average of the best four; and the unconditional
 \texttt{avg-5}. The result is unambiguous: \texttt{avg-5} is best on \emph{every}
-backbone. It beats not only our fixed \textsc{J} (by $+0.4$ to $+2.1$ macro-mAP)
+backbone. It beats not only our fixed \textsc{E} (by $+0.4$ to $+2.1$ macro-mAP)
 but also the per-backbone oracle, even though that baseline is allowed to inspect
 the evaluation set to pick the winning instruction. In other words, blindly
 averaging all five prompts outperforms an oracle that selects the single best
 one. Averaging keeps the signal that is consistent across instructions and
 attenuates the idiosyncrasies of any single prompt, which is why we adopt it as
-the default and reserve the fixed \textsc{J} only for analyses that need a single
+the default and reserve the fixed \textsc{E} only for analyses that need a single
 prompt.
 
 % SOURCE: runs/caption_backbone_instancepool/<bk>/summary.csv (triple):
-%   J = INSTR_J ; best single = max INSTR_* ; best-4 = AUG_BEST4 ; avg-5 = AUG_AVG5
+%   E = INSTR_J (label map F=A,G=B,H=C,I=D,J=E) ; best single = max INSTR_* ; best-4 = AUG_BEST4 ; avg-5 = AUG_AVG5
 \begin{table}[h!]
 \centering
 \begin{tabular}{l c c c c}
 \toprule
-Backbone & \textsc{J} (fixed) & best single$^\dagger$ & best-4$^\dagger$ & \texttt{avg-5} \\ \midrule
+Backbone & \textsc{E} (fixed) & best single$^\dagger$ & best-4$^\dagger$ & \texttt{avg-5} \\ \midrule
 CLIP-L   & 23.83 & 23.83 & 25.27 & \textbf{25.41} \\
 CLIP-H   & 44.97 & 45.63 & 46.88 & \textbf{47.05} \\
 SigLIP-L & 41.38 & 41.88 & 43.16 & \textbf{43.33} \\
@@ -397,7 +392,7 @@ SigLIP2  & 52.88 & 53.91 & 55.63 & \textbf{56.09} \\
 \bottomrule
 \end{tabular}
 \caption[Caption augmentation: averaging vs.\ single instructions.]{Triplet
-macro-mAP (\%) on the full i-CIR dataset. \textsc{J} is our fixed
+macro-mAP (\%) on the full i-CIR dataset. \textsc{E} is our fixed
 single-instruction variant; $^\dagger$``best single'' and ``best-4'' are
 \emph{oracle} baselines that select the instruction(s) per backbone on the
 evaluation set. The unconditional \texttt{avg-5} is best on every

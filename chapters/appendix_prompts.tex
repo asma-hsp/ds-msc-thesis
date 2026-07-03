@@ -3,7 +3,8 @@
 % =====================================================================
 %  APPENDIX — Caption-generation prompts (verbatim)
 % ---------------------------------------------------------------------
-%  Reproduced from scripts/generate_internvl_captions_v9.py (INSTR_F..J).
+%  Reproduced from scripts/generate_internvl_captions_v9.py, where the prompts
+%  are named INSTR_F..J. Thesis label mapping: F=A, G=B, H=C, I=D, J=E.
 %  Bullet/checkbox glyphs are transcribed to ASCII ([+], [-], [ ], ->)
 %  so the listings typeset cleanly under XeLaTeX; the wording is verbatim.
 %  At run time the placeholder "relative_caption" is replaced by the
@@ -17,7 +18,7 @@ caption generator of Section~\ref{sect:method_caption}, summarised in
 Table~\ref{tab:instructions}. The default caption embedding (\texttt{avg-5})
 averages the text embeddings of the captions produced by all five.
 
-\section*{INSTR\,F --- Adaptive Precision}
+\section*{Instruction\,A --- Adaptive Precision}
 \begin{verbatim}
 You are given an image and a modification text: "relative_caption".
 
@@ -49,7 +50,7 @@ Line 2: @Final Caption: <caption from STEP 3>
 English only.
 \end{verbatim}
 
-\section*{INSTR\,G --- Constraint-Priority}
+\section*{Instruction\,B --- Constraint-Priority}
 \begin{verbatim}
 You are given an image and a modification text: "relative_caption".
 
@@ -80,7 +81,7 @@ Line 2: @Final Caption: <caption from STEP C containing ALL atomic constraints>
 English only.
 \end{verbatim}
 
-\section*{INSTR\,H --- Anti-Noise Contract}
+\section*{Instruction\,C --- Anti-Noise Contract}
 \begin{verbatim}
 You are given an image and a modification text: "relative_caption".
 
@@ -116,7 +117,7 @@ Line 2: @Final Caption: <caption passing the full quality contract>
 English only.
 \end{verbatim}
 
-\section*{INSTR\,I --- Slot-Fill Template}
+\section*{Instruction\,D --- Slot-Fill Template}
 \begin{verbatim}
 You are given an image and a modification text: "relative_caption".
 
@@ -148,7 +149,7 @@ Line 2: @Final Caption: [INSTANCE_PHRASE] [MODIFICATION_PHRASE].
 English only.
 \end{verbatim}
 
-\section*{INSTR\,J --- Draft-Refine}
+\section*{Instruction\,E --- Draft-Refine}
 \begin{verbatim}
 You are given an image and a modification text: "relative_caption".
 
