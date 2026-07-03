@@ -18,168 +18,23 @@ composed image retrieval. The central idea is to add a third retrieval
 modality: in addition to the reference image and the modification text, a frozen
 multimodal large language model generates a \emph{target caption} -- a short
 description of the image the user has in mind -- and the three resulting
-similarities are combined by a late-fusion product. The chapter is organised as
+similarities are combined by a late-fusion product. The problem
+formulation, the i-CIR benchmark, the evaluation protocol, and the
+\textsc{Basic} baseline were established in Chapter~\ref{chapt:benchmark}; this
+chapter reuses that notation and builds on that baseline. It is organised as
 follows.
-Section~\ref{sect:method_problem} formalises the composed image retrieval task
-and fixes the notation used throughout the thesis.
-Section~\ref{sect:method_dataset} describes the i-CIR benchmark.
-Section~\ref{sect:method_eval} defines the evaluation protocol and metrics.
 Section~\ref{sect:method_overview} gives an overview of the proposed retrieval
 pipeline.
 Section~\ref{sect:method_backbones} describes the vision--language backbones
 used to embed the data.
-Section~\ref{sect:method_basic} recalls the \textsc{Basic} baseline that this
-work builds upon.
+Section~\ref{sect:method_basic_recap} briefly recalls the \textsc{Basic}
+baseline that this work builds upon and defines the duplet baseline used for
+comparison.
 Section~\ref{sect:method_caption} introduces the target-caption generation
 step, the central contribution.
 Section~\ref{sect:method_fusion} presents the triplet late-fusion scoring
 function.
 Section~\ref{sect:method_impl} reports the implementation details.
-
-% =====================================================================
-\section{Problem Formulation and Notation}\label{sect:method_problem}
-% =====================================================================
-
-\paragraph{Composed image retrieval.}
-A composed image retrieval query is a pair $q = (\qv, \qt)$, where $\qv$ is a
-reference \emph{query image} and $\qt$ is a short \emph{query text} that
-specifies how the desired result should differ from $\qv$. Given a database of
-images $\DB = \{\xdb_1, \dots, \xdb_N\}$, the goal is to produce a ranking of
-$\DB$ that places the image the user intends -- the result of applying the
-modification $\qt$ to the instance shown in $\qv$ -- as close to the top as
-possible. We denote by $\encv$ the visual encoder of a frozen vision--language
-model and by $\enct$ its textual encoder; both map their input to an
-$\ell_2$-normalised vector in a shared $d$-dimensional space. Image-to-image and
-image-to-text similarities are then computed as the dot product of the
-corresponding features.
-
-\paragraph{Instance-level relevance.}
-This thesis adopts the instance-level protocol of the i-CIR
-benchmark~\cite{psomas2025icir}. Unlike category-level CIR, where any image of
-the right category is acceptable, here a database image is \emph{relevant} to a
-query only if it depicts the same object \emph{instance} as $\qv$, modified as
-$\qt$ requests. Ground truth is defined at this instance granularity, so the
-positive set of a query is typically small and specific. The benchmark
-deliberately surrounds each query with \emph{hard negatives}, which we group
-into three types following the dataset design: \emph{visual} hard negatives
-(the same or a visually similar instance that does \emph{not} satisfy the
-modification), \emph{textual} hard negatives (images that satisfy the
-modification text but show a \emph{different} instance), and \emph{composed}
-hard negatives (the correct instance under a \emph{different} modification).
-This structure is what makes instance-level CIR difficult: a method must
-jointly preserve the visual identity of the instance \emph{and} apply the
-precise change demanded by the text, since collapsing onto either modality
-alone aligns the method with one of the hard-negative types.
-
-\paragraph{Zero-shot assumption.}
-We operate strictly in the \emph{zero-shot} regime: no component of the system
-is trained or fine-tuned on i-CIR. All encoders $\encv, \enct$ are
-off-the-shelf, frozen vision--language models, the caption generator is a
-frozen MLLM, and every fusion and post-processing step is training-free. We
-adopt this setting because the zero-shot regime is the more practical and
-scalable one for composed image retrieval in general:
-\begin{itemize}
-  \item \textbf{Supervised training is expensive and labour-intensive.} It
-        requires large-scale annotated triplets of reference image, modification
-        text, and target image, which are costly to collect.
-  \item \textbf{It does not scale.} Building a dedicated training set for every
-        possible kind of modification a user might request is unrealistic.
-  \item \textbf{Trained models generalise poorly.} A fusion model trained on one
-        CIR dataset often transfers badly to another.
-\end{itemize}
-Operating zero-shot side-steps all three issues; on i-CIR specifically, it
-additionally isolates the contribution of the proposed retrieval signal from any
-benefit of supervision.
-
-% =====================================================================
-\section{The i-CIR Dataset}\label{sect:method_dataset}
-% =====================================================================
-
-We conduct all experiments on i-CIR~\cite{psomas2025icir}, the instance-level
-composed image retrieval benchmark. The benchmark is organised around object
-\emph{instances}: each instance is associated with one or more composed queries,
-where a query pairs a reference image $\qv$ of the instance with a modification
-text $\qt$ describing a desired change. Relevance is defined at instance
-granularity, exactly as in Section~\ref{sect:method_problem}.
-
-\paragraph{Query-specific instance pool.}
-Rather than ranking each query against the full database, i-CIR equips every
-instance with a dedicated \emph{pool} of candidate images. This pool gathers the
-positive (relevant) images of all queries belonging to the instance together
-with a curated set of hard negatives of the three types introduced in
-Section~\ref{sect:method_problem}. Retrieval and evaluation for a query are
-carried out within this pool, which concentrates closely related distractors
-around each query and makes the ranking task substantially harder than retrieval
-against an unconstrained gallery.
-
-\paragraph{Scale.}
-% HIGHLIGHT: verify these counts against the i-CIR data card.
-The full benchmark comprises $1{,}883$ queries and $N = 752{,}092$ database
-images. For development we use a fixed $20\%$ instance subset ($400$ queries and
-$N = 143{,}769$ database images; see Section~\ref{sect:method_impl}), on which
-the ablation studies of Chapter~\ref{chapt:results} are conducted.
-
-% =====================================================================
-\section{Evaluation Protocol and Metrics}\label{sect:method_eval}
-% =====================================================================
-
-\paragraph{Ranking protocol.}
-Following the i-CIR protocol~\cite{psomas2025icir}, each query is evaluated
-within its query-specific instance pool (Section~\ref{sect:method_dataset}): the
-pool is ranked by decreasing fused similarity and the ranking is compared against
-the query's relevant set.
-
-\paragraph{Precision and recall.}
-Given a ranking, let $\mathrm{rel}(j)\in\{0,1\}$ indicate whether the item at
-rank $j$ is relevant, and let $R$ be the total number of relevant items for the
-query. At a rank cutoff $k$, precision and recall are
-\begin{equation}\label{eq:prec_rec}
-    \mathrm{P}@k = \frac{1}{k}\sum_{j=1}^{k}\mathrm{rel}(j),
-    \qquad
-    \mathrm{R}@k = \frac{1}{R}\sum_{j=1}^{k}\mathrm{rel}(j),
-\end{equation}
-i.e. the fraction of the top-$k$ that is relevant, and the fraction of all
-relevant items recovered within the top-$k$, respectively.
-
-\paragraph{Average precision.}
-Average precision (AP) summarises the whole precision--recall curve into a single
-number. Sweeping the cutoff $k$ traces the sequence of points
-$(\mathrm{R}@k, \mathrm{P}@k)$, and AP is the area under this curve. We use the
-trapezoidal (Oxford-style) estimate adopted by the benchmark and classical
-instance retrieval~\cite{philbin2007oxford},
-\begin{equation}\label{eq:ap}
-    \mathrm{AP} = \sum_{i \geq 1} (r_i - r_{i-1})\,
-    \frac{p_i + p_{i-1}}{2},
-\end{equation}
-where $(r_i, p_i)$ are successive recall--precision points. AP is high only when
-relevant items are concentrated near the top of the ranking.
-
-\paragraph{Mean average precision.}
-% HIGHLIGHT: confirm this matches the paper's macro/micro definition exactly.
-The mean average precision (mAP) is AP averaged over a set of queries. Because
-the number of queries per instance is uneven, two averagings are distinguished.
-The \emph{micro}-averaged mAP averages AP over \emph{all queries} equally,
-\begin{equation}\label{eq:micro_map}
-    \textsc{mAP} = \frac{1}{|Q|}\sum_{q\in Q}\mathrm{AP}(q),
-\end{equation}
-where $Q$ is the set of all queries. The \emph{macro}-averaged mAP first
-averages AP within each instance and then averages across instances,
-\begin{equation}\label{eq:macro_map}
-    \textsc{mmAP} = \frac{1}{|\mathcal{I}|}\sum_{I\in\mathcal{I}}
-    \frac{1}{|Q_I|}\sum_{q\in Q_I}\mathrm{AP}(q),
-\end{equation}
-where $\mathcal{I}$ is the set of instances and $Q_I$ the queries of instance
-$I$. Macro-averaging gives every instance equal weight regardless of how many
-queries it has, whereas micro-averaging gives every query equal weight.
-Following the i-CIR benchmark, \textbf{macro-mAP is the primary metric}; it is
-the headline number in all tables unless stated otherwise.
-
-\paragraph{Auxiliary metrics.}
-We additionally report rank-cutoff metrics that characterise the top of the
-ranking, which is what a user sees first: $\mathrm{R}@k$ of
-Equation~\eqref{eq:prec_rec} for $k \in \{10, 100\}$, and $\mathrm{Hit}@k$
-(whether at least one relevant item appears in the top-$k$) for
-$k \in \{1, 10\}$.
 
 % =====================================================================
 \section{Pipeline Overview}\label{sect:method_overview}
@@ -285,136 +140,33 @@ image--text space.\label{tab:backbones}}
 \end{table}
 
 % =====================================================================
-\section{The \textsc{Basic} Baseline}\label{sect:method_basic}
+\section{The \textsc{Basic} Baseline (Recap)}\label{sect:method_basic_recap}
 % =====================================================================
 
-The method of this thesis builds on \textsc{Basic}, the training-free zero-shot
-pipeline introduced together with the i-CIR benchmark~\cite{psomas2025icir} and
-re-implemented here. \textsc{Basic} rests on the assumption that the two
-modalities of a composed query encode \emph{complementary} information that
-jointly defines the retrieval target, which makes composed retrieval analogous to
-a logical conjunction over the modalities: the result sought is one that is
-simultaneously relevant to the reference image \emph{and} to the modification
-text.\footnote{This assumption holds well for standard composite queries (e.g.\
-\emph{this image} and the concept ``winter''), but may weaken when one modality
-dominates (e.g.\ purely textual transformations) or when the text query is highly
-entangled with the image content, as in CIRR-like datasets; in such cases the
-benefit of the mechanisms below diminishes.} Following this assumption,
-\textsc{Basic} computes a similarity per modality and fuses the two. Before
-fusing, it improves each modality by removing modality-specific noise and
-spurious correlations that interfere with their combination: visual features can
-be entangled with background clutter, image composition, or dataset-specific
-style, while textual features can reflect lexical biases or corpus-level drift.
-The pipeline is a sequence of conceptually simple yet effective steps that
-progressively filter out these artefacts. We summarise them below, marking which
-parts this thesis keeps, tunes, or supersedes; the empirical contribution of each
-is quantified in Chapter~\ref{chapt:results}.
+The method of this thesis builds directly on \textsc{Basic}, the training-free
+zero-shot pipeline introduced with the i-CIR benchmark and described component by
+component in Section~\ref{sect:method_basic}. We recall here only what is needed
+to state the contribution and to define the baseline the method is measured
+against.
 
-\paragraph{Centering for bias removal.} Each embedding is centered by subtracting
-a precomputed modality mean, which captures low-level regularities (general
-visual patterns for images, common linguistic patterns for text) and whose
-removal isolates semantic content from distributional bias
-(Equation~\eqref{eq:centering}). A mean $\boldsymbol{\mu}^v$ is subtracted from
-the image features $\encv(\qv)$ and from the database features, and a text mean
-$\boldsymbol{\mu}^t$ from the text features $\enct(\qt)$. For scale and
-generalisation, $\boldsymbol{\mu}^v$ is estimated on a large external dataset
-such as LAION~\cite{schuhmann2022laion5b} and $\boldsymbol{\mu}^t$ on a
-predefined textual corpus. The choice of image mean is studied in
-Section~\ref{subsect:method_centering}.
+\textsc{Basic} treats composed retrieval as a soft logical \textsc{and}: for each
+database image it computes an image similarity $\sv$ and a (contextualized) text
+similarity $\st$ in the shared embedding space and fuses them
+\emph{multiplicatively}, so that a candidate scores highly only if it agrees with
+\emph{both} modalities (Equation~\eqref{eq:basic_harris}). Before fusing, each
+modality is cleaned by the post-processing steps of
+Section~\ref{sect:method_basic}: centering, a semantic projection, and optional
+query expansion on the image side, and contextualization on the text side. The
+single component this thesis changes is the text side: where \textsc{Basic} pads
+the bare modification phrase with random object names, the proposed method
+replaces it with a model-generated description of the intended target
+(Section~\ref{sect:method_caption}).
 
-\paragraph{Projection onto a semantic subspace.} To retain information about the
-main object while suppressing style, object domain, and background -- exactly the
-dimensions that common text modifications target -- \textsc{Basic} projects the
-centered image features onto a low-dimensional subspace derived from text
-features. Two textual corpora are used: an \emph{object} corpus $\mathcal{C}^+$
-of object-oriented terms (e.g.\ ``building'', ``dog'') and a \emph{stylistic}
-corpus $\mathcal{C}^-$ of style, viewing-condition, and context terms (e.g.\
-``cartoon'', ``aerial view'', ``in a cloudy day''). A weighted contrastive
-covariance matrix
-\begin{equation}\label{eq:basic_proj}
-  C = (1-\alpha)\,C^{+} - \alpha\,C^{-},
-  \qquad
-  C^{\pm} = \frac{1}{|\mathcal{C}^{\pm}|}\sum_{x\in\mathcal{C}^{\pm}}
-  \big(\enct(x)-\boldsymbol{\mu}^t\big)\big(\enct(x)-\boldsymbol{\mu}^t\big)^{\!\top}
-\end{equation}
-is formed, with $\alpha$ an empirically chosen hyperparameter. The top-$k$
-eigenvectors of $C\in\mathbb{R}^{d\times d}$ form a projection matrix
-$P\in\mathbb{R}^{d\times k}$ that captures directions of high variance in
-$\mathcal{C}^+$ and low variance in $\mathcal{C}^-$, emphasising object-specific
-cues while suppressing style-related variation; centered image features
-$\bar{x}^v$ are projected as $P^{\top}\bar{x}^v\in\mathbb{R}^{k}$. The corpora
-need not match the retrieval domain -- even generic terms (e.g.\ ImageNet class
-names) transfer well. This is the step our high-level overview earlier called
-dimensionality reduction; it is in fact a \emph{semantic} projection rather than
-plain PCA.
-
-\paragraph{Image query expansion.} Optionally, the image-query feature is
-enhanced by a weighted combination of the top-ranked database features it
-retrieves, with weights increasing in the corresponding similarities -- a
-standard recall-boosting technique in instance retrieval~\cite{philbin2007oxford}.
-
-\paragraph{Contextualization of text queries.} Because CLIP is trained on full
-captions, bare single-word or fragmentary text queries (e.g.\ ``sculpture'',
-``during sunset'') are out-of-distribution and produce poorly aligned text
-features. \textsc{Basic} therefore \emph{contextualizes} $\qt$ into caption-like
-phrases by inserting random terms from the object corpus $\mathcal{C}^+$ before
-and after it (e.g.\ ``dog during the sunset'', ``sculpture dog''), embedding all
-variants, centering them, and averaging the result into a single, more robust
-text feature. This is the step that the target caption of
-Section~\ref{sect:method_caption} is designed to replace with a stronger,
-self-contained textual signal.
-
-\paragraph{Score normalisation and fusion.} For a database image $\xdb$ with
-centered feature $\bar{x}^v$, and given the centered image query $\bar{q}^v$ and
-the contextualized centered text query $\bar{q}^t$, the per-modality similarities
-are
-\begin{equation}\label{eq:basic_scores}
-  \sv = \big\langle P^{\top}\bar{x}^v,\; P^{\top}\bar{q}^v\big\rangle,
-  \qquad
-  \st = \big\langle \bar{x}^v,\; \bar{q}^t\big\rangle ,
-\end{equation}
-and are fused multiplicatively, $s = \sv\,\st$, reflecting the \textsc{and}
-assumption. To correct the range imbalance between modalities, each similarity
-is affinely rescaled using its empirical minimum $s_{\min}<0$ (estimated on an
-external dataset), so that $s_{\min}\!\mapsto\!0$ and $0\!\mapsto\!1$:
-\begin{equation}\label{eq:basic_minnorm}
-  \tilde{s} = \frac{s - s_{\min}}{|s_{\min}|}.
-\end{equation}
-The normalised scores are finally fused with a regulariser inspired by the
-Harris corner detector~\cite{harris1988corner},
-\begin{equation}\label{eq:basic_harris}
-  \tilde{s}^{f} = \tilde{s}^{v}\,\tilde{s}^{t}
-  - \lambda\big(\tilde{s}^{v} + \tilde{s}^{t}\big)^{2},
-\end{equation}
-whose first term rewards items jointly relevant to both modalities and whose
-second term penalises items activated by only one modality, thereby suppressing
-single-modality false positives; the scalar $\lambda$ is fixed across all
-experiments.
-
-\paragraph{Efficiency.} The entire pipeline is (deep-network) training-free and
-scales near-linearly with the database, since scoring reduces to inner products
-that off-the-shelf similarity-search libraries handle efficiently. Moreover,
-centering and projection can be folded into the query side and applied on the fly
-over a stored index of \emph{raw} features, so the mean and the projection matrix
-can be swapped -- for example with domain-specific knowledge -- without touching
-the stored index, which makes \textsc{Basic} well-suited to large-scale
-deployment with no adaptation, fine-tuning, or backpropagation.
-
-\subsection{Feature Centering}\label{subsect:method_centering}
-Centering subtracts a fixed mean $\mu$ from each embedding and re-normalises, as
-in Equation~\eqref{eq:centering}. The mean can be estimated from the database
-itself (the \emph{global} mean) or from an external corpus -- here a one-million
-image sample of LAION~\cite{schuhmann2022laion5b} (the \emph{LAION-1M} mean).
-Both choices remove the embedding-space bias that otherwise inflates all
-pairwise similarities; whether the source of the mean matters in practice is a
-question we answer empirically in Section~\ref{sect:res_centering}.
-
-\subsection{Duplet Baseline Score}\label{subsect:method_duplet}
-Throughout this thesis we refer to the two-modality \textsc{Basic} score --
-image fused with (contextualized) text -- as the \emph{duplet} baseline, against
-which the triplet method of Section~\ref{sect:method_fusion} is compared. For
-consistency with the triplet fusion, we instantiate \textsc{Basic}'s
-multiplicative \textsc{and} (Equation~\eqref{eq:basic_harris}) in the simpler
+\paragraph{Duplet baseline.} Throughout this thesis we refer to the two-modality
+\textsc{Basic} score -- image fused with (contextualized) text -- as the
+\emph{duplet} baseline, against which the triplet method of
+Section~\ref{sect:method_fusion} is compared. For consistency with the triplet
+fusion, we instantiate \textsc{Basic}'s multiplicative \textsc{and} in the simpler
 clamped-product form
 \begin{equation}\label{eq:duplet}
     s_{\text{duplet}}(q, \xdb) =
@@ -423,9 +175,6 @@ clamped-product form
 where $\clamp(\cdot)$ maps negative similarities to zero
 (Section~\ref{sect:method_fusion}). The triplet score of this thesis extends
 Equation~\eqref{eq:duplet} with the caption term.
-% HIGHLIGHT: confirm that the reproduced "BASIC (img x txt)" duplet uses this
-% clamped product, NOT the paper's min-norm + Harris fusion (eq:basic_harris).
-% If the reproduction follows the paper exactly, replace eq:duplet accordingly.
 
 % =====================================================================
 \section{Target-Caption Generation}\label{sect:method_caption}
