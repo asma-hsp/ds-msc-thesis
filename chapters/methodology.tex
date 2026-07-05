@@ -71,18 +71,21 @@ the fusion to respect instance identity while applying the modification.
 \caption[Overview of the proposed retrieval pipeline.]{Overview of the
   proposed pipeline, illustrated on a real query -- the \emph{Pantheon}
   instance with the modification \emph{``in an old archival photo''}.
-  \textit{Left:} the reference image $\qv$ (the image query) and the
-  modification text $\qt$ are read \emph{together} by a frozen multimodal
-  language model (InternVL 3.5-8B), which writes a self-contained target
-  caption $c$ describing the imagined result. The caption is produced
-  \emph{after} the image and text, and only then joins the two branches.
-  \textit{Centre:} the text query is first \emph{contextualised} with object
-  names; $\qv$, $\qt$, and $c$ are then independently encoded, mean-\emph{centred}
-  ($-\boldsymbol{\mu}$), and compared against the precomputed embedding of every
-  image in the database $\mathcal{X}$ by dot product. The resulting similarities
-  are \emph{min-normalised}, giving three scores $s^v_i$, $s^t_i$, $s^c_i$.
-  \textit{Right:} each score is \emph{clamped} to be non-negative and the three
-  are multiplied -- a soft logical \textsc{and}, combined with the Harris fusion
+  \textit{Left:} the image query $\qv$ (top row) and the text query $\qt$
+  (bottom row) are read \emph{together} by a frozen multimodal language model
+  (InternVL 3.5-8B), which writes a self-contained target caption $c$
+  describing the imagined result -- the caption branch in the middle row is
+  the contribution of this thesis. The text query is additionally
+  \emph{contextualised} by averaging it with object words (``dog + text
+  query'', \dots).
+  \textit{Centre:} $\qv$, $c$, and $\qt$ are independently encoded and
+  mean-\emph{centred} ($-\boldsymbol{\mu}$); every image of the database
+  $\mathcal{X}$ (top right) is encoded and centred the same way, and each
+  branch is compared against all database embeddings $\{\bar{x}^v_i\}$ by dot
+  product, giving three similarity scores $s^v_i$, $s^c_i$, $s^t_i$ that are
+  then \emph{min-normalised}.
+  \textit{Right:} the three scores are clamped to be non-negative and
+  multiplied ($\otimes$) -- a soft logical \textsc{and} with the Harris fusion
   penalty -- to rank the database; the top-1 result (green) is the correct
   archival photograph of the same instance. The two remaining \textsc{Basic}
   steps, the contrastive projection and query expansion, are omitted here as
