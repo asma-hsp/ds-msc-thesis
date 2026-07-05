@@ -65,9 +65,9 @@ caption branch is purely \emph{additive} -- it supplies a strong text-side query
 without removing the visual signal from the image branch, which is what allows
 the fusion to respect instance identity while applying the modification.
 
-\begin{sidewaysfigure}
+\begin{figure}[t]
 \centering
-\resizebox{\textheight}{!}{\input{figures/pipeline_overview}}
+\resizebox{\textwidth}{!}{\input{figures/pipeline_overview}}
 \caption[Overview of the proposed retrieval pipeline.]{Overview of the
   proposed pipeline, illustrated on a real query -- the \emph{Pantheon}
   instance with the modification \emph{``in an old archival photo''}.
@@ -89,7 +89,7 @@ the fusion to respect instance identity while applying the modification.
   they do not help on this benchmark (Chapter~\ref{chapt:results}). Every
   component -- both encoders, the caption generator, and all fusion steps -- is
   off-the-shelf and frozen (zero-shot).\label{fig:pipeline}}
-\end{sidewaysfigure}
+\end{figure}
 
 % =====================================================================
 \section{Vision--Language Backbones}\label{sect:method_backbones}

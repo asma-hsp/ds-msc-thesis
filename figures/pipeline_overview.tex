@@ -1,14 +1,14 @@
 % Pipeline overview — three-branch CIR method (TikZ/PGF), with real thumbnails.
 %
 % Preamble (dissertation.tex) needs:
-%   \usepackage{graphicx,tikz,rotating}
+%   \usepackage{graphicx,tikz}
 %   \usetikzlibrary{arrows.meta,shapes.geometric,positioning,calc,backgrounds}
 %
-% Usage in methodology.tex (LANDSCAPE / full page so it can be big):
-%   \begin{sidewaysfigure}\centering
-%     \resizebox{\textheight}{!}{\input{figures/pipeline_overview}}
+% Usage in methodology.tex (upright, full text width):
+%   \begin{figure}[t]\centering
+%     \resizebox{\textwidth}{!}{\input{figures/pipeline_overview}}
 %     \caption{...}\label{fig:pipeline}
-%   \end{sidewaysfigure}
+%   \end{figure}
 %
 % ─────────────────────────────────────────────────────────────────────────────
 %  SWAP THE RUNNING EXAMPLE HERE.
@@ -38,7 +38,7 @@
                        text width=3.3cm, minimum height=1.1cm,
                        align=center, font=\large\itshape, inner sep=5pt},
   capph/.style     = {draw=orange!55, fill=orange!8, rounded corners=3pt,
-                       text width=3.9cm, align=center,
+                       text width=3.4cm, align=center,
                        font=\normalsize\itshape, inner sep=6pt},
   ctxbox/.style    = {draw=teal!55, fill=teal!8, rounded corners=3pt,
                        text width=2.1cm, minimum height=1.0cm, align=center,
@@ -58,9 +58,9 @@
 ]
 
 % ── branch y-coordinates ──────────────────────────────────────────────────────
-\def\yI{4.0}    % image branch
+\def\yI{3.6}    % image branch
 \def\yT{0.0}    % text branch
-\def\yC{-4.0}   % caption branch
+\def\yC{-3.6}   % caption branch
 
 % =============================================================================
 % INPUTS (x = 0): image query + text query  (large)
@@ -74,7 +74,7 @@
 % =============================================================================
 % MLLM caption generation:  q^v + q^t  ->  MLLM  ->  caption  (flows forward)
 % =============================================================================
-\node[enc=orange] (mllm) at (3.7, 2.1) {InternVL\\3.5-8B};
+\node[enc=orange] (mllm) at (3.7, 1.9) {InternVL\\3.5-8B};
 \node[above=2pt of mllm, lbl=orange!75!black] {MLLM};
 \draw[carr] (qv.east) -- (mllm.north west);
 \draw[carr] (qt.east) -- (mllm.south west);
@@ -92,7 +92,7 @@
 % =============================================================================
 % ENCODERS  (x = 8.7)
 % =============================================================================
-\def\encX{8.7}
+\def\encX{8.0}
 \node[enc=blue]   (ev) at (\encX, \yI) {visual encoder\\$\phi^v$};
 \node[enc=teal]   (et) at (\encX, \yT) {text encoder\\$\phi^t$};
 \node[enc=orange] (ec) at (\encX, \yC) {text encoder\\$\phi^t$};
@@ -103,7 +103,7 @@
 % =============================================================================
 % CENTERING (x = 11.2)  — small circles
 % =============================================================================
-\def\ctrX{11.2}
+\def\ctrX{9.6}
 \node[sop] (muv) at (\ctrX, \yI) {$-\boldsymbol{\mu}^v$};
 \node[sop] (mut) at (\ctrX, \yT) {$-\boldsymbol{\mu}^t$};
 \node[sop] (muc) at (\ctrX, \yC) {$-\boldsymbol{\mu}^t$};
@@ -115,10 +115,10 @@
 % =============================================================================
 % IMAGE DATABASE (thumbnail stack) + DOT PRODUCT  (x = 13.0)
 % =============================================================================
-\def\dbX{13.0}
-\node[imgnode=gray] (dbA) at (\dbX-0.25, 7.35) {\includegraphics[width=1.55cm]{\pipeDbA}};
-\node[imgnode=gray] (dbB) at (\dbX,      7.05) {\includegraphics[width=1.55cm]{\pipeDbB}};
-\node[imgnode=gray] (dbC) at (\dbX+0.25, 6.75) {\includegraphics[width=1.55cm]{\pipeDbC}};
+\def\dbX{10.9}
+\node[imgnode=gray] (dbA) at (\dbX-0.25, 6.35) {\includegraphics[width=1.55cm]{\pipeDbA}};
+\node[imgnode=gray] (dbB) at (\dbX,      6.05) {\includegraphics[width=1.55cm]{\pipeDbB}};
+\node[imgnode=gray] (dbC) at (\dbX+0.25, 5.75) {\includegraphics[width=1.55cm]{\pipeDbC}};
 \node[right=0.15cm of dbC, align=left, sub] {image\\dataset $\mathcal{X}$};
 
 \node[sop] (dv) at (\dbX, \yI) {$\cdot$};
@@ -140,7 +140,7 @@
 % =============================================================================
 % MIN-NORMALISATION (x = 14.9)  — small circles
 % =============================================================================
-\def\mnX{14.9}
+\def\mnX{12.1}
 \node[sop] (mnv) at (\mnX, \yI) {$\downarrow$};
 \node[sop] (mnt) at (\mnX, \yT) {$\downarrow$};
 \node[sop] (mnc) at (\mnX, \yC) {$\downarrow$};
@@ -155,7 +155,7 @@
 % =============================================================================
 % CLAMP (x = 16.4)  — minimal small circles
 % =============================================================================
-\def\clX{16.4}
+\def\clX{13.1}
 \node[sop, minimum size=0.68cm] (clv) at (\clX, \yI) {$\lfloor\;\rfloor$};
 \node[sop, minimum size=0.68cm] (clt) at (\clX, \yT) {$\lfloor\;\rfloor$};
 \node[sop, minimum size=0.68cm] (clc) at (\clX, \yC) {$\lfloor\;\rfloor$};
@@ -167,7 +167,7 @@
 % =============================================================================
 % PRODUCT (soft logical AND + Harris)  (x = 18.0)
 % =============================================================================
-\node[prodop] (prod) at (18.0, \yT) {$\times$};
+\node[prodop] (prod) at (14.4, \yT) {$\times$};
 \node[above=2pt of prod, align=center, lbl=gray!70!black] {soft \textsc{and}\\+ Harris};
 \draw[iarr] (clv.east) -- ++(0.35,0) |- (prod.north);
 \draw[tarr] (clt.east) -- (prod.west);
@@ -187,7 +187,7 @@
 % =============================================================================
 % LEGEND  (bottom)
 % =============================================================================
-\begin{scope}[shift={(10.5, -6.6)}]
+\begin{scope}[shift={(9.0, -6.0)}]
   \draw[iarr, line width=1.4pt] (0,0) -- ++(0.9,0)
     node[right, font=\normalsize, text=black] {image branch};
   \draw[tarr, line width=1.4pt] (3.9,0) -- ++(0.9,0)
