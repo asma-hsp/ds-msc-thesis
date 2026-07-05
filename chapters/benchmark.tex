@@ -145,6 +145,32 @@ separate the true target from its look-alikes.
   \label{fig:icir_montage}
 \end{figure}
 
+The pattern in Figures~\ref{fig:icir_query} and~\ref{fig:icir_montage} is not a
+special case engineered around a single instance: it recurs across every kind of
+object the benchmark covers. Figure~\ref{fig:icir_category_examples} shows eight
+further examples spanning strikingly different visual and textual categories --
+a gold death mask repainted as art, a sneaker with swapped shoelaces, the
+Leaning Tower seen from the air, a chocolate bunny turned into an outdoor
+installation, a cartoon rat placed on a mug, a decorative duck moved into a
+garden, a muscle car reimagined as a cabrio, and a film camera fitted with an
+external flash -- each accompanied by its own visual, textual, and composed
+hard negative. The three-negative structure, and the need to read the image and
+the text together, is therefore a property of the benchmark's design, not an
+artefact of any single category.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{figures/icir_category_examples}
+  \caption{%
+    Visualization of visual and textual category examples from i-CIR. For each
+    of eight randomly chosen category pairings (a--h), the image query, the
+    text query, the composed positive, the visual hard negative, the textual
+    hard negative, and the composed hard negative are shown. Reproduced from
+    Psomas~et~al.~\cite{psomas2025icir}.%
+  }
+  \label{fig:icir_category_examples}
+\end{figure}
+
 \paragraph{Zero-shot assumption.}
 This thesis operates strictly in the \emph{zero-shot} regime: no component of the
 system is ever trained or fine-tuned on i-CIR. All encoders $\encv, \enct$ are
@@ -195,6 +221,52 @@ curated \emph{hard-negative} images for that instance. The ground truth of a que
 is therefore defined purely by folder membership: an image is relevant to the
 query $(\text{instance}, \text{modification})$ exactly when it lives in that
 instance's folder for that modification.
+
+\paragraph{Instance diversity.}
+Figure~\ref{fig:icir_instances_grid} gives a bird's-eye view of the benchmark,
+showing one randomly sampled query image for each of the $202$ instances. The
+collage makes concrete how broad ``instance'' is meant to be: landmarks
+(the Colosseum, the Parthenon), fictional characters (Mickey Mouse, Luffy),
+vehicles, household objects, fashion items, toys, and consumer products all sit
+side by side. This heterogeneity matters for the argument of
+Section~\ref{sect:method_problem}: because instances are drawn from so many
+unrelated domains, a method cannot rely on domain-specific priors and must
+instead genuinely read the reference image and the modification text for every
+query.
+
+\begin{figure}[p]
+  \centering
+  \includegraphics[width=0.85\linewidth,height=0.82\textheight,keepaspectratio]{figures/icir_instances_grid}
+  \caption{%
+    The $202$ instances of i-CIR. A query image is randomly sampled per object
+    instance. Reproduced from Psomas~et~al.~\cite{psomas2025icir}.%
+  }
+  \label{fig:icir_instances_grid}
+\end{figure}
+
+\paragraph{Category taxonomy.}
+To organise this diversity, i-CIR defines two complementary taxonomies, shown in
+Figure~\ref{fig:icir_taxonomy}. Visual categories are arranged in a $3$-level
+hierarchy (for instance \emph{household} $\to$ \emph{kitchenware} $\to$
+\emph{mug}), while textual modification categories are labelled at a single
+level (\emph{projection}, \emph{domain}, \emph{attribute}, \emph{appearance},
+\emph{viewpoint}, \emph{addition}, \emph{context}). Beyond documenting the
+benchmark's coverage, this taxonomy is what makes the category-pairing view of
+Figure~\ref{fig:icir_category_examples} possible in the first place, and it
+enables performance to be reported per category rather than only in aggregate.
+
+\begin{figure}[p]
+  \centering
+  \includegraphics[width=0.85\linewidth,height=0.82\textheight,keepaspectratio]{figures/icir_taxonomy}
+  \caption{%
+    The i-CIR taxonomies showing (a) the $3$-level hierarchy of visual
+    categories and (b) the single-level taxonomy of textual modification
+    categories. This taxonomy captures the diversity and distribution of
+    object instances and textual queries, and enables performance reporting
+    per category. Reproduced from Psomas~et~al.~\cite{psomas2025icir}.%
+  }
+  \label{fig:icir_taxonomy}
+\end{figure}
 
 \paragraph{Query-specific instance pool.}
 Rather than ranking every query against all $752{,}092$ images at once, i-CIR
@@ -419,8 +491,10 @@ object content and suppresses style}.
 The subspace is built from two small text corpora: an \emph{object} corpus
 $\mathcal{C}^{+}$ of object-oriented nouns (e.g.\ ``building'', ``dog''), and a
 \emph{style} corpus $\mathcal{C}^{-}$ of stylistic and contextual terms (e.g.\
-``cartoon'', ``aerial view'', ``in a cloudy day''). From their centered text
-embeddings a weighted \emph{contrastive covariance} matrix is formed,
+``cartoon'', ``aerial view'', ``in a cloudy day''). Inspired by the
+parts-of-speech-grounded subspaces of Oldfield~et~al.~\cite{oldfield2023pos},
+from their centered text embeddings a weighted \emph{contrastive covariance}
+matrix is formed,
 \begin{equation}\label{eq:basic_proj}
   \mathbf{C}
   = (1-\alpha)\,\mathbf{C}^{+} - \alpha\,\mathbf{C}^{-},
@@ -436,8 +510,9 @@ words -- form a projection matrix $\mathbf{P}\in\mathbb{R}^{d\times k}$, and
 centered image features $\bar{x}^{v}$ are projected as
 $\mathbf{P}^{\!\top}\bar{x}^{v}$. The effect is to keep the object-semantic
 directions and discard the stylistic ones. Crucially the corpora need not match
-the retrieval domain -- even generic ImageNet class names transfer well -- because
-CLIP's stylistic directions are largely domain-independent. In practice only the
+the retrieval domain -- even generic ImageNet~\cite{deng2009imagenet} class
+names transfer well -- because CLIP's stylistic directions are largely
+domain-independent. In practice only the
 query-side image is transformed; the projection of a database image follows
 implicitly from the bilinear form
 $\bar{q}^{v\top}\mathbf{P}\mathbf{P}^{\!\top}\bar{x}^{v}$, so the stored database
@@ -462,12 +537,13 @@ description of the intended target.
 
 \subsection{Image Query Expansion}\label{sect:rel_basic_qe}
 
-Instance retrieval often improves with \emph{query expansion}: after an initial
-search, the query is nudged towards the images it already retrieved with high
+Instance retrieval often improves with \emph{query
+expansion}~\cite{chum2007totalrecall,gordo2020attqe}: after an initial search,
+the query is nudged towards the images it already retrieved with high
 confidence, pulling it into the dense cluster of relevant items. \textsc{Basic}
 uses an \emph{$\alpha$-weighted} variant that blends the query image feature with
 its own top-ranked database neighbours, weighting each neighbour by how similar it
-was~\cite{philbin2007oxford}. The expanded query then replaces the original for
+was~\cite{gordo2020attqe}. The expanded query then replaces the original for
 the final image-similarity computation. As the ablation below shows, this step is
 optional and its benefit on the instance-level benchmark is marginal.
 

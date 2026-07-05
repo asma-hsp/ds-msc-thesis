@@ -123,9 +123,14 @@ or text to an embedding, differing only in how they were trained.
 \section{Contrastive Vision--Language Pretraining}\label{sect:bg_clip}
 % =====================================================================
 
-CLIP (Contrastive Language--Image Pretraining)~\cite{radford2021clip} is the
-canonical example of a \emph{dual-encoder} (also called \emph{dual-tower} or
-\emph{two-tower}) model. A vision encoder $\encv$ (a ViT or a ResNet~\cite{he2016resnet}) maps an
+Vision--language models (VLMs) that align images and text in a shared embedding
+space~\cite{radford2021clip,li2022blip,li2023blip2,jia2021align,zhai2023siglip}
+underpin nearly all recent progress in zero-shot and training-free image
+retrieval: because the alignment is learned once, at large scale, retrieval and
+composition can be built on top of a frozen model with no task-specific
+training. CLIP (Contrastive Language--Image Pretraining)~\cite{radford2021clip}
+is the canonical example of a \emph{dual-encoder} (also called \emph{dual-tower}
+or \emph{two-tower}) model. A vision encoder $\encv$ (a ViT or a ResNet~\cite{he2016resnet}) maps an
 image to an embedding, and a \emph{separate} text encoder $\enct$ (a
 Transformer) maps a text string to an embedding in the \emph{same}
 $d$-dimensional space. The encoders share no weights; matching is simply a dot
@@ -249,7 +254,8 @@ couples a pretrained vision encoder (a ViT, Section~\ref{sect:bg_transformer})
 to a pretrained LLM through a lightweight \emph{connector}---for example an MLP
 projector or a set of learned query tokens---that maps visual features into the
 LLM's token space; the combined model is then instruction-tuned on multimodal
-data.
+data, as popularised by BLIP-2~\cite{li2023blip2}, LLaVA~\cite{liu2024llava},
+and GPT-4o~\cite{hurst2024gpt4o}.
 
 \subsection{InternVL-3.5}\label{sect:bg_internvl}
 
