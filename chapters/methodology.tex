@@ -69,19 +69,24 @@ the fusion to respect instance identity while applying the modification.
 \centering
 \resizebox{\textwidth}{!}{\input{figures/pipeline_overview}}
 \caption[Overview of the proposed retrieval pipeline.]{Overview of the
-  proposed pipeline.
-  \textit{Left:} the reference image $\qv$ and modification text $\qt$ are
-  fed jointly to the MLLM (InternVL 3.5-8B), which generates a target
-  caption $c$.
+  proposed pipeline, illustrated on a real query -- the \emph{Pantheon}
+  instance with the modification \emph{``in an old archival photo''}.
+  \textit{Left:} the reference image $\qv$ (the image query) and the
+  modification text $\qt$ are read \emph{together} by a frozen multimodal
+  language model (InternVL 3.5-8B), which writes a self-contained target
+  caption $c$ describing the imagined result. The caption is produced
+  \emph{after} the image and text, and only then joins the two branches.
   \textit{Centre:} $\qv$, $\qt$, and $c$ are independently encoded and
-  centred, yielding $\bar{q}^v$, $\bar{q}^t$, and $\bar{c}$.
-  Each is compared against the precomputed database embeddings
-  $\{\bar{x}^v_i\}$ via dot product, producing three similarity scores
+  centred, yielding $\bar{q}^v$, $\bar{q}^t$, and $\bar{c}$; each is compared
+  against the precomputed embedding of every image in the database
+  $\mathcal{X}$ via a dot product, producing three similarity scores
   $s^v_i$, $s^t_i$, $s^c_i$.
   \textit{Right:} the clamped triplet product
   $\tilde{s}^f_i = \mathrm{clamp}(s^v_i)\cdot\mathrm{clamp}(s^t_i)\cdot
-  \mathrm{clamp}(s^c_i)$ ranks the database.
-  All components are frozen and zero-shot.\label{fig:pipeline}}
+  \mathrm{clamp}(s^c_i)$ acts as a soft logical \textsc{and} and ranks the
+  database; the top-1 result (green) is the correct archival photograph of the
+  same instance. Every component -- both encoders, the caption generator, and
+  all fusion steps -- is off-the-shelf and frozen (zero-shot).\label{fig:pipeline}}
 \end{figure}
 
 % =====================================================================

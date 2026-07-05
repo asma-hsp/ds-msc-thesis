@@ -1,7 +1,7 @@
-% Pipeline overview — three-branch CIR method (TikZ/PGF)
+% Pipeline overview — three-branch CIR method (TikZ/PGF), with real thumbnails.
 %
-% Add to dissertation.tex preamble:
-%   \usepackage{tikz}
+% Preamble (dissertation.tex) needs:
+%   \usepackage{graphicx,tikz}
 %   \usetikzlibrary{arrows.meta,shapes.geometric,positioning,calc,backgrounds}
 %
 % Usage in methodology.tex:
@@ -9,35 +9,51 @@
 %     \resizebox{\textwidth}{!}{\input{figures/pipeline_overview}}
 %     \caption{...}\label{fig:pipeline}
 %   \end{figure}
+%
+% ─────────────────────────────────────────────────────────────────────────────
+%  SWAP THE RUNNING EXAMPLE HERE.
+%  Regenerate the thumbnails with:  python scripts/export_pipeline_samples.py
+%  (in the thesis_cir repo; set QID there) and paste the two strings it prints.
+% ─────────────────────────────────────────────────────────────────────────────
+\def\pipeRef{figures/pipeline_samples/ref}      % reference / image query q^v
+\def\pipeTop{figures/pipeline_samples/top1}     % top-1 retrieved image
+\def\pipeDbA{figures/pipeline_samples/db1}      % image-dataset thumbnails
+\def\pipeDbB{figures/pipeline_samples/db2}
+\def\pipeDbC{figures/pipeline_samples/db3}
+\def\pipeQueryText{in an old archival photo}
+\def\pipeCaptionText{``Pantheon in an old archival photo with large columns and inscribed facade''}
 
 \begin{tikzpicture}[
   >=Stealth, line cap=round, line join=round,
-  font=\small,
+  font=\normalsize,
   % ── node styles ───────────────────────────────────────────────────────
+  imgnode/.style  = {draw=#1!70!black, line width=1.1pt, inner sep=0pt,
+                      rounded corners=1pt},
+  imgnode/.default = gray,
   enc/.style      = {draw=#1!65!black, fill=#1!10, rounded corners=3pt,
-                      minimum width=1.85cm, minimum height=0.60cm,
-                      align=center, inner sep=3pt},
+                      minimum width=2.05cm, minimum height=0.72cm,
+                      align=center, inner sep=3pt, font=\normalsize},
   enc/.default    = gray,
-  imgph/.style    = {draw=gray!55, fill=gray!8, rounded corners=3pt,
-                      minimum width=1.45cm, minimum height=1.15cm,
-                      align=center, font=\tiny, text=gray!60},
-  txtph/.style    = {draw=gray!50, fill=yellow!10, rounded corners=3pt,
-                      minimum width=2.40cm, minimum height=0.60cm,
-                      align=center, font=\scriptsize\itshape, inner sep=3pt},
-  capph/.style    = {draw=orange!50, fill=orange!7, rounded corners=3pt,
-                      minimum width=3.00cm, align=center,
-                      font=\scriptsize\itshape, inner sep=4pt},
-  op/.style       = {draw=gray!55, fill=white, circle,
-                      minimum size=0.52cm, inner sep=0pt, font=\scriptsize},
-  dotop/.style    = {draw=gray!55, fill=white, circle,
-                      minimum size=0.52cm, inner sep=0pt, font=\large\bfseries},
-  prodop/.style   = {draw=gray!55, fill=gray!8, circle,
-                      minimum size=0.62cm, inner sep=0pt, font=\normalsize\bfseries},
+  txtph/.style    = {draw=gray!55, fill=yellow!12, rounded corners=3pt,
+                      text width=2.15cm, minimum height=0.80cm,
+                      align=center, font=\small\itshape, inner sep=4pt},
+  capph/.style    = {draw=orange!55, fill=orange!8, rounded corners=3pt,
+                      text width=2.55cm, align=center,
+                      font=\footnotesize\itshape, inner sep=5pt},
+  op/.style       = {draw=gray!60, fill=white, circle,
+                      minimum size=0.60cm, inner sep=0pt, font=\small},
+  dotop/.style    = {draw=gray!60, fill=white, circle,
+                      minimum size=0.58cm, inner sep=0pt, font=\Large\bfseries},
+  prodop/.style   = {draw=gray!60, fill=gray!8, circle,
+                      minimum size=0.72cm, inner sep=0pt, font=\large\bfseries},
+  lbl/.style      = {font=\scriptsize\itshape, text=#1},
+  lbl/.default    = {gray!65!black},
+  sub/.style      = {font=\small},
   % ── arrow styles ──────────────────────────────────────────────────────
-  iarr/.style     = {->, draw=blue!60!black,    line width=0.80pt},
-  tarr/.style     = {->, draw=teal!65!black,    line width=0.80pt},
-  carr/.style     = {->, draw=orange!65!black,  line width=0.80pt},
-  garr/.style     = {->, draw=gray!50,          line width=0.65pt},
+  iarr/.style     = {->, draw=blue!60!black,   line width=0.95pt},
+  tarr/.style     = {->, draw=teal!65!black,   line width=0.95pt},
+  carr/.style     = {->, draw=orange!70!black, line width=0.95pt},
+  garr/.style     = {->, draw=gray!55,         line width=0.80pt},
 ]
 
 % ── branch y-coordinates ──────────────────────────────────────────────────────
@@ -46,98 +62,74 @@
 \def\yC{-3.0}   % caption branch
 
 % =============================================================================
-% INPUTS  (x = 0)
+% INPUTS  (x = 0): image query + text query
 % =============================================================================
-\node[imgph] (qv)  at (0, \yI)  {ref.\ image};
-\node[below=1pt of qv,  font=\scriptsize] {$q^v$};
+\node[imgnode=blue] (qv) at (0, \yI) {\includegraphics[width=1.75cm]{\pipeRef}};
+\node[below=1pt of qv, sub] {image query $q^v$};
 
-\node[txtph] (qt)  at (0, \yT)  {``in an old\\[-2pt]archival photo''};
-\node[below=1pt of qt,  font=\scriptsize] {$q^t$};
-
-% =============================================================================
-% MLLM — Caption Generation  (x = 2.7, between image and text rows)
-% =============================================================================
-\node[enc=orange, minimum width=2.10cm]
-  (mllm) at (2.7, {0.5*\yI+0.5*\yT+0.3}) {InternVL\\[-2pt]3.5-8B};
-\node[above=1pt of mllm, font=\tiny\itshape, text=orange!70!black] {MLLM};
-
-% Arrows: qv, qt → MLLM (both orange — caption-generation step)
-\draw[carr] (qv.east) -- ++(0.30,0) |- (mllm.west);
-\draw[carr] (qt.east) -- ++(0.30,0) |- (mllm.west);
-
-% Caption box c  (at caption branch y, positioned to the right of the loop)
-\node[capph] (cap) at (2.7, \yC)
-  {``Greek temple in a\\[-2pt]monochrome photograph''};
-\node[below=1pt of cap, font=\scriptsize] {$c$};
-
-% MLLM → cap: route LEFT of the input column to avoid crossings
-\draw[carr] (mllm.west) -- (-1.3, {0.5*\yI+0.5*\yT+0.3})
-                         -- (-1.3, \yC)
-                         -- (cap.west);
+\node[txtph] (qt) at (0, \yT) {\pipeQueryText};
+\node[below=1pt of qt, sub] {text query $q^t$};
 
 % =============================================================================
-% ENCODERS  (x = 5.8)
+% MLLM caption generation:  q^v + q^t  ->  MLLM  ->  caption  (flows forward)
 % =============================================================================
-\node[enc=blue]   (ev) at (5.8, \yI) {$\phi^v$};
-\node[above=1pt of ev, font=\tiny\itshape, text=blue!62!black] {visual encoder};
+\node[enc=orange, minimum width=2.15cm] (mllm) at (2.55, 1.45) {InternVL\\3.5-8B};
+\node[above=1pt of mllm, lbl=orange!75!black] {MLLM};
 
-\node[enc=teal]   (et) at (5.8, \yT) {$\phi^t$};
+% both inputs feed the MLLM (orange = caption-generation step)
+\draw[carr] (qv.east) -- (mllm.north west);
+\draw[carr] (qt.east) -- (mllm.south west);
 
-\node[enc=orange] (ec) at (5.8, \yC) {$\phi^t$};
-\node[below=1pt of ec, font=\tiny\itshape, text=orange!65!black] {text encoder};
+% caption emerges to the right of / below the MLLM, then flows into its encoder
+\node[capph] (cap) at (3.7, \yC) {\pipeCaptionText};
+\node[below=1pt of cap, sub] {target caption $c$};
+\draw[carr] (mllm.east) -| (cap.north);
 
-% Arrows: inputs → encoders (straight horizontal — no crossings because
-%         the MLLM detour stays to the LEFT of x=0)
+% =============================================================================
+% ENCODERS  (x = 6.1)
+% =============================================================================
+\def\encX{6.6}
+\node[enc=blue]   (ev) at (\encX, \yI) {visual encoder\\$\phi^v$};
+\node[enc=teal]   (et) at (\encX, \yT) {text encoder\\$\phi^t$};
+\node[enc=orange] (ec) at (\encX, \yC) {text encoder\\$\phi^t$};
+
+% inputs -> encoders (image and text continue straight; caption from its box)
 \draw[iarr] (qv.east) -- (ev.west);
 \draw[tarr] (qt.east) -- (et.west);
 \draw[carr] (cap.east) -- (ec.west);
 
 % =============================================================================
-% CENTERING OPERATORS  (x = 8.3)
+% CENTERING OPERATORS  (x = 8.6)
 % =============================================================================
-\node[op] (muv) at (8.3, \yI) {\small$-\!\boldsymbol{\mu}^v$};
-\node[op] (mut) at (8.3, \yT) {\small$-\!\boldsymbol{\mu}^t$};
-\node[op] (muc) at (8.3, \yC) {\small$-\!\boldsymbol{\mu}^t$};
+\def\ctrX{9.1}
+\node[op] (muv) at (\ctrX, \yI) {$-\boldsymbol{\mu}^v$};
+\node[op] (mut) at (\ctrX, \yT) {$-\boldsymbol{\mu}^t$};
+\node[op] (muc) at (\ctrX, \yC) {$-\boldsymbol{\mu}^t$};
 
 \draw[iarr] (ev.east) -- (muv.west);
 \draw[tarr] (et.east) -- (mut.west);
 \draw[carr] (ec.east) -- (muc.west);
 
-% Centred query labels
-\node[right=0.32cm of muv, font=\normalsize, text=blue!60!black]   (qvb) {$\bar{q}^v$};
-\node[right=0.32cm of mut, font=\normalsize, text=teal!65!black]   (qtb) {$\bar{q}^t$};
-\node[right=0.32cm of muc, font=\normalsize, text=orange!65!black] (qcb) {$\bar{c}$};
+% centred query labels
+\node[right=0.30cm of muv, font=\large, text=blue!60!black]   (qvb) {$\bar{q}^v$};
+\node[right=0.30cm of mut, font=\large, text=teal!65!black]   (qtb) {$\bar{q}^t$};
+\node[right=0.30cm of muc, font=\large, text=orange!70!black] (qcb) {$\bar{c}$};
 
 \draw[iarr] (muv.east) -- (qvb);
 \draw[tarr] (mut.east) -- (qtb);
 \draw[carr] (muc.east) -- (qcb);
 
 % =============================================================================
-% DATABASE CYLINDER  (x = 11.5, above image branch)
+% IMAGE DATABASE  (thumbnail stack, x = 11.6, above image branch)
 % =============================================================================
-\def\dbX{11.5}
-\def\dbTY{5.80}   % top y of cylinder body
-\def\dbRx{0.82}   % x-radius of ellipses
-\def\dbRy{0.21}   % y-radius of ellipses
-\def\dbH{1.10}    % body height
-
-% Cylinder body
-\fill[blue!6]  (\dbX-\dbRx, \dbTY-\dbH) rectangle (\dbX+\dbRx, \dbTY);
-\draw[gray!50] (\dbX-\dbRx, \dbTY-\dbH) -- (\dbX-\dbRx, \dbTY);
-\draw[gray!50] (\dbX+\dbRx, \dbTY-\dbH) -- (\dbX+\dbRx, \dbTY);
-% Front (bottom) arc
-\draw[gray!50] (\dbX, \dbTY-\dbH) ellipse (\dbRx cm and \dbRy cm);
-% Top cap
-\fill[blue!13] (\dbX, \dbTY) ellipse (\dbRx cm and \dbRy cm);
-\draw[gray!50] (\dbX, \dbTY) ellipse (\dbRx cm and \dbRy cm);
-
-\node[font=\normalsize] at (\dbX, \dbTY - 0.52*\dbH)
-  {$\mathcal{X}$};
-\node[font=\tiny\itshape, text=gray!60]
-  at (\dbX, \dbTY - \dbH - 2.2*\dbRy) {image dataset};
+\def\dbX{12.1}
+\node[imgnode=gray] (dbA) at (\dbX-0.18, 5.55) {\includegraphics[width=1.15cm]{\pipeDbA}};
+\node[imgnode=gray] (dbB) at (\dbX,      5.35) {\includegraphics[width=1.15cm]{\pipeDbB}};
+\node[imgnode=gray] (dbC) at (\dbX+0.18, 5.15) {\includegraphics[width=1.15cm]{\pipeDbC}};
+\node[right=0.12cm of dbC, align=left, font=\small] {image\\dataset $\mathcal{X}$};
 
 % =============================================================================
-% DOT PRODUCT OPERATORS  (x = 11.5, aligned with database)
+% DOT PRODUCT OPERATORS  (x = dbX, aligned with database)
 % =============================================================================
 \node[dotop] (dv) at (\dbX, \yI) {$\cdot$};
 \node[dotop] (dt) at (\dbX, \yT) {$\cdot$};
@@ -147,80 +139,71 @@
 \draw[tarr] (qtb.east) -- (dt.west);
 \draw[carr] (qcb.east) -- (dc.west);
 
-% Database → dot products: one vertical spine feeding all three
-\pgfmathsetmacro{\dbBaseY}{\dbTY - \dbH - \dbRy}
-\draw[garr] (\dbX, \dbBaseY) -- (\dbX, \yI+0.34);
-\draw[gray!48, line width=0.65pt] (\dbX, \yI+0.34) -- (\dbX, \yC+0.34);
+% database -> dot products: one vertical spine feeding all three
+\draw[garr] (dbC.south) -- (\dbX, \yI+0.34);
+\draw[gray!52, line width=0.80pt] (\dbX, \yI+0.34) -- (\dbX, \yC+0.34);
 \draw[garr] (\dbX, \yI+0.34) -- (dv.north);
 \draw[garr] (\dbX, \yT+0.34) -- (dt.north);
 \draw[garr] (\dbX, \yC+0.34) -- (dc.north);
-
-% Labels on the spine
-\node[right=2pt, font=\tiny, text=gray!58] at (\dbX, \yI+0.62) {$\bar{x}^v_i$};
-\node[right=2pt, font=\tiny, text=gray!58] at (\dbX, \yT+0.55) {$\bar{x}^v_i$};
-\node[right=2pt, font=\tiny, text=gray!58] at (\dbX, \yC+0.55) {$\bar{x}^v_i$};
+\node[right=2pt, font=\scriptsize, text=gray!60] at (\dbX, \yT+0.60) {$\bar{x}^v_i$};
 
 % =============================================================================
-% SIMILARITY SCORES  (x = 13.1)
+% SIMILARITY SCORES  (x = 13.3)
 % =============================================================================
-\node[font=\normalsize, text=blue!60!black]   (sv) at (13.1, \yI) {$s^v_i$};
-\node[font=\normalsize, text=teal!65!black]   (st) at (13.1, \yT) {$s^t_i$};
-\node[font=\normalsize, text=orange!65!black] (sc) at (13.1, \yC) {$s^c_i$};
+\def\simX{13.8}
+\node[font=\large, text=blue!60!black]   (sv) at (\simX, \yI) {$s^v_i$};
+\node[font=\large, text=teal!65!black]   (st) at (\simX, \yT) {$s^t_i$};
+\node[font=\large, text=orange!70!black] (sc) at (\simX, \yC) {$s^c_i$};
 
 \draw[iarr] (dv.east) -- (sv);
 \draw[tarr] (dt.east) -- (st);
 \draw[carr] (dc.east) -- (sc);
 
 % =============================================================================
-% CLAMP BOXES + PRODUCT OPERATOR  (x = 14.5 .. 16.2)
+% CLAMP BOXES + PRODUCT (soft logical AND)  (x = 14.8 .. 16.4)
 % =============================================================================
-\node[draw=blue!40!gray, fill=blue!5, rounded corners=2pt,
-      minimum width=1.30cm, minimum height=0.50cm, font=\scriptsize, align=center]
-  (clv) at (14.5, \yI) {$\mathrm{clamp}(\cdot)$};
-
-\node[draw=teal!40!gray, fill=teal!5, rounded corners=2pt,
-      minimum width=1.30cm, minimum height=0.50cm, font=\scriptsize, align=center]
-  (clt) at (14.5, \yT) {$\mathrm{clamp}(\cdot)$};
-
-\node[draw=orange!50, fill=orange!5, rounded corners=2pt,
-      minimum width=1.30cm, minimum height=0.50cm, font=\scriptsize, align=center]
-  (clc) at (14.5, \yC) {$\mathrm{clamp}(\cdot)$};
+\def\clX{15.3}
+\node[draw=blue!45!gray, fill=blue!6, rounded corners=2pt,
+      minimum width=1.45cm, minimum height=0.60cm, font=\small, align=center]
+  (clv) at (\clX, \yI) {clamp};
+\node[draw=teal!45!gray, fill=teal!6, rounded corners=2pt,
+      minimum width=1.45cm, minimum height=0.60cm, font=\small, align=center]
+  (clt) at (\clX, \yT) {clamp};
+\node[draw=orange!55, fill=orange!6, rounded corners=2pt,
+      minimum width=1.45cm, minimum height=0.60cm, font=\small, align=center]
+  (clc) at (\clX, \yC) {clamp};
 
 \draw[iarr] (sv.east) -- (clv.west);
 \draw[tarr] (st.east) -- (clt.west);
 \draw[carr] (sc.east) -- (clc.west);
 
-% Product operator
-\node[prodop] (prod) at (16.0, \yT) {$\times$};
-
+\node[prodop] (prod) at (16.9, \yT) {$\times$};
+\node[above=1pt of prod, lbl=gray!70!black] {soft AND};
 \draw[iarr] (clv.east) -- ++(0.30,0) |- (prod.north);
 \draw[tarr] (clt.east) -- (prod.west);
 \draw[carr] (clc.east) -- ++(0.30,0) |- (prod.south);
 
 % =============================================================================
-% FINAL SCORE + OUTPUT  (x = 17.2 .. 18.8)
+% FINAL SCORE + OUTPUT  (x = 17.5 ..)
 % =============================================================================
-\node[font=\normalsize, right=0.30cm of prod] (sfinal) {$\tilde{s}^f_i$};
-\draw[garr, line width=0.75pt] (prod.east) -- (sfinal);
+\node[font=\large, right=0.35cm of prod] (sfinal) {$\tilde{s}^f_i$};
+\draw[garr, line width=0.90pt] (prod.east) -- (sfinal);
 
-% Ranking output — image placeholder
-\node[imgph, draw=green!55!black, fill=green!7,
-      minimum width=1.45cm, minimum height=1.15cm,
-      right=0.65cm of sfinal] (out) {top-1};
-\node[below=1pt of out, font=\scriptsize] {ranked output};
-
-\draw[garr, line width=0.75pt] (sfinal.east) -- (out.west);
+\node[imgnode=green, right=0.70cm of sfinal] (out)
+  {\includegraphics[width=1.55cm]{\pipeTop}};
+\node[below=1pt of out, sub] {top-1 retrieved};
+\draw[garr, line width=0.90pt] (sfinal.east) -- (out.west);
 
 % =============================================================================
-% OPTIONAL: legend / colour key at bottom right
+% LEGEND  (bottom, below the caption branch)
 % =============================================================================
-\begin{scope}[shift={(13.8, -4.6)}]
-  \draw[iarr,  line width=1.0pt] (0,0.40) -- ++(0.70,0)
-    node[right, font=\scriptsize, text=black] {image branch};
-  \draw[tarr,  line width=1.0pt] (0,0.00) -- ++(0.70,0)
-    node[right, font=\scriptsize, text=black] {text branch};
-  \draw[carr,  line width=1.0pt] (0,-0.40) -- ++(0.70,0)
-    node[right, font=\scriptsize, text=black] {caption branch};
+\begin{scope}[shift={(9.0, -5.1)}]
+  \draw[iarr, line width=1.2pt] (0,0.40) -- ++(0.75,0)
+    node[right, font=\small, text=black] {image branch};
+  \draw[tarr, line width=1.2pt] (3.1,0.40) -- ++(0.75,0)
+    node[right, font=\small, text=black] {text branch};
+  \draw[carr, line width=1.2pt] (6.1,0.40) -- ++(0.75,0)
+    node[right, font=\small, text=black] {caption branch};
 \end{scope}
 
 \end{tikzpicture}
