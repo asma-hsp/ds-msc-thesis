@@ -1,10 +1,12 @@
 % Pipeline overview — three-branch CIR method, styled after the BASIC paper
 % figure: gray pipeline band, vertical encoder boxes, dataset cylinder with
-% sample images, one tall min-normalization box, AND bubble (clamp + Harris).
+% overlapping sample images, one tall min-normalization box, AND bubble.
 %
 % Row layout (no arrow crossings):
 %   top    = image branch,  middle = caption branch (our contribution),
 %   bottom = text branch.  Image + text funnel into the MLLM at centre-left.
+% The contextualization module follows the paper: padded queries -> textual
+% encoder (inside the module) -> mean; branch labels sit ABOVE the arrows.
 %
 % Usage in methodology.tex (upright, full text width):
 %   \begin{figure}[t]\centering
@@ -14,8 +16,10 @@
 %
 % ─────────────────────────────────────────────────────────────────────────────
 %  SWAP THE RUNNING EXAMPLE HERE.
-%  Regenerate thumbnails with:  python scripts/export_pipeline_samples.py
-%  (thesis_cir repo; set QID there) and paste the two strings it prints.
+%  ref/top1: regenerate with  python scripts/export_pipeline_samples.py
+%  db1–db9: instance-pool thumbnails cropped from the qualitative figures
+%  (figures/qualitative_*.png) and figures/icir_dataset.png — keep them
+%  real i-CIR database images, not stock photos.
 % ─────────────────────────────────────────────────────────────────────────────
 \def\pipeRef{figures/pipeline_samples/ref}      % reference / image query q^v
 \def\pipeTop{figures/pipeline_samples/top1}     % top-1 retrieved image
@@ -24,6 +28,10 @@
 \def\pipeDbC{figures/pipeline_samples/db3}
 \def\pipeDbD{figures/pipeline_samples/db4}
 \def\pipeDbE{figures/pipeline_samples/db5}
+\def\pipeDbF{figures/pipeline_samples/db6}
+\def\pipeDbG{figures/pipeline_samples/db7}
+\def\pipeDbH{figures/pipeline_samples/db8}
+\def\pipeDbI{figures/pipeline_samples/db9}
 \def\pipeQueryText{in an old archival photo}
 \def\pipeCaptionText{``Pantheon in an old archival photo with large columns and inscribed facade''}
 
@@ -53,6 +61,7 @@
                        align=center, font=\small, inner sep=5pt},
   footlbl/.style   = {font=\footnotesize, text=gray!45!black},
   sub/.style       = {font=\Large},
+  blbl/.style      = {font=\Large, inner sep=1pt},
   iarr/.style      = {->, draw=blue!60!black,   line width=1.2pt},
   tarr/.style      = {->, draw=teal!65!black,   line width=1.2pt},
   carr/.style      = {->, draw=orange!75!black, line width=1.2pt},
@@ -62,12 +71,12 @@
 % ── branch y-coordinates (caption branch in the MIDDLE) ──────────────────────
 \def\yI{3.2}    % image branch  (top)
 \def\yC{0.0}    % caption branch (middle — our contribution)
-\def\yT{-3.4}   % text branch   (bottom)
+\def\yT{-4.0}   % text branch   (bottom)
 
 % =============================================================================
 % GRAY PIPELINE BAND (paper style)
 % =============================================================================
-\fill[gray!12, rounded corners=10pt] (-2.45,-5.4) rectangle (17.95,4.75);
+\fill[gray!12, rounded corners=10pt] (-2.45,-5.6) rectangle (17.95,4.75);
 
 % =============================================================================
 % INPUTS (x = 0): image query (top) + text query (bottom)
@@ -83,87 +92,58 @@
 % =============================================================================
 \node[mllmbox] (mllm) at (2.9, \yC) {InternVL\\3.5-8B};
 \node[above=2pt of mllm, font=\normalsize\itshape, text=orange!75!black] {MLLM};
-\draw[carr] ([xshift=1.15cm]qv.south) -- (mllm.north west);
-\draw[carr] ([xshift=1.15cm]qt.north) -- (mllm.south west);
+\draw[carr] (qv.south east) -- ++(0,-0.35) -- (mllm.north west);
+\draw[carr] (qt.north east) -- ++(0,0.35)  -- (mllm.south west);
 
 \node[capph] (cap) at (6.35, \yC) {\pipeCaptionText};
 \node[below=3pt of cap, sub] {target caption $c$};
 \draw[carr] (mllm.east) -- (cap.west);
 
 % =============================================================================
-% CONTEXTUALIZATION (text branch, paper-style dashed module)
+% CONTEXTUALIZATION (text branch, paper-style module):
+% padded queries -> textual encoder -> mean, all inside the dashed box
 % =============================================================================
-\node[draw=gray!55, dashed, rounded corners=4pt, minimum width=3.7cm,
-      minimum height=2.1cm, fill=white] (ctx) at (5.2, \yT) {};
-\node[fill=white, font=\normalsize, inner sep=2pt] at (ctx.north) {contextualization};
-\node[align=left, font=\footnotesize, text=gray!25!black] (ctxlist) at (4.45, \yT)
-  {dog + text query\\[-1pt]$\vdots$\\[-1pt]man + text query};
+\node[draw=gray!55, dashed, rounded corners=4pt, minimum width=6.0cm,
+      minimum height=2.7cm, fill=white] (ctx) at (5.35, \yT) {};
+\node[anchor=north, font=\normalsize, inner sep=3pt] at (ctx.north) {contextualization};
+\node[font=\footnotesize, text=gray!25!black, anchor=west] (ctxa) at (2.6, \yT+0.7)
+  {dog + text query};
+\node[font=\footnotesize, text=gray!25!black, anchor=west] (ctxb) at (2.6, \yT+0.2)
+  {building + text query};
+\node[font=\footnotesize, text=gray!25!black, anchor=west] at (2.6, \yT-0.3)
+  {\hspace*{2.6em}$\vdots$};
+\node[font=\footnotesize, text=gray!25!black, anchor=west] (ctxc) at (2.6, \yT-0.9)
+  {man + text query};
+\node[venc, minimum height=2.1cm, minimum width=0.6cm, inner sep=1pt] (ctxenc)
+  at (6.5, \yT) {\rotatebox{90}{\scriptsize textual encoder}};
+\draw[garr, line width=0.7pt] (ctxa.east) -- (ctxenc.west |- ctxa);
+\draw[garr, line width=0.7pt] (ctxb.east) -- (ctxenc.west |- ctxb);
+\draw[garr, line width=0.7pt] (ctxc.east) -- (ctxenc.west |- ctxc);
 \node[draw=gray!55, fill=white, rounded corners=2pt, font=\footnotesize,
-      inner sep=3pt] (ctxmean) at (6.55, \yT) {mean};
-\draw[garr, line width=0.7pt] (ctxlist.east) -- (ctxmean.west);
+      inner sep=3pt] (ctxmean) at (7.6, \yT) {mean};
+\draw[garr, line width=0.7pt] (ctxenc.east) -- (ctxmean.west);
 \draw[tarr] (qt.east) -- (ctx.west);
 
 % =============================================================================
-% ENCODERS (x = 9.5): vertical dark boxes, paper style
+% ENCODERS (x = 9.5): the text branch is already encoded inside the module
 % =============================================================================
 \def\encX{9.5}
 \node[venc] (ev) at (\encX, \yI) {\rotatebox{90}{visual encoder}};
 \node[venc] (ec) at (\encX, \yC) {\rotatebox{90}{text encoder}};
-\node[venc] (et) at (\encX, \yT) {\rotatebox{90}{text encoder}};
 \draw[iarr] (qv.east)  -- (ev.west);
 \draw[carr] (cap.east) -- (ec.west);
-\draw[tarr] (ctx.east) -- (et.west);
 
 % =============================================================================
-% CENTERING (x = 11.05) and centred-query labels
+% CENTERING (x = 11.05); branch labels sit ABOVE the arrows (paper style)
 % =============================================================================
 \def\ctrX{11.05}
 \node[sop] (muv) at (\ctrX, \yI) {$-\boldsymbol{\mu}^v$};
 \node[sop] (muc) at (\ctrX, \yC) {$-\boldsymbol{\mu}^t$};
 \node[sop] (mut) at (\ctrX, \yT) {$-\boldsymbol{\mu}^t$};
-\node[below=2pt of mut, footlbl] {centering};
+\node[below=4pt of mut, footlbl] {centering};
 \draw[iarr] (ev.east) -- (muv.west);
 \draw[carr] (ec.east) -- (muc.west);
-\draw[tarr] (et.east) -- (mut.west);
-
-\node[font=\Large, text=blue!60!black]   (qvb) at (11.8, \yI) {$\bar{q}^v$};
-\node[font=\Large, text=orange!75!black] (qcb) at (11.8, \yC) {$\bar{c}$};
-\node[font=\Large, text=teal!65!black]   (qtb) at (11.8, \yT) {$\bar{q}^t$};
-\draw[iarr] (muv.east) -- (qvb);
-\draw[carr] (muc.east) -- (qcb);
-\draw[tarr] (mut.east) -- (qtb);
-
-% =============================================================================
-% IMAGE DATASET (cylinder with sample photos, paper style; above the band)
-% =============================================================================
-\def\cylX{16.2}
-\def\cylRx{1.55}
-\def\cylRy{0.30}
-\def\cylBot{5.05}
-\def\cylTop{6.7}
-% body (white so the sample photos stand out)
-\fill[white] (\cylX-\cylRx, \cylBot) rectangle (\cylX+\cylRx, \cylTop);
-% sample photos inside
-\node[inner sep=0pt] at (\cylX-0.95, 6.12) {\includegraphics[height=0.56cm]{\pipeDbA}};
-\node[inner sep=0pt] at (\cylX,      6.12) {\includegraphics[height=0.56cm]{\pipeDbB}};
-\node[inner sep=0pt] at (\cylX+0.95, 6.12) {\includegraphics[height=0.56cm]{\pipeDbC}};
-\node[inner sep=0pt] at (\cylX-0.5,  5.45) {\includegraphics[height=0.56cm]{\pipeDbD}};
-\node[inner sep=0pt] at (\cylX+0.5,  5.45) {\includegraphics[height=0.56cm]{\pipeDbE}};
-% outline
-\draw[gray!45!black, line width=0.9pt] (\cylX-\cylRx, \cylBot) -- (\cylX-\cylRx, \cylTop);
-\draw[gray!45!black, line width=0.9pt] (\cylX+\cylRx, \cylBot) -- (\cylX+\cylRx, \cylTop);
-\draw[gray!45!black, line width=0.9pt] (\cylX-\cylRx, \cylBot)
-  arc[start angle=180, end angle=360, x radius=\cylRx, y radius=\cylRy];
-\fill[blue!13] (\cylX, \cylTop) ellipse ({\cylRx} and {\cylRy});
-\draw[gray!45!black, line width=0.9pt] (\cylX, \cylTop) ellipse ({\cylRx} and {\cylRy});
-\node[sub] at (\cylX, 7.45) {image dataset $\mathcal{X}$};
-
-% database encoding chain (right to left, paper style)
-\node[venc, minimum height=2.0cm] (dbenc) at (13.8, 5.85)
-  {\rotatebox{90}{\footnotesize visual encoder}};
-\node[sop] (dbmu) at (12.55, 5.85) {$-\boldsymbol{\mu}^v$};
-\draw[garr] (\cylX-\cylRx, 5.85) -- (dbenc.east);
-\draw[garr] (dbenc.west) -- (dbmu.east);
+\draw[tarr] (ctx.east) -- (mut.west);
 
 % =============================================================================
 % DOT PRODUCTS (x = 12.55): database spine feeds all three branches
@@ -172,46 +152,86 @@
 \node[sop] (dv) at (\dotX, \yI) {$\cdot$};
 \node[sop] (dc) at (\dotX, \yC) {$\cdot$};
 \node[sop] (dt) at (\dotX, \yT) {$\cdot$};
-\node[below=2pt of dt, footlbl] {dot product};
-\draw[iarr] (qvb.east) -- (dv.west);
-\draw[carr] (qcb.east) -- (dc.west);
-\draw[tarr] (qtb.east) -- (dt.west);
+\node[below=4pt of dt, footlbl] {dot product};
+\draw[iarr] (muv.east) -- (dv.west)
+  node[midway, above=2pt, blbl, text=blue!60!black]   {$\bar{q}^v$};
+\draw[carr] (muc.east) -- (dc.west)
+  node[midway, above=2pt, blbl, text=orange!75!black] {$\bar{c}$};
+\draw[tarr] (mut.east) -- (dt.west)
+  node[midway, above=2pt, blbl, text=teal!65!black]   {$\bar{q}^t$};
 
+% =============================================================================
+% MIN NORMALIZATION: one tall vertical box spanning all branches (paper style)
+% =============================================================================
+\node[venc, minimum height=8.8cm, minimum width=0.95cm] (minn) at (14.55, -0.35)
+  {\rotatebox{90}{min normalization}};
+\draw[iarr] (dv.east) -- (minn.west |- dv)
+  node[midway, above=2pt, blbl, text=blue!60!black]   {$s^v_i$};
+\draw[carr] (dc.east) -- (minn.west |- dc)
+  node[midway, above=2pt, blbl, text=orange!75!black] {$s^c_i$};
+\draw[tarr] (dt.east) -- (minn.west |- dt)
+  node[midway, above=2pt, blbl, text=teal!65!black]   {$s^t_i$};
+
+% =============================================================================
+% IMAGE DATASET (large cylinder, overlapping instance-pool photos; above band)
+% =============================================================================
+\def\cylX{16.6}
+\def\cylRx{2.05}
+\def\cylRy{0.34}
+\def\cylBot{4.95}
+\def\cylTop{7.15}
+% body (white so the sample photos stand out)
+\fill[white] (\cylX-\cylRx, \cylBot) rectangle (\cylX+\cylRx, \cylTop);
+% overlapping sample photos, clipped to the body
+\begin{scope}
+  \clip (\cylX-\cylRx, \cylBot) rectangle (\cylX+\cylRx, \cylTop);
+  % upper row
+  \node[inner sep=0pt] at (15.25, 6.38) {\includegraphics[height=0.85cm]{\pipeDbA}};
+  \node[inner sep=0pt] at (16.15, 6.42) {\includegraphics[height=0.85cm]{\pipeDbB}};
+  \node[inner sep=0pt] at (16.95, 6.38) {\includegraphics[height=0.85cm]{\pipeDbC}};
+  \node[inner sep=0pt] at (17.85, 6.42) {\includegraphics[height=0.85cm]{\pipeDbG}};
+  % lower row (overlaps the upper row slightly, paper style)
+  \node[inner sep=0pt] at (15.00, 5.70) {\includegraphics[height=0.85cm]{\pipeDbD}};
+  \node[inner sep=0pt] at (15.90, 5.66) {\includegraphics[height=0.85cm]{\pipeDbH}};
+  \node[inner sep=0pt] at (16.75, 5.70) {\includegraphics[height=0.85cm]{\pipeDbE}};
+  \node[inner sep=0pt] at (17.50, 5.66) {\includegraphics[height=0.85cm]{\pipeDbF}};
+  \node[inner sep=0pt] at (18.20, 5.70) {\includegraphics[height=0.85cm]{\pipeDbI}};
+\end{scope}
+% outline
+\draw[gray!45!black, line width=0.9pt] (\cylX-\cylRx, \cylBot) -- (\cylX-\cylRx, \cylTop);
+\draw[gray!45!black, line width=0.9pt] (\cylX+\cylRx, \cylBot) -- (\cylX+\cylRx, \cylTop);
+\draw[gray!45!black, line width=0.9pt] (\cylX-\cylRx, \cylBot)
+  arc[start angle=180, end angle=360, x radius=\cylRx, y radius=\cylRy];
+\fill[blue!13] (\cylX, \cylTop) ellipse ({\cylRx} and {\cylRy});
+\draw[gray!45!black, line width=0.9pt] (\cylX, \cylTop) ellipse ({\cylRx} and {\cylRy});
+\node[sub] at (\cylX, 7.85) {image dataset $\mathcal{X}$};
+
+% database encoding chain (right to left, paper style)
+\node[venc, minimum height=2.0cm] (dbenc) at (13.5, 5.85)
+  {\rotatebox{90}{\footnotesize visual encoder}};
+\node[sop] (dbmu) at (\dotX, 5.85) {$-\boldsymbol{\mu}^v$};
+\draw[garr] (\cylX-\cylRx, 5.85) -- (dbenc.east);
+\draw[garr] (dbenc.west) -- (dbmu.east);
+
+% database spine feeds all three dot products
 \draw[garr] (dbmu.south) -- (dv.north);
 \draw[garr] (dv.south) -- (dc.north);
 \draw[garr] (dc.south) -- (dt.north);
 \node[footlbl, right=2pt] at (\dotX, 4.45) {$\{\bar{x}^v_i\}$};
 
-% similarity scores
-\node[font=\Large, text=blue!60!black]   (sv) at (13.55, \yI) {$s^v_i$};
-\node[font=\Large, text=orange!75!black] (sc) at (13.55, \yC) {$s^c_i$};
-\node[font=\Large, text=teal!65!black]   (st) at (13.55, \yT) {$s^t_i$};
-\draw[iarr] (dv.east) -- (sv);
-\draw[carr] (dc.east) -- (sc);
-\draw[tarr] (dt.east) -- (st);
-
-% =============================================================================
-% MIN NORMALIZATION: one tall vertical box spanning all branches (paper style)
-% =============================================================================
-\node[venc, minimum height=8.1cm, minimum width=0.95cm] (minn) at (14.55, -0.1)
-  {\rotatebox{90}{min normalization}};
-\draw[iarr] (sv.east) -- (minn.west |- sv);
-\draw[carr] (sc.east) -- (minn.west |- sc);
-\draw[tarr] (st.east) -- (minn.west |- st);
-
 % =============================================================================
 % AND FUSION (clamp + Harris folded into the bubble) + FINAL SCORE + TOP-1
 % =============================================================================
 \node[prodop] (prod) at (16.25, \yC) {$\otimes$};
-\draw[iarr] (minn.east |- sv) -- (prod.north west);
-\draw[carr] (minn.east |- sc) -- (prod.west);
-\draw[tarr] (minn.east |- st) -- (prod.south west);
+\draw[iarr] (minn.east |- dv) -- (prod.north west);
+\draw[carr] (minn.east |- dc) -- (prod.west);
+\draw[tarr] (minn.east |- dt) -- (prod.south west);
 
-\node[bubble] (andbub) at (16.8, 2.35) {AND operation\\(clamp + Harris)};
-\draw[gray!55, dashed, line width=0.8pt] (andbub.south) -- (prod.north east);
+\node[bubble] (andbub) at (17.05, 2.55) {AND operation\\(clamp + Harris)};
+\draw[gray!55, dashed, line width=0.8pt] (andbub.south) -- (prod.north);
 
-\node[font=\Large] (sfinal) at (17.35, \yC) {$\tilde{s}^f_i$};
-\draw[garr] (prod.east) -- (sfinal);
+\node[font=\Large, inner sep=2pt] (sfinal) at (17.45, \yC) {$\tilde{s}^f_i$};
+\draw[garr] (prod.east) -- (sfinal.west);
 
 \node[imgnode=green!55!black] (out) at (19.85, \yC)
   {\includegraphics[width=3.1cm]{\pipeTop}};
@@ -221,7 +241,7 @@
 % =============================================================================
 % LEGEND (below the band)
 % =============================================================================
-\begin{scope}[shift={(3.4, -6.15)}]
+\begin{scope}[shift={(3.4, -6.35)}]
   \draw[iarr, line width=1.4pt] (0,0) -- ++(0.85,0)
     node[right, font=\large, text=black] {image branch};
   \draw[carr, line width=1.4pt] (4.4,0) -- ++(0.85,0)
