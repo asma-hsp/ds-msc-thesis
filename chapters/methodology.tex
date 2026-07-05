@@ -83,7 +83,10 @@ the fusion to respect instance identity while applying the modification.
   $\mathcal{X}$ (top right) is encoded and centred the same way, and each
   branch is compared against all database embeddings $\{\bar{x}^v_i\}$ by dot
   product, giving three similarity scores $s^v_i$, $s^c_i$, $s^t_i$ that are
-  then \emph{min-normalised}.
+  then \emph{min-normalised}. The database panel shows mostly \emph{hard
+  negatives} -- other images of the \emph{same} Pantheon instance that do
+  \emph{not} satisfy the modification (e.g.\ modern colour photographs) and
+  would mislead a method that ignores the text -- alongside one true positive.
   \textit{Right:} the three scores are clamped to be non-negative and
   multiplied ($\otimes$) -- a soft logical \textsc{and} with the Harris fusion
   penalty -- to rank the database; the top-1 result (green) is the correct
