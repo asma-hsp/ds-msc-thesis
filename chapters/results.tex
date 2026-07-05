@@ -127,8 +127,10 @@ Img\,$\times$\,Txt              & 17.95 \\
 \midrule
 \textsc{Basic} (reproduction)           & 30.28 \\
 \textsc{Basic}$^\dagger$ (reproduction) & 32.48 \\
+\rowcolor{gray!15}
 Ours~[\textsc{E}]                       & 34.06 \\
-\textbf{Ours~(\texttt{avg-5})}          & \textbf{35.76} \\
+\rowcolor{gray!15}
+Ours~(\texttt{avg-5})                   & \cellcolor{gray!45}\textbf{35.76} \\
 \bottomrule
 \end{tabular}
 \caption[Macro-mAP on the full i-CIR benchmark (CLIP-L backbone).]{Macro-mAP
@@ -223,9 +225,9 @@ product (no post-processing)   & 17.95 & 25.41          & 23.83 \\
 \quad + centering              & 27.76 & 31.87          & 31.02 \\
 \quad + min-normalisation      & 27.40 & 31.97          & 30.28 \\
 \quad + Harris fusion          & 28.33 & 32.82          & 31.25 \\
-\quad + contextualisation      & 32.25 & \textbf{35.76} & 34.06 \\
-\quad + projection             & 32.48 & 33.80          & 32.58 \\
-\quad + query expansion        & 30.28 & 32.39          & 31.53 \\
+\quad + contextualisation      & 32.25 & \cellcolor{gray!20}\textbf{35.76} & \cellcolor{gray!20}\textbf{34.06} \\
+\quad + projection             & \cellcolor{gray!20}\textbf{32.48} & 33.80 & 32.58 \\
+\quad + query expansion        & 30.28 & 32.39 & 31.53 \\
 \bottomrule
 \end{tabular}
 \caption[Component ladder on CLIP-L (full i-CIR).]{Macro-mAP (\%) on the full
@@ -335,9 +337,7 @@ ID & Instruction & Caption & Cap$\times$Img & Triplet \\ \midrule
 \textsc{C} & anti-noise contract     & 14.51 & 12.76 & 23.51 \\
 \textsc{D} & slot-fill template      & 16.26 & 15.89 & 23.12 \\
 \textsc{E} & draft--refine           & 16.16 & 14.04 & 23.83 \\ \midrule
-           & \texttt{avg-5}          & \textbf{19.51} & \textbf{16.26} & \textbf{25.41} \\
-\midrule
-\multicolumn{2}{l}{Img\,$\times$\,Txt (duplet)} & \multicolumn{3}{c}{17.95} \\
+           & \texttt{avg-5}          & \cellcolor{gray!20}\textbf{19.51} & \cellcolor{gray!20}\textbf{16.26} & \cellcolor{gray!20}\textbf{25.41} \\
 \bottomrule
 \end{tabular}
 \caption[Caption-instruction comparison across scoring modes (CLIP-L, full i-CIR).]{Macro-mAP
@@ -345,8 +345,7 @@ ID & Instruction & Caption & Cap$\times$Img & Triplet \\ \midrule
 text query; Cap$\times$Img: caption $\times$ image duplet; Triplet: full
 caption $\times$ text $\times$ image product. Caption alone consistently
 outperforms Cap$\times$Img for every instruction. \texttt{avg-5} is best in every
-mode; the bottom row is the Img\,$\times$\,Txt duplet for
-reference.\label{tab:res_instr}}
+mode (bold).\label{tab:res_instr}}
 \end{table}
 
 % HIGHLIGHT-FIG: grouped bars, 5 instructions x {caption, cap x img, triplet}.
@@ -448,10 +447,10 @@ must be made within the full pipeline.
  & \multicolumn{3}{c}{\textsc{Basic} (duplet)} & \multicolumn{3}{c}{Ours (\texttt{avg-5})} \\
 \cmidrule(lr){2-4}\cmidrule(lr){5-7}
 Backbone & mmAP & mAP & R@10 & mmAP & mAP & R@10 \\ \midrule
-CLIP ViT-H/14       & \textbf{41.10} & \textbf{37.29} & \textbf{83.5} & 47.05 & 46.49 & 89.9 \\
-SigLIP2 g/16-384    & 38.11 & 35.42 & 78.9 & \textbf{56.09} & \textbf{54.88} & \textbf{92.2} \\
-SigLIP ViT-L/16-256 & 21.10 & 23.13 & 64.6 & 43.33 & 47.51 & 87.9 \\
 CLIP ViT-L/14       & 17.95 & 21.85 & 65.6 & 25.41 & 30.80 & 72.8 \\
+CLIP ViT-H/14       & \cellcolor{gray!20}\textbf{41.10} & \cellcolor{gray!20}\textbf{37.29} & \cellcolor{gray!20}\textbf{83.5} & 47.05 & 46.49 & 89.9 \\
+SigLIP ViT-L/16-256 & 21.10 & 23.13 & 64.6 & 43.33 & 47.51 & 87.9 \\
+SigLIP2 g/16-384    & 38.11 & 35.42 & 78.9 & \cellcolor{gray!20}\textbf{56.09} & \cellcolor{gray!20}\textbf{54.88} & \cellcolor{gray!20}\textbf{92.2} \\
 \bottomrule
 \end{tabular}
 \caption[Backbone comparison: \textsc{Basic} duplet vs.\ Ours (\texttt{avg-5}), full i-CIR.]{Macro-mAP
@@ -515,7 +514,7 @@ product (no post-processing)   & 38.12 & 56.09 \\
 \quad + centering              & 49.96 & 55.51 \\
 \quad + min-normalisation      & 45.49 & 53.70 \\
 \quad + Harris fusion          & 47.64 & 55.87 \\
-\quad + contextualisation      & 57.69 & \textbf{61.98} \\
+\quad + contextualisation      & \cellcolor{gray!20}\textbf{57.69} & \cellcolor{gray!20}\textbf{61.98} \\
 \quad + projection             & 52.67 & 59.02 \\
 \quad + query expansion        & 49.56 & 57.29 \\
 \bottomrule
