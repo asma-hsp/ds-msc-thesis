@@ -33,7 +33,7 @@
   capph/.style     = {draw=orange!65!black, fill=orange!8, rounded corners=3pt,
                        line width=1.1pt, text width=3.6cm, minimum height=1.3cm,
                        align=center, font=\large\itshape, inner sep=6pt},
-  sub/.style       = {font=\Large},
+  sub/.style       = {font=\large},
   carr/.style      = {->, draw=orange!75!black, line width=1.2pt},
   garr/.style      = {->, draw=gray!45,         line width=1.0pt},
 ]
@@ -55,11 +55,11 @@
 \node[below=3pt of cap, sub] {target caption $c$};
 \draw[carr] (mllm.east) -- (cap.west);
 
-\node[imgnode=green!55!black] (out) at (11.6, 0)
+\node[imgnode=green!55!black] (out) at (13.4, 0)
   {\includegraphics[width=3.2cm]{\capexTop}};
 \node[below=3pt of out, sub] {top-1 retrieved};
 \draw[garr, line width=1.1pt] (cap.east) -- (out.west)
-  node[midway, above=10pt, font=\normalsize, text=gray!40!black] {embed + retrieve}
-  node[midway, below=2pt,  font=\normalsize, text=gray!40!black] {rank by $s^c_i$};
+  node[midway, above=7pt, font=\footnotesize, text=gray!40!black] {embed + retrieve}
+  node[midway, below=7pt, font=\footnotesize, text=gray!40!black] {rank by $s^c_i$};
 
 \end{tikzpicture}
