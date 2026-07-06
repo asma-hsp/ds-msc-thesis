@@ -16,11 +16,10 @@ reviews the dual-encoder models used for retrieval---CLIP, SigLIP, and
 SigLIP2---in Section~\ref{sect:bg_clip} and Section~\ref{sect:bg_siglip}, and
 describes modern multimodal large language models such as InternVL~3.5
 (Section~\ref{sect:bg_mllm}). Finally, it frames composed image retrieval as a
-problem (Section~\ref{sect:bg_cir}) and discusses training-free post-processing
-operations that can refine retrieval without learning new parameters
-(Section~\ref{sect:bg_postproc}). Detailed descriptions of the
-\textsc{Basic} pipeline appear in Chapter~\ref{chapt:related}; this chapter
-focuses on the underlying building blocks.
+problem (Section~\ref{sect:bg_cir}). Detailed descriptions of the
+\textsc{Basic} pipeline and its training-free post-processing operations
+appear in Chapter~\ref{chapt:benchmark}; this chapter focuses on the
+underlying building blocks.
 
 % =====================================================================
 \section{Image Retrieval Fundamentals}\label{sect:bg_retrieval}
@@ -280,15 +279,27 @@ respect to the composed retrieval task. The choice of InternVL-3.5 over other
 MLLMs is discussed in Section~\ref{sect:method_caption}.
 
 % =====================================================================
-\begin{figure}[t]
+\begin{figure}[H]
   \centering
-  \resizebox{0.95\textwidth}{!}{\input{figures/mllm_caption}}
-  \caption{Schematic of caption generation with a multimodal large language
-    model. A reference image (tiled for high resolution) is processed by the
-    vision encoder and projected through an MLP connector into the language
-    model's token space, while the modification text enters as the text prompt;
-    conditioned on both, the model generates a target caption used as the caption
-    retrieval signal.}\label{fig:bg_mllm}
+  \resizebox{\textwidth}{!}{\input{figures/bg_mllm_schematic}}
+  \caption[Schematic of MLLM-based caption generation.]{Schematic of caption
+    generation with a multimodal large language model (MLLM), illustrated on
+    a real query -- the \emph{Buzz Lightyear} instance with the modification
+    \emph{``as a huge balloon''}. The reference image $q^v$ (tiled into
+    high-resolution crops plus a downsampled thumbnail, following InternVL's
+    dynamic-resolution strategy) is processed by the vision encoder (ViT);
+    the resulting visual tokens pass through \emph{pixel shuffle}, a
+    parameter-free operation that reduces their number by a factor of four,
+    and then an MLP projector maps them into the language model's token
+    space. The modification text $q^t$ enters the language model directly as
+    a text prompt. Conditioned on both the projected visual tokens and the
+    text prompt, the LLM generates the target caption $c$ -- here, in full,
+    \emph{``Lightyear as a huge balloon with a green suit, purple helmet, and
+    spaceship helmet''} -- which is later embedded and used as the caption
+    retrieval signal $s^c_i$ (Chapter~\ref{chapt:method}). Unlike the
+    ``MLP connector'' shorthand sometimes used for this vision-to-language
+    interface, pixel shuffle and the MLP projector are two distinct
+    steps~\cite{wang2025internvl35}.}\label{fig:bg_mllm}
 \end{figure}
 % =====================================================================
 
@@ -327,39 +338,3 @@ encoders~\cite{saito2023pic2word,baldrati2023circo}. This thesis operates
 entirely in the zero-shot, late-fusion regime. Existing approaches that populate
 these categories are reviewed in Chapter~\ref{chapt:related}.
 
-% =====================================================================
-\section{Feature Post-Processing for Retrieval}\label{sect:bg_postproc}
-% =====================================================================
-
-Even with a fixed encoder, the geometry of an embedding space can be reshaped
-by simple, training-free post-processing operations. These techniques add no
-learned parameters and are therefore natural components of a zero-shot pipeline.
-Chapter~\ref{chapt:related} describes how \textsc{Basic} assembles them into a
-complete system; here we define each operation in the abstract.
-
-\paragraph{Centering.} Embeddings from contrastive encoders often share a
-dominant common component that inflates all pairwise similarities and reduces
-discriminativeness. \emph{Centering} subtracts a mean vector $\mu$ from every
-embedding and re-normalises,
-\begin{equation}\label{eq:centering}
-  \tilde{\enc}(x)
-  = \frac{\enc(x)-\mu}{\lVert\enc(x)-\mu\rVert},
-\end{equation}
-where $\mu$ may be estimated from the database itself or from an external
-reference corpus. This removes the shared component and typically sharpens
-retrieval.
-
-\paragraph{Dimensionality reduction and whitening.} Principal component analysis
-(PCA) projects embeddings onto their leading directions of variance; combining
-this with \emph{whitening} equalises the variance across those directions. In
-retrieval, this suppresses noisy or redundant dimensions and has a long history
-as a post-processing step~\cite{radenovic2018finetuning}.
-
-\paragraph{Query expansion.} After an initial retrieval pass, the query
-embedding can be aggregated with the embeddings of its top-ranked neighbours and
-the search repeated~\cite{philbin2007oxford,radenovic2018finetuning}. This
-propagates information from confident matches and improves recall, particularly
-in instance-level retrieval tasks.
-
-Although these operations are conceptually simple, they can significantly improve
-zero-shot retrieval quality, as later chapters demonstrate.

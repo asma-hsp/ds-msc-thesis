@@ -445,8 +445,12 @@ This common component inflates all pairwise similarities and blurs the
 distinctions that retrieval depends on.
 
 \textsc{Basic} removes it by \emph{mean-centering} every feature before anything
-else -- subtracting a precomputed mean vector and re-normalising, as defined in
-Equation~\eqref{eq:centering} of Chapter~\ref{chapt:background}. For images the
+else: subtracting a precomputed mean vector $\mu$ and re-normalising,
+\begin{equation}\label{eq:centering}
+  \tilde{\enc}(x)
+  = \frac{\enc(x)-\mu}{\lVert\enc(x)-\mu\rVert}.
+\end{equation}
+For images the
 mean $\bm{\mu}^{v}$ is estimated once on a one-million-image sample of
 LAION~\cite{schuhmann2022laion5b}, a large and domain-diverse reference set, and
 subtracted from the query image and every database image. For text the mean
