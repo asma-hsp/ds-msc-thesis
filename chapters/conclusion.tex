@@ -51,11 +51,24 @@ design}, so it leaves on the table any gains a learned fusion could provide.
 Caption generation introduces \emph{variance}: a single instruction is
 prompt-sensitive, which the \texttt{avg-5} averaging mitigates but does not
 eliminate, and it adds a non-trivial \emph{compute cost} (five MLLM generations
-per query). The ablations were conducted on a $20\%$ \emph{development subset};
-although the subset baseline closely matches the full-dataset baseline, not
-every ablated configuration was re-run at full scale. Finally, the caption
-relies on a \emph{single MLLM} (InternVL-3.5-8B), and the sensitivity of the
-results to the choice of captioner was not explored.
+per query). Finally, the caption relies on a \emph{single MLLM}
+(InternVL-3.5-8B), and the sensitivity of the results to the choice of captioner
+was not explored.
+
+A further caveat concerns the comparison to the published numbers. Our
+reproduction of \textsc{Basic} reaches $32.48$ macro-mAP on CLIP ViT-L/14, below
+the $34.35$ reported in the i-CIR paper~\cite{psomas2025icir}. The gap is not a
+code error but an \emph{environment} effect: we re-extracted all features in a
+newer software stack, and the shortfall is concentrated in the image branch,
+whose image-only score is lower than in the original work
+(Section~\ref{sect:res_main}). This most likely reflects differences in
+image decoding and resizing across library versions, and possibly in the quality
+of the database images we were able to re-download, both of which lower the
+already-weak image signal. Because our \textsc{Basic} reproduction and the
+proposed method are evaluated in the \emph{same} environment, the \emph{relative}
+improvement of the caption is unaffected; nonetheless, absolute numbers should be
+compared to our own reproduction ($32.48$) rather than to the published $34.35$,
+and the proposed method surpasses both.
 
 \section{Future Work}\label{sect:concl_future}
 

@@ -589,9 +589,19 @@ $33.48\%$ -- strong evidence that the terse modification text is the principal
 bottleneck of the pipeline. Semantic projection adds a further $0.87$ points to
 the paper's best of $34.35\%$, while query expansion slightly \emph{reduces}
 performance at the instance level (its expanded neighbours introduce more noise
-than signal). Our own re-run of the released code tracks these numbers closely;
-the small residual gap (at most $1.3$ points) comes from the random sampling in
-the contextualization step, which draws fresh object names per query.
+than signal). Our own re-run of the released code tracks these numbers closely, but does not
+match them exactly (the reproduced best rung reaches $32.48$ against the paper's
+$34.35$). Two effects account for the residual gap. First, the contextualization
+step draws fresh object names per query, so its contribution varies slightly
+between runs. Second, and more importantly, we re-extracted all features in a
+newer software stack, and the shortfall is concentrated in the \emph{image}
+branch: the image-only score is lower here than in the original work, a
+difference consistent with changes in image decoding and resizing across library
+versions -- and possibly with the quality of the database images we were able to
+re-download -- which lower the already-weak image signal. The text branch is
+unaffected. Because our reproduction and the proposed method are evaluated in the
+same environment, this gap does not affect the relative comparisons reported in
+Chapter~\ref{chapt:results}.
 
 \begin{table}[htbp]
   \centering

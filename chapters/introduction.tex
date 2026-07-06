@@ -66,14 +66,29 @@ demanded by the text.
 
 A natural way to attack CIR is to train a fusion network that maps the pair
 $(\qv, \qt)$ to a single query embedding using triplet supervision on a CIR
-training set~\cite{vo2019tirg}. However, instance-level annotation is
-expensive, the i-CIR benchmark is designed for evaluation rather than
-large-scale training, and supervised fusion models tend to overfit the
-distribution of modifications seen during training. This motivates the
-\emph{zero-shot} setting~\cite{saito2023pic2word,baldrati2023circo}, in which
-no CIR-specific training is performed and retrieval is built entirely on
+training set~\cite{vo2019tirg}. The obstacle is the supervision itself. Training
+such a model requires a large collection of triplets of the form (reference
+image, modification text, positive image), and these are difficult to obtain at
+scale. In practice they come from one of three sources, each with a drawback.
+They may be \emph{manually} annotated, which limits datasets to a few tens of
+thousands of carefully labelled triplets~\cite{vo2019tirg,wu2021fashioniq,liu2021cirr,baldrati2023circo};
+they may be \emph{crawled} from the web by pairing images that co-occur on the
+same page~\cite{zhang2024magiclens,ventura2024covr}; or they may be
+\emph{synthesised} by a generative model~\cite{gu2024compodiff}. The automatic
+routes scale, but at a cost in quality, and in every case the diversity of visual
+object types and textual modifications remains far narrower than the variety a
+vision--language model already sees during pre-training, which limits how well a
+trained fusion model generalises beyond its training distribution. Instance-level
+annotation is more expensive still, and the i-CIR benchmark is explicitly
+designed for evaluation rather than for large-scale training.
+
+These considerations motivate the \emph{zero-shot} setting~\cite{saito2023pic2word,baldrati2023circo},
+in which no CIR-specific training is performed and retrieval is built entirely on
 \emph{off-the-shelf}, frozen vision--language models such as
 CLIP~\cite{radford2021clip} and SigLIP~\cite{zhai2023siglip,tschannen2025siglip2}.
+A zero-shot method inherits the broad coverage of the pre-trained encoders
+directly, needs no triplet collection, and is not tied to the distribution of any
+one CIR training set -- which is precisely the setting this thesis adopts.
 
 The i-CIR paper accompanies the benchmark with a strong zero-shot baseline,
 \textsc{Basic}, which combines a frozen vision--language backbone with a
@@ -102,7 +117,7 @@ The contributions of this thesis are the following:
 \begin{itemize}
   \item \textbf{An MLLM-generated target caption as a third retrieval modality.}
         We propose to generate, for each query, a caption of the intended
-        target image with a frozen MLLM (InternVL-3.5-8B), and to use the
+        target image with a frozen MLLM (InternVL-3.5-8B~\cite{wang2025internvl35}), and to use the
         embedding of this caption as an additional, text-side retrieval signal
         alongside the reference-image and modification-text signals
         (Chapter~\ref{chapt:method}).
@@ -112,7 +127,8 @@ The contributions of this thesis are the following:
         must agree with all three signals to score highly.
   \item \textbf{A backbone comparison on the full i-CIR benchmark.} We embed
         the full database (752K images) with four off-the-shelf backbones
-        (CLIP ViT-L/14, CLIP ViT-H/14, SigLIP ViT-L/16, and SigLIP2 g/16-384)
+        (CLIP ViT-L/14~\cite{radford2021clip}, CLIP ViT-H/14~\cite{ilharco2021openclip},
+        SigLIP ViT-L/16~\cite{zhai2023siglip}, and SigLIP2 g/16-384~\cite{tschannen2025siglip2})
         and report apples-to-apples results, identifying SigLIP2 as the
         strongest backbone for our pipeline.
   \item \textbf{Ablations isolating each component.} We quantify the separate

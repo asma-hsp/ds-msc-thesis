@@ -106,7 +106,8 @@ not a code error: we re-extracted all features in a newer stack
 difference is concentrated in the image branch -- the image-only score is $2.75$
 here versus $3.04$ in the paper, a $\sim\!10\%$ relative drop in the weakest
 signal that is consistent with differences in image decoding and resizing across
-\texttt{Pillow} versions. The text branch is unaffected, and because
+\texttt{Pillow} versions, and possibly with the quality of the database images we
+were able to re-download. The text branch is unaffected, and because
 \textsc{Basic}$^\dagger$ and Ours are evaluated in the \emph{same} environment,
 the \emph{relative} improvement of Ours over \textsc{Basic} is independent of
 this gap.
@@ -409,7 +410,7 @@ backbones, and Figure~\ref{fig:res_backbones} shows the same comparison as a bar
 chart. Two patterns emerge.
 
 \textbf{The duplet ranking does not predict the triplet ranking.}
-On the bare duplet, CLIP-H is the strongest backbone ($41.10$ mmAP), ahead of
+On the bare duplet, CLIP-H is the strongest backbone ($41.10$ macro-mAP), ahead of
 SigLIP2 ($38.11$). Once the caption branch is added, SigLIP2 jumps to first
 place ($56.09$) while CLIP-H's gain is far smaller ($47.05$). A backbone must
 therefore be evaluated \emph{within} the full pipeline: a strong duplet encoder
@@ -433,7 +434,7 @@ Recall@10 corroborates the pattern. On the duplet, CLIP-H leads with $83.5\%$
 (meaning the correct instance appears in the top-10 for $83.5\%$ of queries);
 after adding the caption, SigLIP2 reaches $92.2\%$ -- a gain of $+13.3$ points --
 while CLIP-H gains only $+6.4$. The recall picture (Figure~\ref{fig:res_recall})
-is consistent with the mmAP ranking and further confirms that backbone choice
+is consistent with the macro-mAP ranking and further confirms that backbone choice
 must be made within the full pipeline.
 
 % SOURCE: docs/backbone_recall.csv ; runs/caption_backbone_instancepool/<bk>/summary.csv
@@ -559,7 +560,7 @@ Duplet baseline                & CLIP-H, img$\times$txt               & 41.10 \\
 \bottomrule
 \end{tabular}
 \caption[Performance ceiling on the full i-CIR dataset.]{The best result
-attainable at each stage of the pipeline. The caption ($+14.98$ mmAP) contributes
+attainable at each stage of the pipeline. The caption ($+14.98$ macro-mAP) contributes
 the larger share of the gain over the bare duplet, versus post-processing
 ($+5.89$).\label{tab:res_ceiling}}
 \end{table}
