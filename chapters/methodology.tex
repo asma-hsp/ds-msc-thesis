@@ -65,7 +65,7 @@ caption branch is purely \emph{additive} -- it supplies a strong text-side query
 without removing the visual signal from the image branch, which is what allows
 the fusion to respect instance identity while applying the modification.
 
-\begin{figure}[t]
+\begin{figure}[H]
 \centering
 \resizebox{\textwidth}{!}{\input{figures/pipeline_overview}}
 \caption[Overview of the proposed retrieval pipeline.]{Overview of the
@@ -281,14 +281,19 @@ across instructions and attenuates the idiosyncrasies of any single prompt. We
 use \texttt{avg-5} as the default and compare it against the best single
 instruction in Chapter~\ref{chapt:results}.
 
-\begin{figure}[h!]
+\begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figures/caption_example}
-\caption[Example of target-caption generation.]{Given the reference image $q^v$
-and the modification text $q^t$ (here \emph{``as a plushie''}), the frozen MLLM
-generates a self-contained description of the intended target image; its
-embedding is then used as the third retrieval signal $s_c$, which here ranks the
-correct plushie of the same instance first.\label{fig:caption_example}}
+\resizebox{\textwidth}{!}{\input{figures/caption_example_pipeline}}
+\caption[Example of target-caption generation.]{Target-caption generation on a
+real query -- the \emph{Tintin} instance with the modification \emph{``as an
+iconic rooftop sign''}. The reference image $\qv$ and the modification text
+$\qt$ are read together by the frozen MLLM, which writes a self-contained
+target caption $c$ describing the imagined result; its embedding is then used
+as the third retrieval signal $s^c_i$, which here ranks first the real
+photograph of the Tintin rooftop sign in Brussels -- a case where the caption
+supplies information (that the target is now a sign on a building) that
+neither the reference image nor the bare modification text convey on their
+own.\label{fig:caption_example}}
 \end{figure}
 
 \begin{table}[h!]

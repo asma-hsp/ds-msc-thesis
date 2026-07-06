@@ -103,8 +103,7 @@ half of the query:
         \emph{different} modification (they satisfy the image and are on-topic,
         but apply the wrong change).
 \end{itemize}
-Figure~\ref{fig:icir_query} lays out this structure schematically, and
-Figure~\ref{fig:icir_montage} shows it on a concrete example. A method that
+Figure~\ref{fig:icir_query} lays out this structure schematically. A method that
 collapses onto a single modality is systematically trapped: relying on the image
 alone promotes the visual and composed negatives, while relying on the text alone
 promotes the textual negatives. Only a method that respects the visual identity
@@ -127,25 +126,7 @@ separate the true target from its look-alikes.
   \label{fig:icir_query}
 \end{figure}
 
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=\linewidth]{figures/icir_query_example}
-  \caption{%
-    A concrete i-CIR instance (the cartoon character \emph{Homer Simpson}).
-    Each column is a different modification of the \emph{same} reference
-    instance. The top row shows the \emph{composed positives} -- the correct
-    targets. The middle row shows \emph{textual hard negatives}: a
-    \emph{different} instance rendered under the same modification (e.g.\ a
-    different action figure, a different plushie), which a text-only method
-    would wrongly rank high. The bottom row shows \emph{composed hard
-    negatives}: images that are on-topic but neither the right instance nor
-    the right modification. Distinguishing the top row from the rows below it
-    requires reading the image and the text together.%
-  }
-  \label{fig:icir_montage}
-\end{figure}
-
-The pattern in Figures~\ref{fig:icir_query} and~\ref{fig:icir_montage} is not a
+The pattern in Figure~\ref{fig:icir_query} is not a
 special case engineered around a single instance: it recurs across every kind of
 object the benchmark covers. Figure~\ref{fig:icir_category_examples} shows eight
 further examples spanning strikingly different visual and textual categories --

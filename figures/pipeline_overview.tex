@@ -185,20 +185,23 @@
 \def\cylTop{7.55}
 % body (white so the sample photos stand out)
 \fill[white] (\cylX-\cylRx, \cylBot) rectangle (\cylX+\cylRx, \cylTop);
-% overlapping sample photos, clipped to the body
+% sample photos, evenly spread over a 3x3 grid so they fill the cylinder
+% (top/bottom rows touch cylTop/cylBot -- no leftover white space), clipped
+% to the body; wider column gaps than before so photos read as more sparse.
 \begin{scope}
   \clip (\cylX-\cylRx, \cylBot) rectangle (\cylX+\cylRx, \cylTop);
-  % upper row
-  \node[inner sep=0pt] at (16.72, 6.59) {\includegraphics[height=1.05cm]{\pipeDbA}};
-  \node[inner sep=0pt] at (17.77, 6.64) {\includegraphics[height=1.05cm]{\pipeDbB}};
-  \node[inner sep=0pt] at (18.71, 6.59) {\includegraphics[height=1.05cm]{\pipeDbC}};
-  \node[inner sep=0pt] at (19.76, 6.64) {\includegraphics[height=1.05cm]{\pipeDbG}};
-  % lower row (overlaps the upper row slightly, paper style)
-  \node[inner sep=0pt] at (16.43, 5.74) {\includegraphics[height=1.05cm]{\pipeDbD}};
-  \node[inner sep=0pt] at (17.48, 5.69) {\includegraphics[height=1.05cm]{\pipeDbH}};
-  \node[inner sep=0pt] at (18.48, 5.74) {\includegraphics[height=1.05cm]{\pipeDbE}};
-  \node[inner sep=0pt] at (19.35, 5.69) {\includegraphics[height=1.05cm]{\pipeDbF}};
-  \node[inner sep=0pt] at (20.17, 5.74) {\includegraphics[height=1.05cm]{\pipeDbI}};
+  % top row (touches cylTop)
+  \node[inner sep=0pt] at (16.8, 7.00) {\includegraphics[height=1.1cm]{\pipeDbA}};
+  \node[inner sep=0pt] at (18.3, 7.00) {\includegraphics[height=1.1cm]{\pipeDbB}};
+  \node[inner sep=0pt] at (19.8, 7.00) {\includegraphics[height=1.1cm]{\pipeDbC}};
+  % middle row
+  \node[inner sep=0pt] at (16.8, 6.175) {\includegraphics[height=1.1cm]{\pipeDbD}};
+  \node[inner sep=0pt] at (18.3, 6.175) {\includegraphics[height=1.1cm]{\pipeDbE}};
+  \node[inner sep=0pt] at (19.8, 6.175) {\includegraphics[height=1.1cm]{\pipeDbF}};
+  % bottom row (touches cylBot)
+  \node[inner sep=0pt] at (16.8, 5.35) {\includegraphics[height=1.1cm]{\pipeDbG}};
+  \node[inner sep=0pt] at (18.3, 5.35) {\includegraphics[height=1.1cm]{\pipeDbH}};
+  \node[inner sep=0pt] at (19.8, 5.35) {\includegraphics[height=1.1cm]{\pipeDbI}};
 \end{scope}
 % outline
 \draw[gray!45!black, line width=0.9pt] (\cylX-\cylRx, \cylBot) -- (\cylX-\cylRx, \cylTop);
