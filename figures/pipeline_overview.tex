@@ -77,7 +77,7 @@
 % =============================================================================
 % GRAY PIPELINE BAND (paper style)
 % =============================================================================
-\fill[gray!12, rounded corners=10pt] (-2.45,-6.0) rectangle (18.60,4.75);
+\fill[gray!12, rounded corners=10pt] (-2.45,-6.3) rectangle (18.60,4.75);
 
 % =============================================================================
 % INPUTS (x = 0): image query (top) + text query (bottom)
@@ -181,8 +181,8 @@
 \def\cylX{18.3}
 \def\cylRx{2.4}
 \def\cylRy{0.38}
-\def\cylBot{4.80}
-\def\cylTop{7.55}
+\def\cylBot{5.20}
+\def\cylTop{7.95}
 % body (white so the sample photos stand out)
 \fill[white] (\cylX-\cylRx, \cylBot) rectangle (\cylX+\cylRx, \cylTop);
 % sample photos, evenly spread over a 3x3 grid so they fill the cylinder
@@ -191,17 +191,17 @@
 \begin{scope}
   \clip (\cylX-\cylRx, \cylBot) rectangle (\cylX+\cylRx, \cylTop);
   % top row (touches cylTop)
-  \node[inner sep=0pt] at (16.8, 7.00) {\includegraphics[height=1.1cm]{\pipeDbA}};
-  \node[inner sep=0pt] at (18.3, 7.00) {\includegraphics[height=1.1cm]{\pipeDbB}};
-  \node[inner sep=0pt] at (19.8, 7.00) {\includegraphics[height=1.1cm]{\pipeDbC}};
+  \node[inner sep=0pt] at (16.8, 7.40) {\includegraphics[height=1.1cm]{\pipeDbA}};
+  \node[inner sep=0pt] at (18.3, 7.40) {\includegraphics[height=1.1cm]{\pipeDbB}};
+  \node[inner sep=0pt] at (19.8, 7.40) {\includegraphics[height=1.1cm]{\pipeDbC}};
   % middle row
-  \node[inner sep=0pt] at (16.8, 6.175) {\includegraphics[height=1.1cm]{\pipeDbD}};
-  \node[inner sep=0pt] at (18.3, 6.175) {\includegraphics[height=1.1cm]{\pipeDbE}};
-  \node[inner sep=0pt] at (19.8, 6.175) {\includegraphics[height=1.1cm]{\pipeDbF}};
+  \node[inner sep=0pt] at (16.8, 6.575) {\includegraphics[height=1.1cm]{\pipeDbD}};
+  \node[inner sep=0pt] at (18.3, 6.575) {\includegraphics[height=1.1cm]{\pipeDbE}};
+  \node[inner sep=0pt] at (19.8, 6.575) {\includegraphics[height=1.1cm]{\pipeDbF}};
   % bottom row (touches cylBot)
-  \node[inner sep=0pt] at (16.8, 5.35) {\includegraphics[height=1.1cm]{\pipeDbG}};
-  \node[inner sep=0pt] at (18.3, 5.35) {\includegraphics[height=1.1cm]{\pipeDbH}};
-  \node[inner sep=0pt] at (19.8, 5.35) {\includegraphics[height=1.1cm]{\pipeDbI}};
+  \node[inner sep=0pt] at (16.8, 5.75) {\includegraphics[height=1.1cm]{\pipeDbG}};
+  \node[inner sep=0pt] at (18.3, 5.75) {\includegraphics[height=1.1cm]{\pipeDbH}};
+  \node[inner sep=0pt] at (19.8, 5.75) {\includegraphics[height=1.1cm]{\pipeDbI}};
 \end{scope}
 % outline
 \draw[gray!45!black, line width=0.9pt] (\cylX-\cylRx, \cylBot) -- (\cylX-\cylRx, \cylTop);
@@ -210,13 +210,13 @@
   arc[start angle=180, end angle=360, x radius=\cylRx, y radius=\cylRy];
 \fill[blue!13] (\cylX, \cylTop) ellipse ({\cylRx} and {\cylRy});
 \draw[gray!45!black, line width=0.9pt] (\cylX, \cylTop) ellipse ({\cylRx} and {\cylRy});
-\node[sub] at (\cylX, 8.25) {image dataset $\mathcal{X}$};
+\node[sub] at (\cylX, 8.65) {image dataset $\mathcal{X}$};
 
 % database encoding chain (right to left, paper style)
-\node[venc, minimum height=2.0cm] (dbenc) at (14.95, 5.85)
+\node[venc, minimum height=2.0cm] (dbenc) at (14.95, 6.25)
   {\rotatebox{90}{\footnotesize visual encoder}};
-\node[sop] (dbmu) at (\dotX, 5.85) {$-\boldsymbol{\mu}^v$};
-\draw[garr] (\cylX-\cylRx, 5.85) -- (dbenc.east);
+\node[sop] (dbmu) at (\dotX, 6.25) {$-\boldsymbol{\mu}^v$};
+\draw[garr] (\cylX-\cylRx, 6.25) -- (dbenc.east);
 \draw[garr] (dbenc.west) -- (dbmu.east);
 
 % database spine feeds all three dot products
