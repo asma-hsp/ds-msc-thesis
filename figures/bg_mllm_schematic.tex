@@ -17,8 +17,8 @@
 %  (thesis_cir repo; set QID there).
 % ─────────────────────────────────────────────────────────────────────────────
 \def\bgRef{figures/bg_mllm_samples/ref}
-\def\bgQueryText{as a huge balloon}
-\def\bgCaptionText{``Lightyear as a huge balloon with a green suit, purple helmet, and spaceship helmet.''}
+\def\bgQueryText{with a real car in front}
+\def\bgCaptionText{``A poster with two men kissing, text in multiple languages, with a real car in front.''}
 
 \begin{tikzpicture}[
   >=Stealth, line cap=round, line join=round,
@@ -81,12 +81,15 @@
 \draw[carr] (llm.east) -- (cap.west);
 
 % ---- MLLM bounding box + label (filled + thicker border, per house style
-%      used for the contextualization box in Figure 5.1, for clarity) ----
+%      used for the contextualization box in Figure 5.1, for clarity).
+%      Box enlarged and label moved with a clear gap above the top edge
+%      (not straddling the border) to avoid the earlier overlap. ----
 \begin{scope}[on background layer]
-  \draw[orange!55!black, dashed, line width=1.1pt, rounded corners=6pt, fill=orange!6]
-    (2.15,-1.05) rectangle (13.05,2.65);
+  \draw[orange!55!black, dashed, line width=1.2pt, rounded corners=6pt, fill=orange!6]
+    (2.15,-1.05) rectangle (13.05,2.95);
 \end{scope}
 \node[font=\bfseries\normalsize\itshape, text=orange!70!black, fill=white,
-      inner sep=3pt, rounded corners=2pt] at (7.6, 2.65) {MLLM (InternVL-3.5-8B)};
+      draw=orange!55!black, line width=0.8pt, rounded corners=2pt,
+      inner sep=4pt, anchor=south] at (7.6, 3.05) {MLLM (InternVL-3.5-8B)};
 
 \end{tikzpicture}

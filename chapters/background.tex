@@ -284,8 +284,9 @@ MLLMs is discussed in Section~\ref{sect:method_caption}.
   \resizebox{\textwidth}{!}{\input{figures/bg_mllm_schematic}}
   \caption[Schematic of MLLM-based caption generation.]{Schematic of caption
     generation with a multimodal large language model (MLLM), illustrated on
-    a real query -- the \emph{Buzz Lightyear} instance with the modification
-    \emph{``as a huge balloon''}. The reference image $q^v$ (tiled into
+    a real query -- the \emph{Berlin Wall kissing mural} instance (the East
+    Side Gallery's \emph{Fraternal Kiss}) with the modification
+    \emph{``with a real car in front''}. The reference image $q^v$ (tiled into
     high-resolution crops plus a downsampled thumbnail, following InternVL's
     dynamic-resolution strategy) is processed by the vision encoder (ViT);
     the resulting visual tokens pass through \emph{pixel shuffle}, a
@@ -294,8 +295,8 @@ MLLMs is discussed in Section~\ref{sect:method_caption}.
     space. The modification text $q^t$ enters the language model directly as
     a text prompt. Conditioned on both the projected visual tokens and the
     text prompt, the LLM generates the target caption $c$ -- here, in full,
-    \emph{``Lightyear as a huge balloon with a green suit, purple helmet, and
-    spaceship helmet''} -- which is later embedded and used as the caption
+    \emph{``A poster with two men kissing, text in multiple languages, with a
+    real car in front''} -- which is later embedded and used as the caption
     retrieval signal $s^c_i$ (Chapter~\ref{chapt:method}). Unlike the
     ``MLP connector'' shorthand sometimes used for this vision-to-language
     interface, pixel shuffle and the MLP projector are two distinct
