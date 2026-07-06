@@ -1,0 +1,68 @@
+% Comparison of the five instruction-variant captions for one query (Figure
+% 5.3) — reuses the same query image/text/MLLM motif as Figure 5.2, fanning
+% out to five labelled caption boxes (one per instruction, A-E) instead of a
+% single one. Same node styles/colours as Figures 5.1/5.2.
+%
+% Usage in methodology.tex (upright, full text width):
+%   \begin{figure}[H]\centering
+%     \resizebox{\textwidth}{!}{\input{figures/instruction_captions_compare}}
+%     \caption{...}\label{fig:instruction_captions}
+%   \end{figure}
+%
+% ─────────────────────────────────────────────────────────────────────────────
+%  SWAP THE RUNNING EXAMPLE HERE (must match the QID used to export the
+%  query image below, and the five per-instruction captions from
+%  artifacts/icir/captions/internvl8b_FGHIJ_full/query_captions.csv).
+% ─────────────────────────────────────────────────────────────────────────────
+\def\icRef{figures/caption_example_samples/ref}   % reuses the Figure 5.2 Tintin query image
+\def\icQueryText{as an iconic rooftop sign}
+\def\icCapA{A character with a beige coat and blue shirt, as an iconic rooftop sign}
+\def\icCapB{A character wearing a trench coat, blonde hair, and a blue shirt, is an iconic rooftop sign.}
+\def\icCapC{Character in a beige trench coat, blue shirt, with blushing cheeks and short orange hair as an iconic rooftop sign.}
+\def\icCapD{a cartoon character wearing a trench coat, blushing, with short hair as an iconic rooftop sign.}
+\def\icCapE{Cartoon character in a beige coat and blue shirt appears as an iconic rooftop sign.}
+
+\begin{tikzpicture}[
+  >=Stealth, line cap=round, line join=round,
+  font=\large,
+  imgnode/.style   = {draw=#1, line width=1.6pt, inner sep=0pt},
+  imgnode/.default = gray,
+  mllmbox/.style   = {draw=orange!70!black, fill=orange!12, rounded corners=3pt,
+                       minimum width=2.3cm, minimum height=1.3cm,
+                       align=center, font=\large},
+  txtph/.style     = {draw=teal!60!black, fill=white, rounded corners=3pt,
+                       line width=1.1pt, text width=2.9cm, minimum height=1.3cm,
+                       align=center, font=\large\itshape, inner sep=6pt},
+  rowbox/.style    = {draw=orange!65!black, fill=orange!8, rounded corners=3pt,
+                       line width=1.1pt, text width=10.5cm, align=left,
+                       inner sep=7pt, anchor=west, font=\normalsize},
+  sub/.style       = {font=\large},
+  carr/.style      = {->, draw=orange!75!black, line width=1.2pt},
+]
+
+\def\yI{1.6}
+\def\yT{-1.6}
+
+\node[imgnode=blue!60!black] (qv) at (0, \yI) {\includegraphics[width=3.2cm]{\icRef}};
+\node[below=3pt of qv, sub] {image query $q^v$};
+
+\node[txtph] (qt) at (0, \yT) {\icQueryText};
+\node[below=3pt of qt, sub] {text query $q^t$};
+
+\node[mllmbox] (mllm) at (3.2, 0) {MLLM};
+\draw[carr] (qv.south east) -- ++(0,-0.35) -- (mllm.north west);
+\draw[carr] (qt.north east) -- ++(0,0.35)  -- (mllm.south west);
+
+\node[rowbox] (rA) at (5.0,  4.6) {\textbf{\textsc{A} --- adaptive precision:} \emph{``\icCapA''}};
+\node[rowbox] (rB) at (5.0,  2.3) {\textbf{\textsc{B} --- constraint-priority:} \emph{``\icCapB''}};
+\node[rowbox] (rC) at (5.0,  0.0) {\textbf{\textsc{C} --- anti-noise contract:} \emph{``\icCapC''}};
+\node[rowbox] (rD) at (5.0, -2.3) {\textbf{\textsc{D} --- slot-fill template:} \emph{``\icCapD''}};
+\node[rowbox] (rE) at (5.0, -4.6) {\textbf{\textsc{E} --- draft--refine:} \emph{``\icCapE''}};
+
+\draw[carr] (mllm.east) -- ++(0.3,0) |- (rA.west);
+\draw[carr] (mllm.east) -- ++(0.3,0) |- (rB.west);
+\draw[carr] (mllm.east) -- (rC.west);
+\draw[carr] (mllm.east) -- ++(0.3,0) |- (rD.west);
+\draw[carr] (mllm.east) -- ++(0.3,0) |- (rE.west);
+
+\end{tikzpicture}

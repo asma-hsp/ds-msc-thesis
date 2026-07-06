@@ -74,8 +74,10 @@ the fusion to respect instance identity while applying the modification.
   \textit{Left:} the image query $\qv$ (top row) and the text query $\qt$
   (bottom row) are read \emph{together} by a frozen multimodal language model
   (InternVL 3.5-8B), which writes a self-contained target caption $c$
-  describing the imagined result -- the caption branch in the middle row is
-  the contribution of this thesis. The text query is additionally
+  describing the imagined result -- here, in full, \emph{``Pantheon in an old
+  archival photo with large columns, inscribed facade, and circular
+  structure''} -- the caption branch in the middle row is the contribution of
+  this thesis. The text query is additionally
   \emph{contextualised} by averaging it with object words (``dog + text
   query'', \dots).
   \textit{Centre:} $\qv$, $c$, and $\qt$ are independently encoded and
@@ -288,7 +290,9 @@ instruction in Chapter~\ref{chapt:results}.
 real query -- the \emph{Tintin} instance with the modification \emph{``as an
 iconic rooftop sign''}. The reference image $\qv$ and the modification text
 $\qt$ are read together by the frozen MLLM, which writes a self-contained
-target caption $c$ describing the imagined result; its embedding is then used
+target caption $c$ describing the imagined result -- here, in full,
+\emph{``Cartoon character in a beige coat and blue shirt appears as an iconic
+rooftop sign''}; its embedding is then used
 as the third retrieval signal $s^c_i$, which here ranks first the real
 photograph of the Tintin rooftop sign in Brussels -- a case where the caption
 supplies information (that the target is now a sign on a building) that
@@ -313,6 +317,47 @@ variants used to prompt the MLLM. \texttt{avg-5} averages the text embeddings of
 all five (Equation~\eqref{eq:avg5}); the verbatim prompts are reproduced in
 Appendix~\ref{app:prompts}.\label{tab:instructions}}
 \end{table}
+
+The five variants of Table~\ref{tab:instructions} are not merely five
+paraphrases of the same idea: they produce visibly different captions for the
+same query. Figure~\ref{fig:instruction_captions} shows this concretely on the
+running \emph{Tintin} example of Figure~\ref{fig:caption_example} (modification
+\emph{``as an iconic rooftop sign''}), giving the caption written by each of
+the five instructions for the exact same image query and text query.
+\textsc{A} (adaptive precision) is the most terse of the five and, lacking
+confidence in the instance's identity, falls back to a generic ``a
+character'' rather than naming Tintin; \textsc{E} (draft--refine) is almost
+as concise but explicitly calls it a ``cartoon character''. \textsc{D}
+(slot-fill template) and \textsc{B} (constraint-priority) progressively add
+descriptive detail (blushing, hair colour); \textsc{C} (anti-noise contract)
+is the longest and most descriptive, adding both ``blushing cheeks'' and
+``short orange hair''. This spread of concrete wording -- rather than the
+abstract prompt descriptions alone -- is what \texttt{avg-5}
+(Equation~\eqref{eq:avg5}) averages over.
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{\input{figures/instruction_captions_compare}}
+\caption[Generated captions across the five instruction variants.]{The
+caption written by each of the five instruction variants (\textsc{A}--\textsc{E},
+Table~\ref{tab:instructions}) for the \emph{same} query: the \emph{Tintin}
+image query $\qv$ and the modification text $\qt =$ \emph{``as an iconic
+rooftop sign''} (the running example of Figure~\ref{fig:caption_example}).
+Full generated captions, verbatim: \textsc{A} (adaptive precision)
+\emph{``A character with a beige coat and blue shirt, as an iconic rooftop
+sign''}; \textsc{B} (constraint-priority) \emph{``A character wearing a
+trench coat, blonde hair, and a blue shirt, is an iconic rooftop sign.''};
+\textsc{C} (anti-noise contract) \emph{``Character in a beige trench coat,
+blue shirt, with blushing cheeks and short orange hair as an iconic rooftop
+sign.''}; \textsc{D} (slot-fill template) \emph{``a cartoon character wearing
+a trench coat, blushing, with short hair as an iconic rooftop sign.''};
+\textsc{E} (draft--refine) \emph{``Cartoon character in a beige coat and blue
+shirt appears as an iconic rooftop sign.''}. All five correctly identify the
+required modification, but differ in how much visual detail they add and how
+concisely they state it -- the variance that averaging in
+\texttt{avg-5} is designed to smooth
+over.\label{fig:instruction_captions}}
+\end{figure}
 
 % =====================================================================
 \section{Triplet Late-Fusion Scoring}\label{sect:method_fusion}
