@@ -13,6 +13,7 @@
 *.fdb_latexmk
 *.fls
 *.xdv
+*.xmpi
 # build output (uncomment to keep the compiled PDF out of git)
 dissertation.pdf
 # OS cruft

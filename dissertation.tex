@@ -1,7 +1,14 @@
 %!TEX TS-program = xelatex
 %!TEX encoding = UTF-8 Unicode
 
+% Dissertate.cls loads hyperref itself; passing `pdfa` here (before the class
+% loads hyperref) is required so hyperref's PDF/A mode actually sticks --
+% hyperref permanently locks the `pdfa` option after its own package-option
+% processing, so setting it later via \hypersetup (as pdfx does when it finds
+% hyperref already loaded) is silently ignored.
+\PassOptionsToPackage{pdfa}{hyperref}
 \documentclass{Dissertate}
+\usepackage[a-2b]{pdfx}
 \usepackage{titlesec}
 \usepackage{fontspec}
 \usepackage{amsbsy}

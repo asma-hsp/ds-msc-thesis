@@ -90,7 +90,11 @@
 % regular face. AutoFakeBold synthesises a bold so \textbf (e.g. best values in
 % tables) renders visibly bold.
 \setromanfont[Numbers=OldStyle, Ligatures={Common, TeX}, Scale=1.0, AutoFakeBold=2.0]{EB Garamond}
-\newfontfamily{\smallcaps}[RawFeature={+c2sc,+scmp}]{EB Garamond}
+% AutoFakeBold here too: \scshape+\bfseries together resolve to an undefined
+% "b/sc" shape for EB Garamond (fake bold doesn't compose with the smcp/c2sc
+% feature), silently falling all the way back to Latin Modern Roman. Routing
+% through \smallcaps with its own fake bold avoids that fallback.
+\newfontfamily{\smallcaps}[RawFeature={+c2sc,+scmp}, AutoFakeBold=2.0]{EB Garamond}
 \setsansfont[Scale=MatchLowercase, BoldFont={Lato Bold}]{Lato Regular}
 \setmonofont[Scale=MatchLowercase]{Source Code Pro}
 \RequirePackage[labelfont={bf,sf,footnotesize,singlespacing},
@@ -158,7 +162,12 @@
 %\RequirePackage[super,comma,numbers]{natbib}
 \RequirePackage[comma,numbers]{natbib}
 \renewcommand{\bibnumfmt}[1]{[#1]}
-\RequirePackage[palatino]{quotchap}
+% quotchap's `palatino` option requests the classic PostScript "ppl" font,
+% which has no TU (Unicode/fontspec) encoding support in this XeLaTeX
+% document -- it was silently falling back to Latin Modern Roman for every
+% chapter's big decorative number anyway. `lmodern` makes that explicit
+% (same rendered result, no undefined-font-shape warning).
+\RequirePackage[lmodern]{quotchap}
 \renewcommand*{\chapterheadstartvskip}{\vspace*{-0.5\baselineskip}}
 \renewcommand*{\chapterheadendvskip}{\vspace{1.3\baselineskip}}
 \bibliographystyle{IEEEtran}
@@ -264,7 +273,7 @@
 
 	\setstretch{1.5}
 
-	\scshape{\huge{\bfseries{\@university}}} \\
+	\smallcaps{\huge{\bfseries{\@university}}} \\
 	\line(1, 0){400} \\
 	\scshape{\large{Department of \@department}} \\
 	\vspace{3pt}
@@ -275,7 +284,7 @@
 	\setstretch{2.5}
 
 	\vspace{10pt}
-	\scshape{\LARGE{\bfseries{\textcolor{SchoolColor}{\thetitle}}}} \normalsize \\
+	\smallcaps{\LARGE{\bfseries{\textcolor{SchoolColor}{\thetitle}}}} \normalsize \\
 	\vspace{15pt}
 	
 	\setstretch{1.2}
@@ -312,7 +321,7 @@
 	all rights reserved, \@degreeyear
 	\end{center}
 	\newpage
-	\rm
+	\normalfont
 }
 
 \newcommand{\frontispiece}{
@@ -331,7 +340,7 @@
 	\scshape \noindent \input{frontmatter/dedication}
 	\vspace*{\fill}
 	\cleardoublepage
-	\rm
+	\normalfont
 }
 
 \newcommand{\acknowledgments}{
