@@ -1,0 +1,89 @@
+%!TEX root = ../dissertation.tex
+
+% =====================================================================
+%  APPENDIX C — Online inference-time measurement
+% ---------------------------------------------------------------------
+%  Numbers from scripts/benchmark_inference_time.py in the thesis-cir repo
+%  (100 queries sampled seed 42 from the instance_sample20_seed42 subset,
+%  K=5 captions INSTR_F..J, max_new_tokens=256, 12 tiles, bf16).
+%  Hardware: single NVIDIA RTX 6000 Ada (48 GB). Every stage timed with
+%  torch.cuda.synchronize(); 3 warmup queries discarded. Results:
+%  runs/inference_time/{per_query,summary}.csv.
+% =====================================================================
+
+\chapter{Online Inference-Time Measurement}\label{app:inference_time}
+
+This appendix reports the \emph{online} cost of answering a single query with
+the \emph{Ours} pipeline, and discusses where that cost can be reduced. The
+database image embeddings are computed \emph{offline}, once, before any query is
+issued, and are therefore excluded. For each query the timed work is: (i)
+\textbf{caption generation}---the InternVL3.5-8B captioner runs the $K{=}5$
+instruction series (\textsc{Instr\,F}--\textsc{J}) on the query image and
+modification text---followed by (ii) \textbf{triplet embedding}---encoding the
+query image, the modification text, and the $K{=}5$ generated captions with the
+retrieval backbone. We report both backbones studied in the main text, CLIP
+ViT-L/14 and SigLIP2. Caption generation is backbone-independent, so it is
+shared between the two totals.
+
+We time $100$ queries sampled from the \texttt{instance\_sample20\_seed42}
+subset on a single NVIDIA RTX 6000 Ada GPU, wrapping every stage in a CUDA
+synchronisation and discarding three warm-up queries. Table~\ref{tab:inference_time}
+summarises the per-query distribution.
+
+\begin{table}[h!]
+\centering
+\sisetup{table-format=5.1, group-minimum-digits=4}
+\begin{tabular}{l S S S S S S}
+\toprule
+Stage (\si{\milli\second}) & {mean} & {min} & {Q1} & {median} & {Q3} & {max} \\
+\midrule
+Caption generation \emph{(shared)} & 14702.6 & 10138.1 & 12172.5 & 14718.4 & 16664.4 & 21341.7 \\
+\midrule
+CLIP-L: triplet embedding          &    42.7 &    17.8 &    19.7 &    21.5 &    26.0 &   257.9 \\
+CLIP-L: \textbf{total}             & 14745.3 & 10156.0 & 12193.3 & 14749.6 & 16750.4 & 21363.8 \\
+\midrule
+SigLIP2: triplet embedding         &    67.3 &    42.6 &    44.3 &    45.5 &    50.0 &   281.2 \\
+SigLIP2: \textbf{total}            & 14769.9 & 10180.9 & 12216.8 & 14774.8 & 16777.4 & 21388.1 \\
+\bottomrule
+\end{tabular}
+\caption[Per-query online inference time (\emph{Ours}, $K{=}5$).]{Per-query
+online inference time in milliseconds ($n{=}100$ queries, RTX 6000 Ada). The
+database embedding is precomputed offline and excluded. Caption generation is
+identical for both backbones.}
+\label{tab:inference_time}
+\end{table}
+
+Two observations follow. First, \textbf{caption generation dominates}: it
+accounts for roughly $99.7\%$ of the per-query cost ($\approx\!14.7$\,s median),
+while embedding the triplet takes only tens of milliseconds. Second, the
+\textbf{retrieval backbone is essentially irrelevant to latency}: SigLIP2 embeds
+about twice as slowly as CLIP-L ($45.5$ vs.\ $21.5$\,\si{\milli\second} median),
+but this $\approx\!24$\,\si{\milli\second} difference is negligible against a
+$\approx\!14.7$\,s query, so the two totals are practically indistinguishable.
+The choice of backbone can therefore be made purely on retrieval quality without
+a latency penalty.
+
+\section*{Optimisation Opportunities}
+
+Because the captioner is the sole bottleneck, all meaningful speed-ups target it;
+we did not pursue them here since latency is not a contribution of this thesis,
+but several are readily available:
+
+\begin{itemize}
+  \item \textbf{Fewer captions.} We generate $K{=}5$ captions per query and
+    average them (\texttt{avg-5}). Dropping to a single caption cuts the dominant
+    cost by roughly $5\times$; the single-instruction variant
+    (Table~\ref{tab:res_ladder}) is only modestly behind \texttt{avg-5}, so this
+    trades a small quality loss for a large latency gain.
+  \item \textbf{Shorter generations and fewer tiles.} Caption-generation time
+    scales with the number of decoded tokens (\texttt{max\_new\_tokens}$=256$)
+    and the number of image tiles (up to $12$); both can be reduced with limited
+    impact on caption content.
+  \item \textbf{A lighter or faster captioner.} A smaller or distilled VLM,
+    weight quantisation (INT8/INT4), a fused attention kernel (FlashAttention,
+    disabled in our runs), or speculative decoding would each lower the
+    per-token cost without changing the pipeline.
+  \item \textbf{Batching.} The five instructions are currently issued
+    sequentially; batching them (and batching across concurrent queries) would
+    amortise fixed per-call overhead on modern GPUs.
+\end{itemize}
