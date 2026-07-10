@@ -51,7 +51,7 @@ def ladder_chart(basic, ours, fname, peak_idx=4, ylim=None, headline=None):
             ha="center", va="top", fontsize=10.5, color=MUTED, style="italic")
     ax.plot(x, basic, "-o", color=BASIC_C, linewidth=2, markersize=7, label="BASIC")
     ax.plot(x, ours, "-o", color=OURS_C, linewidth=2, markersize=7,
-            label="Ours (+ 5-caption avg.)")
+            label="Ours: img × txt × caption (avg-5)")
     # direct labels: first and peak points of each series
     for series, color, dy in ((basic, BASIC_C, -2.6), (ours, OURS_C, 1.4)):
         for i in (0, peak_idx):
@@ -94,9 +94,9 @@ fig, ax = plt.subplots(figsize=(8.6, 4.1), dpi=200)
 clean_axes(ax)
 w = 0.34
 xs = range(len(backbones))
-b1 = ax.bar([i - w / 2 for i in xs], basic, width=w - 0.03, color=BASIC_C, label="BASIC")
+b1 = ax.bar([i - w / 2 for i in xs], basic, width=w - 0.03, color=BASIC_C, label="img × txt")
 b2 = ax.bar([i + w / 2 for i in xs], ours, width=w - 0.03, color=OURS_C,
-            label="Ours (+ 5-caption avg.)")
+            label="Ours: img × txt × caption (avg-5)")
 for bars, color in ((b1, BASIC_C), (b2, OURS_C)):
     for r in bars:
         ax.annotate(f"{r.get_height():.1f}", (r.get_x() + r.get_width() / 2, r.get_height()),
