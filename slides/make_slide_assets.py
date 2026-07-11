@@ -71,7 +71,7 @@ for c, (label, qdir, pos, hn, npos) in enumerate(queries, start=1):
     axt.set_xticks([]); axt.set_yticks([])
     for sp in axt.spines.values():
         sp.set_edgecolor(BLUE); sp.set_linewidth(2.2)
-    axt.text(0.5, 0.5, label, ha="center", va="center", fontsize=13.5,
+    axt.text(0.5, 0.5, label, ha="center", va="center", fontsize=16.5,
              color=BLUE, family="monospace")
 
     axp = fig.add_subplot(gs[1, c])
@@ -79,9 +79,6 @@ for c, (label, qdir, pos, hn, npos) in enumerate(queries, start=1):
     axp.set_xticks([]); axp.set_yticks([])
     for sp in axp.spines.values():
         sp.set_edgecolor("#cccccc"); sp.set_linewidth(0.8)
-    axp.text(0.985, 0.03, f"1 of {npos}", transform=axp.transAxes, ha="right",
-             va="bottom", fontsize=10, color="white",
-             bbox=dict(boxstyle="round,pad=0.25", fc=GREEN, ec="none", alpha=0.9))
 
     axn = fig.add_subplot(gs[2, c])
     axn.imshow(letterbox(f"{TINTIN_DB}/hn/tintin_hn{hn}.jpg"))
@@ -89,14 +86,10 @@ for c, (label, qdir, pos, hn, npos) in enumerate(queries, start=1):
     for sp in axn.spines.values():
         sp.set_edgecolor("#cccccc"); sp.set_linewidth(0.8)
 
-fig.text(0.585, 0.395, "composed positives", ha="center", fontsize=17,
+fig.text(0.585, 0.395, "composed positives", ha="center", fontsize=18,
          family="serif", color=INK)
-fig.text(0.685, 0.395, "(each query has 3–14 ground truths)", ha="left",
-         fontsize=12.5, family="serif", color=GRAY)
-fig.text(0.585, 0.012, "hard negatives", ha="center", fontsize=17,
+fig.text(0.585, 0.012, "hard negatives", ha="center", fontsize=18,
          family="serif", color=INK)
-fig.text(0.665, 0.012, "(from the instance's pool of 5,128 curated distractors)",
-         ha="left", fontsize=12.5, family="serif", color=GRAY)
 fig.savefig(f"{OUT}/icir_tintin.png", facecolor="white")
 plt.close(fig)
 
@@ -146,18 +139,11 @@ fig.savefig(f"{OUT}/instance_vs_category.png", facecolor="white")
 plt.close(fig)
 
 # ------------------------------------------------------------------
-# 3. CLIP dual-encoder contrastive schematic
+# 3. CLIP dual-encoder schematic (single pair, chair example)
 # ------------------------------------------------------------------
-imgs = [f"{DATA}/query/tintin/tintin_image_query1.jpg",
-        "/extra/ahoseinp/projects/ds-msc-thesis/figures/pipeline_samples/ref.jpg",
-        "/extra/ahoseinp/projects/ds-msc-thesis/figures/pipeline_samples/db3.jpg"]
-texts = ["“a comic-book character\nwith a white dog”",
-         "“an ancient Greek temple\non a cliff”",
-         "“…”"]
-texts_short = ["“a comic character\nwith a white dog”",
-               "“a Greek temple\non a cliff”", "“ … ”"]
-fig, ax = plt.subplots(figsize=(11.5, 5.4), dpi=200)
-ax.set_xlim(0, 11.5); ax.set_ylim(0, 5.4); ax.axis("off")
+CHAIR_CAP = "\u201ca white ornate\nmetal chair\u201d"
+fig, ax = plt.subplots(figsize=(11.0, 4.6), dpi=200)
+ax.set_xlim(0, 11.0); ax.set_ylim(0, 4.6); ax.axis("off")
 
 def rbox(x, y, w, h, label, fc="#f0efec", fontsize=13, tc=INK, bold=True):
     b = FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.08", fc=fc,
@@ -166,55 +152,46 @@ def rbox(x, y, w, h, label, fc="#f0efec", fontsize=13, tc=INK, bold=True):
     ax.text(x + w / 2, y + h / 2, label, ha="center", va="center",
             fontsize=fontsize, color=tc, fontweight="bold" if bold else "normal")
 
-# top pipeline: images -> image encoder
-for i, im in enumerate(imgs):
-    thumb = letterbox(im)
-    x0 = 0.3 + i * 1.35
-    ax.imshow(thumb, extent=(x0, x0 + 1.2, 3.55, 4.45), aspect="auto", zorder=3)
-ax.annotate("", xy=(5.05, 4.0), xytext=(4.45, 4.0),
+# top: one image -> image encoder
+thumb = letterbox(CHAIR_Q)
+ax.imshow(thumb, extent=(0.5, 2.3, 2.75, 4.1), aspect="auto", zorder=3)
+ax.annotate("", xy=(3.35, 3.42), xytext=(2.45, 3.42),
             arrowprops=dict(arrowstyle="->", color=GRAY, lw=1.6))
-rbox(5.1, 3.55, 1.75, 0.9, "image\nencoder")
-# bottom pipeline: texts -> text encoder
-for i, t in enumerate(texts_short):
-    x0 = 1.0 + i * 1.65
-    ax.text(x0, 1.0, t, ha="center", va="center", fontsize=8.5, color=BLUE,
-            family="monospace",
-            bbox=dict(boxstyle="round,pad=0.32", fc="white", ec=BLUE, lw=1.1))
-ax.annotate("", xy=(5.05, 1.0), xytext=(4.45, 1.0),
+rbox(3.4, 2.97, 1.8, 0.9, "image\nencoder")
+# bottom: one text -> text encoder
+ax.text(1.4, 1.05, CHAIR_CAP, ha="center", va="center", fontsize=11,
+        color=BLUE, family="monospace",
+        bbox=dict(boxstyle="round,pad=0.4", fc="white", ec=BLUE, lw=1.2))
+ax.annotate("", xy=(3.35, 1.05), xytext=(2.55, 1.05),
             arrowprops=dict(arrowstyle="->", color=GRAY, lw=1.6))
-rbox(5.1, 0.55, 1.75, 0.9, "text\nencoder")
-# similarity matrix (right, vertically centered)
-mx, my, cell = 8.3, 1.35, 0.85
-for i in range(3):
-    for j in range(3):
-        fc = "#9B0014" if i == j else "#f0efec"
-        b = FancyBboxPatch((mx + j * cell, my + (2 - i) * cell), cell * 0.9,
-                           cell * 0.9, boxstyle="round,pad=0.02", fc=fc,
-                           ec="white", lw=1.5)
-        ax.add_patch(b)
-ax.annotate("", xy=(mx - 0.12, my + 2.45), xytext=(6.9, 4.0),
+rbox(3.4, 0.6, 1.8, 0.9, "text\nencoder")
+# shared embedding space
+space = plt.matplotlib.patches.Ellipse((8.3, 2.3), 4.4, 3.6,
+                                       fc="#fafaf8", ec=MUTED, lw=1.3)
+ax.add_patch(space)
+ax.text(8.3, 3.75, "shared embedding space", ha="center", fontsize=13,
+        color=INK, fontweight="bold")
+ax.annotate("", xy=(7.15, 2.85), xytext=(5.25, 3.42),
             arrowprops=dict(arrowstyle="->", color=GRAY, lw=1.6))
-ax.annotate("", xy=(mx - 0.12, my + 0.2), xytext=(6.9, 1.0),
+ax.annotate("", xy=(7.35, 1.85), xytext=(5.25, 1.05),
             arrowprops=dict(arrowstyle="->", color=GRAY, lw=1.6))
-ax.text(6.95, 3.35, "one vector\nper image", fontsize=9.5, color=GRAY,
-        ha="left", va="center")
-ax.text(6.95, 1.75, "one vector\nper text", fontsize=9.5, color=GRAY,
-        ha="left", va="center")
-ax.text(mx + 1.28, my - 0.35,
-        "cosine-similarity matrix:\nmatching pairs (diagonal) pulled together,\n"
-        "all other pairs pushed apart",
-        ha="center", va="top", fontsize=10.5, color=MUTED)
-ax.text(mx + 1.28, my + 2.95, "contrastive pre-training\n(400M image–text pairs)",
-        ha="center", va="bottom", fontsize=12, color=INK, fontweight="bold")
-fig.savefig(f"{OUT}/clip_schematic.png", facecolor="white",
-            bbox_inches="tight")
+ax.text(6.05, 3.45, "one vector", fontsize=9.5, color=GRAY, ha="left", va="bottom")
+ax.text(6.05, 1.15, "one vector", fontsize=9.5, color=GRAY, ha="left", va="top")
+for (x, y, col) in [(7.55, 2.75, "#2a78d6"), (7.95, 2.05, "#9B0014")]:
+    dot = plt.matplotlib.patches.Circle((x, y), 0.13, fc=col, ec="none")
+    ax.add_patch(dot)
+ax.plot([7.55, 7.95], [2.75, 2.05], color=GRAY, lw=1.2, ls="--")
+ax.text(9.15, 2.35, "similar meaning\n= nearby points\n(cosine similarity)",
+        fontsize=11.5, color=INK, ha="center", va="center")
+fig.savefig(f"{OUT}/clip_schematic.png", facecolor="white", bbox_inches="tight")
 plt.close(fig)
 
 # ------------------------------------------------------------------
 # 4. formula renders
 # ------------------------------------------------------------------
 EQS = {
-    "eq_ap": r"$\mathrm{AP}(q) \;=\; \sum_{i \geq 1}\,(r_i - r_{i-1})\;\frac{p_i + p_{i-1}}{2}$",
+    "eq_pk": r"$\mathrm{P@}k \;=\; \frac{\mathrm{correct\ results\ in\ top-}k}{k}$",
+    "eq_ap": r"$\mathrm{AP} \;=\; \frac{1}{R}\,\sum_{k}\ \mathrm{P@}k \cdot \mathrm{rel}(k)$",
     "eq_map": r"$\mathrm{mAP} \;=\; \frac{1}{|Q|}\sum_{q \in Q}\mathrm{AP}(q)$",
     "eq_mmap": r"$\mathrm{macro}\;\mathrm{mAP} \;=\; \frac{1}{|\mathcal{I}|}\sum_{I \in \mathcal{I}}\;\frac{1}{|Q_I|}\sum_{q \in Q_I}\mathrm{AP}(q)$",
     "eq_centering": r"$\tilde{e}(x) \;=\; \frac{e(x)-\mu}{\Vert\, e(x)-\mu \,\Vert}$",
@@ -231,3 +208,66 @@ for name, eq in EQS.items():
     plt.close(fig)
 
 print("assets written to", OUT)
+
+# ------------------------------------------------------------------
+# 5. paper-style i-CIR statistics (recomputed from the dataset),
+#    matching the paper's Fig. 2: (a) image queries, (b) text queries,
+#    (c) hard negatives per instance; (d) positives per composed query
+# ------------------------------------------------------------------
+import csv
+from collections import defaultdict
+
+img_q = defaultdict(set)
+txt_q = defaultdict(set)
+with open(f"{DATA}/query_files.csv") as fh:
+    for path, text, inst in csv.reader(fh):
+        img_q[inst].add(path)
+        txt_q[inst].add(text)
+pos_per_query = defaultdict(int)
+with open(f"{DATA}/database_files.csv") as fh:
+    for path, text, inst in csv.reader(fh):
+        if "/hn/" not in path:
+            pos_per_query[(inst, text)] += 1
+hn_counts = []
+for inst in sorted(os.listdir(f"{DATA}/database")):
+    hnd = f"{DATA}/database/{inst}/hn"
+    if os.path.isdir(hnd):
+        hn_counts.append(len(os.listdir(hnd)))
+
+import numpy as np
+import statistics
+panels = [
+    ("(a) image queries / instance", sorted(len(v) for v in img_q.values()),
+     np.arange(0.5, 26.5, 1)),
+    ("(b) text queries / instance", sorted(len(v) for v in txt_q.values()),
+     np.arange(0.5, 6.5, 1)),
+    ("(c) hard negatives / instance", sorted(hn_counts), 20),
+    ("(d) positives / composed query",
+     [min(v, 30) for v in pos_per_query.values()], np.arange(0.5, 31.5, 1)),
+]
+fig, axes = plt.subplots(1, 4, figsize=(13.2, 3.1), dpi=200)
+for i, (ax, (title, vals, bins)) in enumerate(zip(axes, panels)):
+    med = statistics.median(vals)
+    ax.hist(vals, bins=bins, color=BLUE, edgecolor="white", linewidth=0.6)
+    ax.axvline(med, color=ORANGE, lw=2)
+    ax.text(0.97, 0.92, f"median {med:g}", transform=ax.transAxes, ha="right",
+            fontsize=10.5, color=ORANGE, style="italic")
+    if i == 3:
+        ax.text(0.97, 0.78, "long tail to 127", transform=ax.transAxes,
+                ha="right", fontsize=9.5, color=GRAY, style="italic")
+    ax.set_title(title, fontsize=12.5, color=INK, loc="left")
+    for s in ("top", "right", "left"):
+        ax.spines[s].set_visible(False)
+    ax.grid(axis="y", color="#e1e0d9", lw=0.7)
+    ax.set_axisbelow(True)
+    ax.tick_params(length=0, labelsize=9.5, colors=GRAY)
+fig.tight_layout()
+fig.savefig(f"{OUT}/icir_paper_stats.png", facecolor="white")
+plt.close(fig)
+
+# ------------------------------------------------------------------
+# 6. slide-2 chair images letterboxed to identical 4:3 boxes
+# ------------------------------------------------------------------
+letterbox(f"{OUT}/chair_ref.jpg").save(f"{OUT}/chair_ref_43.jpg", quality=92)
+letterbox(f"{OUT}/chair_set.jpg").save(f"{OUT}/chair_set_43.jpg", quality=92)
+print("stats + chair 4:3 done")

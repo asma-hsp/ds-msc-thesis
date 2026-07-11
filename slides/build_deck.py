@@ -34,9 +34,11 @@ IMG = {
     "ladder_l": f"{ASSETS}/ladder_clipl.png",
     "ladder_s2": f"{ASSETS}/ladder_siglip2.png",
     "backbones": f"{ASSETS}/backbones.png",
-    "ref": f"{ASSETS}/chair_ref.jpg",
-    "top1": f"{ASSETS}/chair_set.jpg",
+    "ref": f"{ASSETS}/chair_ref_43.jpg",
+    "top1": f"{ASSETS}/chair_set_43.jpg",
+    "paper_stats": f"{ASSETS}/icir_paper_stats.png",
     "tintin_q": f"{FIG}/caption_example_samples/ref.jpg",
+    "eq_pk": f"{ASSETS}/eq_pk.png",
     "eq_ap": f"{ASSETS}/eq_ap.png",
     "eq_map": f"{ASSETS}/eq_map.png",
     "eq_mmap": f"{ASSETS}/eq_mmap.png",
@@ -91,6 +93,10 @@ def new_slide(title, notes=""):
     clean_placeholders(slide)
     if notes:
         slide.notes_slide.notes_text_frame.text = notes
+    # page number bottom-right (title slide is not built via new_slide)
+    n = len(prs.slides._sldIdLst)
+    txt(slide, Inches(9.25), Inches(7.08), Inches(0.55), Inches(0.32), str(n),
+        size=11, color=MUTED, align=PP_ALIGN.RIGHT)
     return slide
 
 def bullets(slide, items, left=Inches(0.68), top=Inches(1.55), w=Inches(8.6),
@@ -194,59 +200,68 @@ sldIdLst.remove(sldIdLst[1])
 # 2 — Composed Image Retrieval
 # =========================================================
 s = new_slide("Composed Image Retrieval (CIR)", notes=(
-    "1:00 — Running example: you have seen a chair you like and want the same chair, "
-    "but as a set around a table. Query = the chair image + 'placed around a table'; "
-    "target = that exact chair, arranged as a dining set. The two modalities are "
-    "complementary: the image fixes WHAT (this specific chair), the text specifies the "
-    "TRANSFORMATION (as a set around a table). Applications: product search, archive "
-    "exploration, digital asset management."))
+    "1:00 — Good morning everyone, and thank you for being here. Imagine that you see "
+    "a chair online that you really like, but you would like to find a dining set that "
+    "includes that same chair design together with a table. To express exactly what "
+    "you are looking for, you need to combine both elements: the image identifies the "
+    "chair, and the text describes the context in which you want to find it. This is "
+    "an example of composed image retrieval — the task of my thesis. The query "
+    "consists of a QUERY IMAGE and a QUERY TEXT; the goal is to retrieve images that "
+    "preserve the identity of the object in the query image while satisfying the "
+    "modification described by the query text."))
 Y, BH = Inches(1.75), Inches(2.15)
-add_pic(s, IMG["ref"], Inches(0.68), Y, Inches(2.3), BH)
-txt(s, Inches(3.05), Y, Inches(0.4), BH, "+", size=32, bold=True,
+add_pic(s, IMG["ref"], Inches(0.68), Y, Inches(2.5), BH)
+txt(s, Inches(3.2), Y, Inches(0.4), BH, "+", size=32, bold=True,
     align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
-card(s, Inches(3.5), Inches(2.35), Inches(2.0), Inches(1.0),
+card(s, Inches(3.6), Inches(2.35), Inches(2.0), Inches(1.0),
      text="“placed around\na table”", size=14, italic=True, color=BLUE)
-arrow(s, Inches(5.65), Inches(2.6), Inches(0.65))
-add_pic(s, IMG["top1"], Inches(6.5), Y, Inches(2.3), BH)
-txt(s, Inches(0.68), Inches(3.95), Inches(2.3), Inches(0.35), "reference image",
+arrow(s, Inches(5.7), Inches(2.6), Inches(0.6))
+add_pic(s, IMG["top1"], Inches(6.4), Y, Inches(2.5), BH)
+txt(s, Inches(0.68), Inches(3.95), Inches(2.5), Inches(0.35), "query image",
     size=12, color=MUTED, align=PP_ALIGN.CENTER)
-txt(s, Inches(3.5), Inches(3.45), Inches(2.0), Inches(0.35), "modification text",
+txt(s, Inches(3.6), Inches(3.45), Inches(2.0), Inches(0.35), "query text",
     size=12, color=MUTED, align=PP_ALIGN.CENTER)
-txt(s, Inches(6.5), Inches(3.95), Inches(2.3), Inches(0.35), "target image",
+txt(s, Inches(6.4), Inches(3.95), Inches(2.5), Inches(0.35), "target image",
     size=12, color=MUTED, align=PP_ALIGN.CENTER)
 bullets(s, [
-    "The query is a pair: a reference image and a modification text — “this, but changed as described”",
-    "The two modalities are complementary: the image fixes the subject, the text specifies its transformation",
-    "Neither modality alone can express the information need — composition is essential",
+    "The query consists of a query image and a query text",
+    ("Goal: retrieve images that preserve the identity of the object in the query "
+     "image while satisfying the modification described by the query text", {"bold": True}),
+    "Neither element alone can express the information need — both must be combined",
 ], top=Inches(4.55), size=16, gap=6)
-takeaway(s, "Retrieval conditioned jointly on visual content and a textual modification.",
-         Inches(6.45))
+takeaway(s, "Search with a picture and a sentence at the same time.", Inches(6.45))
 
 # =========================================================
 # 3 — Instance-level CIR
 # =========================================================
 s = new_slide("From categories to instances", notes=(
-    "0:50 — Same query, two regimes. Category-level: any chair around a table "
-    "satisfies the query — all four results count. Instance-level: only THIS chair "
-    "counts; the three other chair sets are hard negatives. Identity must be preserved "
-    "under the modification. Category-level methods have no mechanism for this."))
+    "0:50 — Unlike category-level retrieval, where any object from the correct class "
+    "may be accepted, instance-level retrieval requires the exact same object shown in "
+    "the query image. Why this is more challenging: candidates from the same category "
+    "look almost identical, so the system must separate one specific object from "
+    "thousands of lookalikes — and at the same time still recognise it when the "
+    "modification changes its appearance. Category-level methods have no mechanism "
+    "for this identity constraint."))
 add_pic(s, IMG["inst_cat"], Inches(0.55), Inches(1.5), Inches(8.9), Inches(3.85))
 bullets(s, [
-    ("Category-level CIR:  any instance of the class satisfies the query", {}),
-    ("Instance-level CIR:  the retrieved object must preserve the identity of the "
-     "reference — under changes of medium, material, viewpoint, and context",
-     {"bold": True}),
-], top=Inches(5.45), size=16, gap=6)
+    ("Category-level CIR:  any object from the correct class may be accepted", {}),
+    ("Instance-level CIR:  the retrieved object must be the exact same object shown "
+     "in the query image", {"bold": True}),
+    ("Harder: same-class candidates are near-lookalikes, yet the true object must "
+     "still be recognised under the modification", {}),
+], top=Inches(5.4), size=16, gap=5)
 
 # =========================================================
 # 4 — the i-CIR benchmark
 # =========================================================
 s = new_slide("The i-CIR benchmark — query structure", notes=(
-    "1:20 — Walk the tintin instance: 1 reference image, 5 modification texts = 5 "
-    "composed queries. Each query has MULTIPLE ground truths (3–14 here, green "
-    "badges). Hard negatives are curated per instance (5,128 for tintin): statues of "
-    "other characters, other rooftop signs, other cartoon t-shirts — designed so that "
-    "single-modality shortcuts fail. Psomas et al., 2025."))
+    "1:20 — For our experiments, we use the i-CIR benchmark. Each instance has "
+    "several composed queries, and each query may have multiple correct target "
+    "images. The dataset also includes hard negatives that were selected specifically "
+    "for each instance. These images are designed to confuse the retrieval system, "
+    "because they may match either the image or the text, but not both correctly. "
+    "(Walk one column: statue of another character; a rooftop without the sign; "
+    "another cartoon on a t-shirt.) Psomas et al., 2025."))
 add_pic(s, IMG["tintin_fig"], Inches(0.55), Inches(1.5), Inches(8.9), Inches(4.3))
 bullets(s, [
     ("Each instance contributes several composed queries; every query has multiple "
@@ -259,53 +274,58 @@ bullets(s, [
 # 5 — statistics
 # =========================================================
 s = new_slide("The i-CIR benchmark — scale", notes=(
-    "0:40 — 1,883 queries over 202 instances (median 6 per instance), searched among "
-    "752,092 database images. Histograms: queries per instance, positives per query, "
-    "pool sizes. Needle-in-a-haystack regime: positives are a vanishing fraction of "
-    "the database."))
-add_pic(s, IMG["stats"], Inches(0.55), Inches(1.5), Inches(8.9), Inches(3.8))
-stats = [("202", "object instances"), ("1,883", "composed queries"),
-         ("6", "median queries / instance"), ("752,092", "database images")]
+    "0:40 — The scale: a database of 752,092 images, 202 object instances, 1,883 "
+    "composed queries — median 6 per instance. Histograms as in the i-CIR paper "
+    "(recomputed from the dataset): image queries, text queries and hard negatives "
+    "per instance; positives per composed query. Needle-in-a-haystack regime: the "
+    "positives are a vanishing fraction of the database."))
+stats = [("752,092", "database images"), ("202", "object instances"),
+         ("1,883", "composed queries"), ("6", "median queries / instance")]
 for i, (num, lab) in enumerate(stats):
-    c = card(s, Inches(0.55 + i * 2.28), Inches(5.55), Inches(2.08), Inches(1.0),
+    c = card(s, Inches(0.55 + i * 2.28), Inches(1.7), Inches(2.08), Inches(1.0),
              text=num, size=22, bold=True, color=RED)
     p2 = c.text_frame.add_paragraph()
     p2.text = lab
     p2.alignment = PP_ALIGN.CENTER
     style_runs(p2, 12, color=MUTED)
+add_pic(s, IMG["paper_stats"], Inches(0.55), Inches(3.1), Inches(8.9), Inches(2.4))
+txt(s, Inches(0.55), Inches(5.7), Inches(8.9), Inches(0.4),
+    "distributions recomputed from the benchmark, following Psomas et al. (2025), Fig. 2",
+    size=11, color=MUTED, align=PP_ALIGN.CENTER)
 
 # =========================================================
 # 6 — problem formulation
 # =========================================================
 s = new_slide("Problem formulation — a zero-shot setting", notes=(
-    "1:00 — Formalise: rank the whole database by a scoring function conditioned on "
-    "the composed query. Why zero-shot: (i) no training triplets exist at instance "
-    "level; (ii) supervised fusion models inherit their training distribution — each "
-    "new instance would need new data; (iii) zero-shot generalises immediately. "
-    "Verbally place related work: supervised combiner networks (CIRR/FashionIQ) and "
-    "zero-shot textual-inversion methods (Pic2Word, SEARLE) address category-level "
-    "CIR — that literature motivates but does not solve the instance-level setting."))
-add_pic(s, IMG["eq_problem"], Inches(0.9), Inches(1.6), Inches(8.2), Inches(0.85))
+    "1:00 — To summarize the task: we are given a query image and a query text, and "
+    "we want to retrieve database images that are relevant to both. The system "
+    "assigns a score to every image in the database and ranks them from the most to "
+    "the least relevant. In this thesis we adopt a zero-shot setting: we do not train "
+    "or fine-tune any model on the i-CIR dataset. This choice is important because "
+    "supervised composed image retrieval requires labelled triplets — a query image, "
+    "a query text, and a target image. At the instance level, collecting these "
+    "annotations for every new object would be expensive and difficult to scale. By "
+    "using frozen pre-trained models, the system can be applied directly to "
+    "previously unseen object instances."))
+add_pic(s, IMG["eq_problem"], Inches(0.9), Inches(1.65), Inches(8.2), Inches(0.85))
 bullets(s, [
-    ("Open-set retrieval: rank the entire database by a scoring function "
-     "s(x | Iᵧ, tᵧ) — no candidate shortlist, no per-instance classifier", {}),
-    ("Supervision is neither available nor scalable: labelled (image, text, target) "
-     "triplets do not exist for these instances, and every newly added object would "
-     "require new annotation", {}),
-    ("Zero-shot constraint adopted throughout: frozen pre-trained models only — no "
-     "learned parameters, no fine-tuning", {"bold": True}),
-    ("Prior CIR work — supervised combiner networks and zero-shot textual "
-     "inversion — targets the category regime; neither preserves instance "
-     "identity for unseen objects", {}),
-], top=Inches(2.7), size=16, gap=9)
+    ("Every database image receives a relevance score; the database is ranked from "
+     "most to least relevant", {}),
+    ("Zero-shot setting: no model is trained or fine-tuned on i-CIR", {"bold": True}),
+    ("Why: supervised CIR needs labelled triplets (query image, query text, target) — "
+     "at the instance level this cannot scale to new objects", {}),
+    ("Frozen pre-trained models apply directly to previously unseen instances", {}),
+], top=Inches(2.85), size=17, gap=10)
 
 # =========================================================
 # 7 — evaluation
 # =========================================================
-s = new_slide("Evaluation protocol", notes=(
-    "1:00 — AP integrates the precision–recall curve of one ranked list; mAP averages "
-    "over queries; macro-mAP averages per instance first, so query-rich instances do "
-    "not dominate — the benchmark's primary metric."))
+s = new_slide("Evaluation metric", notes=(
+    "1:00 — The system returns a ranked list. Precision@k: the fraction of the top-k "
+    "results that are correct. Average precision: precision at each rank where a "
+    "correct image appears, averaged — high when the correct images sit at the top. "
+    "mAP averages over all 1,883 queries; macro-mAP first averages within each "
+    "instance, so every one of the 202 objects counts equally — the primary metric."))
 pos = {0, 2, 5}
 for i in range(8):
     card(s, Inches(0.75 + i * 0.72), Inches(1.55), Inches(0.6), Inches(0.6),
@@ -313,34 +333,44 @@ for i in range(8):
          fill=RGBColor(0x0C, 0xA3, 0x0C) if i in pos else LIGHT,
          line=None, size=18, bold=True, color=WHITE)
 txt(s, Inches(6.7), Inches(1.62), Inches(2.7), Inches(0.5),
-    "ranked list (green = ground truth)", size=12, color=MUTED)
-rows = [("eq_ap", "Average precision — the area under one query's precision–recall curve"),
-        ("eq_map", "mAP — every query weighted equally"),
-        ("eq_mmap", "macro-mAP — every instance weighted equally; the primary metric")]
+    "ranked list (green = correct)", size=12, color=MUTED)
+mrows = [
+    ("eq_pk", "Precision@k", "fraction of the top-k results that are correct"),
+    ("eq_ap", "Average Precision", "precision at each correct result's rank, averaged"),
+    ("eq_map", "mAP", "mean over all queries"),
+    ("eq_mmap", "macro-mAP", "per-instance average first — the primary metric"),
+]
 y = Inches(2.45)
-for eq, lab in rows:
-    add_pic(s, IMG[eq], Inches(0.75), y, Inches(4.5), Inches(0.95))
-    txt(s, Inches(5.5), y + Inches(0.18), Inches(3.9), Inches(0.85), lab,
-        size=14, color=INK)
-    y += Inches(1.15)
+for eq, name, desc in mrows:
+    b = txt(s, Inches(0.75), y + Inches(0.06), Inches(3.15), Inches(0.95),
+            name, size=14, bold=True, color=INK)
+    p2 = b.text_frame.add_paragraph()
+    p2.text = desc
+    style_runs(p2, 11.5, color=MUTED)
+    add_pic(s, IMG[eq], Inches(4.05), y, Inches(5.3), Inches(0.92))
+    y += Inches(1.08)
 
 # =========================================================
 # 8 — VLMs / CLIP
 # =========================================================
 s = new_slide("Vision–language models: a shared embedding space", notes=(
-    "1:20 — Dual-encoder architecture, contrastively pre-trained on 400M pairs: "
-    "matching image–caption pairs are pulled together in a common vector space. "
-    "Consequence: image–text relevance reduces to cosine similarity of two "
-    "embeddings. Baseline backbone: CLIP ViT-L/14, frozen. This is the slide the "
-    "non-CV committee must retain."))
+    "1:20 — The building block. CLIP: two encoders — one for images, one for text — "
+    "trained on 400 million image–caption pairs so that an image and a text with the "
+    "same meaning land on nearby points in one shared vector space. Consequence: the "
+    "relevance between any image and any sentence is just the cosine similarity of "
+    "two vectors. SigLIP is a newer model of the same family, trained with an "
+    "improved (sigmoid) objective — it appears later as an alternative backbone. "
+    "Both are used frozen. This is the slide the non-CV committee must retain."))
 add_pic(s, IMG["clip"], Inches(0.55), Inches(1.5), Inches(8.9), Inches(3.5))
 bullets(s, [
-    "Dual encoder: images and sentences are mapped into one common vector space",
-    "Contrastive pre-training on 400M web image–caption pairs (CLIP; Radford et al., 2021)",
-    ("Cross-modal relevance = cosine similarity of two embeddings — computable for "
-     "any image against any sentence", {"bold": True}),
-    "Baseline backbone in this work: CLIP ViT-L/14, frozen",
-], top=Inches(5.15), size=15, gap=5)
+    ("CLIP: two encoders trained on 400M image–caption pairs, mapping images and "
+     "sentences into one shared vector space (Radford et al., 2021)", {}),
+    ("Relevance between any image and any sentence = cosine similarity of their "
+     "vectors", {"bold": True}),
+    ("SigLIP / SigLIP2: same dual-encoder family, newer sigmoid training objective — "
+     "used later as an alternative backbone", {}),
+    ("Both used frozen; baseline backbone: CLIP ViT-L/14", {}),
+], top=Inches(5.1), size=15, gap=5)
 
 # =========================================================
 # 9 — BASIC
@@ -348,13 +378,13 @@ bullets(s, [
 s = new_slide("The BASIC method (Psomas et al., 2025)", notes=(
     "1:20 — The benchmark's zero-shot reference method, our baseline. Two unimodal "
     "branches score every database image independently: visual similarity to the "
-    "reference; textual similarity to the modification. Branch-specific "
+    "query image; textual similarity to the query text. Branch-specific "
     "post-processing (walk the figure at high level), then multiplicative fusion — a "
     "soft conjunction, which is what composed queries demand."))
 add_pic(s, IMG["basic"], Inches(0.55), Inches(1.5), Inches(8.9), Inches(3.55))
 bullets(s, [
-    ("Image branch  sᵛ(x): visual similarity between database image and the reference", {}),
-    ("Text branch  sᵗ(x): similarity between database image and the modification text", {}),
+    ("Image branch  sᵛ(x): visual similarity between database image and the query image", {}),
+    ("Text branch  sᵗ(x): similarity between database image and the query text", {}),
     ("Multiplicative fusion  sᵛ · sᵗ  — a soft logical AND: both conditions must "
      "hold simultaneously", {"bold": True}),
 ], top=Inches(5.15), size=15, gap=5)
@@ -394,41 +424,46 @@ s = new_slide("The structural limitation — and the proposal", notes=(
     "caption of the imagined target; embedded with the same frozen text encoder, it "
     "becomes a third multiplicative branch. This is the thesis title in one line."))
 txt(s, Inches(0.68), Inches(1.5), Inches(8.6), Inches(0.75),
-    "In BASIC, no component ever reads the reference image and the modification text together.",
+    "In BASIC, no component ever reads the query image and the query text together.",
     size=18, bold=True, color=RED)
 bullets(s, [
     ("Both branches are unimodal, so the composition “this object” × “this "
      "transformation” is never modelled — “as a painting” and “next to a painting” "
      "demand different targets, yet each branch sees only its half of the query", {}),
 ], top=Inches(2.3), size=15, gap=5)
-add_pic(s, IMG["tintin_q"], Inches(0.68), Inches(3.7), Inches(1.55), Inches(1.3))
-card(s, Inches(0.68), Inches(5.15), Inches(1.55), Inches(0.85),
-     text="“as an iconic\nrooftop sign”", size=11, italic=True, color=BLUE)
-arrow(s, Inches(2.4), Inches(4.45), Inches(0.5))
-card(s, Inches(3.05), Inches(4.2), Inches(1.85), Inches(1.0), fill=ROSE,
-     text="multimodal LLM\n(reads both)", size=13, bold=True)
-arrow(s, Inches(5.05), Inches(4.45), Inches(0.5))
-card(s, Inches(5.7), Inches(4.05), Inches(3.6), Inches(1.3),
-     text="“Cartoon character in a beige coat and blue shirt appears as an "
-          "iconic rooftop sign.”", size=12, italic=True, align=PP_ALIGN.LEFT)
-txt(s, Inches(5.7), Inches(5.4), Inches(3.6), Inches(0.4),
-    "a caption of the imagined target", size=12, color=MUTED,
+# proposal motif — one aligned row
+MY, MH = Inches(3.85), Inches(1.5)
+add_pic(s, IMG["ref"], Inches(0.68), MY, Inches(1.5), MH)
+card(s, Inches(2.28), MY + Inches(0.2), Inches(1.6), Inches(1.1),
+     text="“placed around\na table”", size=12, italic=True, color=BLUE)
+arrow(s, Inches(3.98), MY + Inches(0.54), Inches(0.5))
+card(s, Inches(4.58), MY + Inches(0.2), Inches(1.5), Inches(1.1), fill=ROSE,
+     text="multimodal\nLLM", size=13, bold=True)
+arrow(s, Inches(6.18), MY + Inches(0.54), Inches(0.5))
+card(s, Inches(6.78), MY, Inches(2.55), MH,
+     text="“White metallic chair with scrolled armrests placed around a table.”",
+     size=11.5, italic=True, align=PP_ALIGN.LEFT)
+txt(s, Inches(0.68), MY + MH + Inches(0.08), Inches(3.2), Inches(0.35),
+    "query image  +  query text", size=12, color=MUTED, align=PP_ALIGN.CENTER)
+txt(s, Inches(6.78), MY + MH + Inches(0.08), Inches(2.55), Inches(0.35),
+    "caption of the imagined target", size=12, color=MUTED,
     align=PP_ALIGN.CENTER)
-txt(s, Inches(0.68), Inches(6.15), Inches(2.2), Inches(0.5),
-    "third branch:", size=14, bold=True, color=INK)
-add_pic(s, IMG["eq_triplet"], Inches(2.6), Inches(6.05), Inches(3.2), Inches(0.7))
+txt(s, Inches(2.3), Inches(6.2), Inches(2.2), Inches(0.5),
+    "third scoring branch:", size=14, bold=True, color=INK)
+add_pic(s, IMG["eq_triplet"], Inches(4.55), Inches(6.1), Inches(3.0), Inches(0.7))
 
 # =========================================================
 # 12 — caption generation
 # =========================================================
 s = new_slide("Target-caption generation", notes=(
-    "1:10 — Captioner: InternVL 3.5 (8B), frozen; conditioned on reference image + "
-    "modification; instructed to describe the target. Five instruction strategies "
-    "yield five diverse captions per query. Caption embedded by the SAME frozen text "
-    "encoder — zero-shot preserved, nothing trained."))
+    "1:10 — Captioner: InternVL 3.5 (8B), frozen; conditioned on the query image and "
+    "the query text; instructed to describe the target. Five instruction strategies "
+    "yield five diverse captions per query (two shown, for our chair example). "
+    "Caption embedded by the SAME frozen text encoder — zero-shot preserved, nothing "
+    "trained."))
 bullets(s, [
-    ("Captioner: InternVL 3.5 (8B), frozen — conditioned on the reference image and "
-     "the modification text", {}),
+    ("Captioner: InternVL 3.5 (8B), frozen — conditioned on the query image and the "
+     "query text", {}),
     ("The instruction matters: five prompting strategies produce five diverse "
      "captions per query", {}),
     ("adaptive precision · constraint-priority · anti-noise contract · slot-fill "
@@ -436,14 +471,14 @@ bullets(s, [
     ("The caption is embedded by the same frozen text encoder and scored like any "
      "text — the pipeline remains fully zero-shot", {"bold": True}),
 ], top=Inches(1.55), size=16, gap=7)
-add_pic(s, IMG["tintin_q"], Inches(0.68), Inches(4.2), Inches(1.6), Inches(1.35))
+add_pic(s, IMG["ref"], Inches(0.68), Inches(4.2), Inches(1.6), Inches(1.35))
 card(s, Inches(0.68), Inches(5.7), Inches(1.6), Inches(0.8),
-     text="“as an iconic\nrooftop sign”", size=11, italic=True, color=BLUE)
+     text="“placed around\na table”", size=11, italic=True, color=BLUE)
 for i, (tag, cap) in enumerate([
-        ("draft–refine", "“Cartoon character in a beige coat and blue shirt appears "
-                         "as an iconic rooftop sign.”"),
-        ("constraint-priority", "“A character wearing a trench coat, blonde hair, and "
-                                "a blue shirt, is an iconic rooftop sign.”")]):
+        ("draft–refine", "“White metallic chair with scrolled armrests placed "
+                         "around a table.”"),
+        ("constraint-priority", "“A white metal chair with scrolled armrests and "
+                                "vertical back bars, placed around a table.”")]):
     c = card(s, Inches(2.6), Inches(4.2 + i * 1.15), Inches(6.7), Inches(1.02),
              text=f"{tag}:", size=11, bold=True, color=RED, align=PP_ALIGN.LEFT)
     p2 = c.text_frame.add_paragraph()
@@ -581,6 +616,41 @@ takeaway(s, "61.98 macro-mAP, fully zero-shot — +4.3 over BASIC's best configu
          Inches(6.2))
 
 # =========================================================
+# 18b — the best overall system
+# =========================================================
+s = new_slide("Our best overall system", notes=(
+    "0:40 — One slide, one recipe: SigLIP2 backbone + InternVL captions (five "
+    "instruction strategies, averaged) + centering and contextualization, nothing "
+    "after. 61.98 macro-mAP / 62.07 micro-mAP, all components frozen. +4.3 over the "
+    "strongest BASIC configuration and +23.9 over the raw img × txt product on the "
+    "same backbone."))
+recipe = [("backbone", "SigLIP2\n(frozen dual encoder)"),
+          ("caption branch", "InternVL 8B\n5 captions, averaged"),
+          ("post-processing", "centering\n+ contextualization")]
+for i, (lab, val) in enumerate(recipe):
+    c = card(s, Inches(0.75 + i * 2.95), Inches(1.75), Inches(2.7), Inches(1.45),
+             text=lab, size=12, color=MUTED)
+    for ln in val.split("\n"):
+        p2 = c.text_frame.add_paragraph()
+        p2.text = ln
+        p2.alignment = PP_ALIGN.CENTER
+        style_runs(p2, 15, bold=True, color=INK)
+    if i < 2:
+        txt(s, Inches(3.42 + i * 2.95), Inches(2.2), Inches(0.4), Inches(0.5),
+            "+", size=24, bold=True, color=RED, align=PP_ALIGN.CENTER)
+big = card(s, Inches(2.3), Inches(3.7), Inches(5.4), Inches(1.7), fill=ROSE,
+           line=None, text="61.98", size=48, bold=True, color=RED)
+p2 = big.text_frame.add_paragraph()
+p2.text = "macro-mAP · fully zero-shot"
+p2.alignment = PP_ALIGN.CENTER
+style_runs(p2, 14, color=MUTED)
+bullets(s, [
+    ("+4.3 over the strongest BASIC configuration (57.69) — after all of its "
+     "post-processing", {}),
+    ("+23.9 over the raw img × txt product on the same backbone (38.12)", {}),
+], top=Inches(5.75), size=16, gap=6)
+
+# =========================================================
 # 19 — qualitative success
 # =========================================================
 s = new_slide("Qualitative — where the caption wins", notes=(
@@ -595,7 +665,7 @@ add_pic(s, IMG["success"], Inches(0.55), Inches(1.5), Inches(8.9), Inches(5.55))
 # =========================================================
 s = new_slide("Qualitative — characteristic failure", notes=(
     "0:45 (flex) — Mask of Agamemnon, 'as a painting'. The target is an abstract "
-    "painting, visually remote from the reference; every pipeline returns real masks. "
+    "painting, visually remote from the query image; every pipeline returns real masks. "
     "When the modification demands a drastic domain shift, the visual branch "
     "dominates the product. Honest diagnosis — sets up future work."))
 add_pic(s, IMG["failure"], Inches(0.55), Inches(1.5), Inches(8.9), Inches(4.65))
@@ -642,8 +712,22 @@ bullets(s, [
      "helping — the system reaches 61.98 macro-mAP, +4.3 over the strongest BASIC "
      "configuration", {}),
 ], top=Inches(1.7), size=17, gap=10)
-txt(s, Inches(0.68), Inches(5.5), Inches(8.6), Inches(0.7), "Thank you.",
-    size=30, bold=True, color=RED, align=PP_ALIGN.CENTER)
+
+# =========================================================
+# thank-you slide (full-bleed red)
+# =========================================================
+s = new_slide("")
+bg = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, prs.slide_width,
+                        prs.slide_height)
+bg.fill.solid(); bg.fill.fore_color.rgb = RED
+bg.line.fill.background()
+tf = bg.text_frame
+tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+p = tf.paragraphs[0]
+p.text = "Thank you!"
+p.alignment = PP_ALIGN.CENTER
+style_runs(p, 54, bold=True, color=WHITE)
+s.notes_slide.notes_text_frame.text = "Thank the committee; open for questions."
 
 # =========================================================
 # backups
@@ -686,16 +770,17 @@ bullets(s, [
     "Levers: fewer captions K, shorter generations, smaller / quantised MLLM, batched decoding",
 ], top=Inches(1.8), size=16, gap=9)
 
-s = new_slide("Backup — the five caption instructions", notes="Tintin example, all five.")
-add_pic(s, IMG["tintin_q"], Inches(0.68), Inches(1.7), Inches(2.0), Inches(1.7))
+s = new_slide("Backup — the five caption instructions",
+              notes="Chair example, all five (InternVL, INSTR F–J).")
+add_pic(s, IMG["ref"], Inches(0.68), Inches(1.7), Inches(2.0), Inches(1.7))
 txt(s, Inches(0.68), Inches(3.55), Inches(2.0), Inches(0.6),
-    "“as an iconic rooftop sign”", size=12, italic=True, color=BLUE,
+    "“placed around a table”", size=12, italic=True, color=BLUE,
     align=PP_ALIGN.CENTER)
-caps = [("A · adaptive precision", "A character with a beige coat and blue shirt, as an iconic rooftop sign"),
-        ("B · constraint-priority", "A character wearing a trench coat, blonde hair, and a blue shirt, is an iconic rooftop sign."),
-        ("C · anti-noise contract", "Character in a beige trench coat, blue shirt, with blushing cheeks and short orange hair as an iconic rooftop sign."),
-        ("D · slot-fill template", "a cartoon character wearing a trench coat, blushing, with short hair as an iconic rooftop sign."),
-        ("E · draft–refine", "Cartoon character in a beige coat and blue shirt appears as an iconic rooftop sign.")]
+caps = [("adaptive precision", "A metallic chair with ornate details, placed around a table."),
+        ("constraint-priority", "A white metal chair with scrolled armrests and vertical back bars, placed around a table."),
+        ("anti-noise contract", "White metal chair with scrolled armrests and vertical back bars placed around a table."),
+        ("slot-fill template", "a white metal chair with ornate back, scrolled armrests, and four legs placed around a table."),
+        ("draft–refine", "White metallic chair with scrolled armrests placed around a table.")]
 for i, (tag, cap) in enumerate(caps):
     card(s, Inches(3.0), Inches(1.6 + i * 1.05), Inches(6.4), Inches(0.95),
          text=f"{tag}:  “{cap}”", size=11, align=PP_ALIGN.LEFT)
