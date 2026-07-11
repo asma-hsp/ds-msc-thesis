@@ -101,21 +101,24 @@ fig.savefig(f"{OUT}/icir_tintin.png", facecolor="white")
 plt.close(fig)
 
 # ------------------------------------------------------------------
-# 2. category-level vs instance-level
+# 2. category-level vs instance-level  (ornate metal chair)
 # ------------------------------------------------------------------
-results = [f"{TINTIN_DB}/on_a_t-shirt/tintin_on_a_t-shirt_pos03.jpg",
-           f"{TINTIN_DB}/hn/tintin_hn4311.jpg",
-           f"{TINTIN_DB}/hn/tintin_hn4295.jpg"]
+CHAIR_DB = f"{DATA}/database/ornate_metal_chair"
+CHAIR_Q = f"{DATA}/query/ornate_metal_chair/ornate_metal_chair_image_query1.jpg"
+results = [f"{CHAIR_DB}/placed_around_a_table/ornate_metal_chair_placed_around_a_table_pos1.jpg",
+           f"{CHAIR_DB}/hn/ornate_metal_chair_hn2116.jpg",
+           f"{CHAIR_DB}/hn/ornate_metal_chair_hn2117.jpg",
+           f"{CHAIR_DB}/hn/ornate_metal_chair_hn2120.jpg"]
 rows = [
-    ("Category-level", "“a cartoon character\non a t-shirt”", [True, True, True]),
-    ("Instance-level", "“this character\non a t-shirt”", [True, False, False]),
+    ("Category-level", "“a chair placed\naround a table”", [True, True, True, True]),
+    ("Instance-level", "“this chair placed\naround a table”", [True, False, False, False]),
 ]
-fig = plt.figure(figsize=(11.5, 5.6), dpi=200)
-gs = fig.add_gridspec(2, 5, width_ratios=[1, 1.15, 1, 1, 1], hspace=0.42,
+fig = plt.figure(figsize=(12.5, 5.6), dpi=200)
+gs = fig.add_gridspec(2, 6, width_ratios=[1, 1.15, 1, 1, 1, 1], hspace=0.42,
                       wspace=0.12, left=0.01, right=0.99, top=0.90, bottom=0.03)
 for r, (mode, qtext, oks) in enumerate(rows):
     axq = fig.add_subplot(gs[r, 0])
-    axq.imshow(letterbox(f"{DATA}/query/tintin/tintin_image_query1.jpg"))
+    axq.imshow(letterbox(CHAIR_Q))
     axq.set_xticks([]); axq.set_yticks([])
     for sp in axq.spines.values():
         sp.set_edgecolor(ORANGE); sp.set_linewidth(2.5)

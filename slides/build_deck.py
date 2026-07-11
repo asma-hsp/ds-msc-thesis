@@ -34,8 +34,8 @@ IMG = {
     "ladder_l": f"{ASSETS}/ladder_clipl.png",
     "ladder_s2": f"{ASSETS}/ladder_siglip2.png",
     "backbones": f"{ASSETS}/backbones.png",
-    "ref": f"{ASSETS}/portofino_ref.jpg",
-    "top1": f"{ASSETS}/portofino_painting.jpg",
+    "ref": f"{ASSETS}/chair_ref.jpg",
+    "top1": f"{ASSETS}/chair_set.jpg",
     "tintin_q": f"{FIG}/caption_example_samples/ref.jpg",
     "eq_ap": f"{ASSETS}/eq_ap.png",
     "eq_map": f"{ASSETS}/eq_map.png",
@@ -194,16 +194,18 @@ sldIdLst.remove(sldIdLst[1])
 # 2 — Composed Image Retrieval
 # =========================================================
 s = new_slide("Composed Image Retrieval (CIR)", notes=(
-    "1:00 — Define the task on the running example (Portofino + 'as a painting'). The "
-    "two query modalities carry complementary information: the image fixes WHAT (this "
-    "specific harbour), the text specifies the TRANSFORMATION (rendered as a painting). "
-    "Applications: product search, archive exploration, digital asset management."))
+    "1:00 — Running example: you have seen a chair you like and want the same chair, "
+    "but as a set around a table. Query = the chair image + 'placed around a table'; "
+    "target = that exact chair, arranged as a dining set. The two modalities are "
+    "complementary: the image fixes WHAT (this specific chair), the text specifies the "
+    "TRANSFORMATION (as a set around a table). Applications: product search, archive "
+    "exploration, digital asset management."))
 Y, BH = Inches(1.75), Inches(2.15)
 add_pic(s, IMG["ref"], Inches(0.68), Y, Inches(2.3), BH)
 txt(s, Inches(3.05), Y, Inches(0.4), BH, "+", size=32, bold=True,
     align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
 card(s, Inches(3.5), Inches(2.35), Inches(2.0), Inches(1.0),
-     text="“as a painting”", size=14, italic=True, color=BLUE)
+     text="“placed around\na table”", size=14, italic=True, color=BLUE)
 arrow(s, Inches(5.65), Inches(2.6), Inches(0.65))
 add_pic(s, IMG["top1"], Inches(6.5), Y, Inches(2.3), BH)
 txt(s, Inches(0.68), Inches(3.95), Inches(2.3), Inches(0.35), "reference image",
@@ -224,11 +226,11 @@ takeaway(s, "Retrieval conditioned jointly on visual content and a textual modif
 # 3 — Instance-level CIR
 # =========================================================
 s = new_slide("From categories to instances", notes=(
-    "0:50 — Same modification, two regimes. Category-level: any object of the right "
-    "class satisfies the query. Instance-level: only the SAME object counts — identity "
-    "must be preserved under drastic appearance change (statue, sign, print). Standard "
-    "category-level methods have no mechanism for this."))
-add_pic(s, IMG["inst_cat"], Inches(0.8), Inches(1.5), Inches(8.4), Inches(3.85))
+    "0:50 — Same query, two regimes. Category-level: any chair around a table "
+    "satisfies the query — all four results count. Instance-level: only THIS chair "
+    "counts; the three other chair sets are hard negatives. Identity must be preserved "
+    "under the modification. Category-level methods have no mechanism for this."))
+add_pic(s, IMG["inst_cat"], Inches(0.55), Inches(1.5), Inches(8.9), Inches(3.85))
 bullets(s, [
     ("Category-level CIR:  any instance of the class satisfies the query", {}),
     ("Instance-level CIR:  the retrieved object must preserve the identity of the "
