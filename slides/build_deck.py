@@ -34,8 +34,8 @@ IMG = {
     "ladder_l": f"{ASSETS}/ladder_clipl.png",
     "ladder_s2": f"{ASSETS}/ladder_siglip2.png",
     "backbones": f"{ASSETS}/backbones.png",
-    "ref": f"{FIG}/pipeline_samples/ref.jpg",
-    "top1": f"{FIG}/pipeline_samples/top1.jpg",
+    "ref": f"{ASSETS}/portofino_ref.jpg",
+    "top1": f"{ASSETS}/portofino_painting.jpg",
     "tintin_q": f"{FIG}/caption_example_samples/ref.jpg",
     "eq_ap": f"{ASSETS}/eq_ap.png",
     "eq_map": f"{ASSETS}/eq_map.png",
@@ -194,16 +194,16 @@ sldIdLst.remove(sldIdLst[1])
 # 2 — Composed Image Retrieval
 # =========================================================
 s = new_slide("Composed Image Retrieval (CIR)", notes=(
-    "1:00 — Define the task on the running example (Temple of Poseidon + 'in an old "
-    "archival photo'). The two query modalities carry complementary information: the "
-    "image fixes WHAT, the text specifies the TRANSFORMATION. Applications: product "
-    "search, archive exploration, digital asset management."))
+    "1:00 — Define the task on the running example (Portofino + 'as a painting'). The "
+    "two query modalities carry complementary information: the image fixes WHAT (this "
+    "specific harbour), the text specifies the TRANSFORMATION (rendered as a painting). "
+    "Applications: product search, archive exploration, digital asset management."))
 Y, BH = Inches(1.75), Inches(2.15)
 add_pic(s, IMG["ref"], Inches(0.68), Y, Inches(2.3), BH)
 txt(s, Inches(3.05), Y, Inches(0.4), BH, "+", size=32, bold=True,
     align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
 card(s, Inches(3.5), Inches(2.35), Inches(2.0), Inches(1.0),
-     text="“in an old\narchival photo”", size=14, italic=True, color=BLUE)
+     text="“as a painting”", size=14, italic=True, color=BLUE)
 arrow(s, Inches(5.65), Inches(2.6), Inches(0.65))
 add_pic(s, IMG["top1"], Inches(6.5), Y, Inches(2.3), BH)
 txt(s, Inches(0.68), Inches(3.95), Inches(2.3), Inches(0.35), "reference image",

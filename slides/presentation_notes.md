@@ -11,8 +11,8 @@ without training any model.
 
 ## 2. Composed Image Retrieval | 1:00 | cum 1:20
 The task is called Composed Image Retrieval. The query has two parts — here, a
-photograph of the Temple of Poseidon and the sentence "in an old archival photo".
-The correct answer is this same temple, as it appears in an archival photograph.
+photograph of the harbour at Portofino and the sentence "as a painting". The
+correct answer is this same harbour, rendered as a painting.
 
 The two modalities are complementary: the image fixes the subject, the text
 specifies its transformation. Neither alone expresses the information need — in
