@@ -235,8 +235,6 @@ bullets(s, [
      "reference — under changes of medium, material, viewpoint, and context",
      {"bold": True}),
 ], top=Inches(5.45), size=16, gap=6)
-takeaway(s, "Instance-level: recognizing identity, not category, under drastic appearance change.",
-         Inches(6.55))
 
 # =========================================================
 # 4 — the i-CIR benchmark
@@ -247,7 +245,7 @@ s = new_slide("The i-CIR benchmark — query structure", notes=(
     "badges). Hard negatives are curated per instance (5,128 for tintin): statues of "
     "other characters, other rooftop signs, other cartoon t-shirts — designed so that "
     "single-modality shortcuts fail. Psomas et al., 2025."))
-add_pic(s, IMG["tintin_fig"], Inches(0.45), Inches(1.5), Inches(9.1), Inches(4.3))
+add_pic(s, IMG["tintin_fig"], Inches(0.55), Inches(1.5), Inches(8.9), Inches(4.3))
 bullets(s, [
     ("Each instance contributes several composed queries; every query has multiple "
      "ground-truth targets", {}),
@@ -267,7 +265,7 @@ add_pic(s, IMG["stats"], Inches(0.55), Inches(1.5), Inches(8.9), Inches(3.8))
 stats = [("202", "object instances"), ("1,883", "composed queries"),
          ("6", "median queries / instance"), ("752,092", "database images")]
 for i, (num, lab) in enumerate(stats):
-    c = card(s, Inches(0.62 + i * 2.25), Inches(5.55), Inches(2.05), Inches(1.0),
+    c = card(s, Inches(0.55 + i * 2.28), Inches(5.55), Inches(2.08), Inches(1.0),
              text=num, size=22, bold=True, color=RED)
     p2 = c.text_frame.add_paragraph()
     p2.text = lab
@@ -282,9 +280,9 @@ s = new_slide("Problem formulation — a zero-shot setting", notes=(
     "the composed query. Why zero-shot: (i) no training triplets exist at instance "
     "level; (ii) supervised fusion models inherit their training distribution — each "
     "new instance would need new data; (iii) zero-shot generalises immediately. "
-    "Verbally place related work: supervised combiner networks and textual inversion "
-    "dominate category-level CIR — that literature motivates but does not solve this "
-    "setting."))
+    "Verbally place related work: supervised combiner networks (CIRR/FashionIQ) and "
+    "zero-shot textual-inversion methods (Pic2Word, SEARLE) address category-level "
+    "CIR — that literature motivates but does not solve the instance-level setting."))
 add_pic(s, IMG["eq_problem"], Inches(0.9), Inches(1.6), Inches(8.2), Inches(0.85))
 bullets(s, [
     ("Open-set retrieval: rank the entire database by a scoring function "
@@ -294,11 +292,10 @@ bullets(s, [
      "require new annotation", {}),
     ("Zero-shot constraint adopted throughout: frozen pre-trained models only — no "
      "learned parameters, no fine-tuning", {"bold": True}),
-    ("Supervised CIR (combiner networks, textual inversion) addresses the category "
-     "regime; it does not transfer to unseen instances", {}),
+    ("Prior CIR work — supervised combiner networks and zero-shot textual "
+     "inversion — targets the category regime; neither preserves instance "
+     "identity for unseen objects", {}),
 ], top=Inches(2.7), size=16, gap=9)
-takeaway(s, "Every component that follows is a frozen pre-trained model — nothing is trained.",
-         Inches(6.3))
 
 # =========================================================
 # 7 — evaluation
@@ -324,8 +321,6 @@ for eq, lab in rows:
     txt(s, Inches(5.5), y + Inches(0.18), Inches(3.9), Inches(0.85), lab,
         size=14, color=INK)
     y += Inches(1.15)
-takeaway(s, "Primary metric: macro-mAP — each of the 202 instances counts equally.",
-         Inches(6.15))
 
 # =========================================================
 # 8 — VLMs / CLIP
@@ -354,7 +349,7 @@ s = new_slide("The BASIC method (Psomas et al., 2025)", notes=(
     "reference; textual similarity to the modification. Branch-specific "
     "post-processing (walk the figure at high level), then multiplicative fusion — a "
     "soft conjunction, which is what composed queries demand."))
-add_pic(s, IMG["basic"], Inches(0.4), Inches(1.5), Inches(9.2), Inches(3.55))
+add_pic(s, IMG["basic"], Inches(0.55), Inches(1.5), Inches(8.9), Inches(3.55))
 bullets(s, [
     ("Image branch  sᵛ(x): visual similarity between database image and the reference", {}),
     ("Text branch  sᵗ(x): similarity between database image and the modification text", {}),
@@ -385,8 +380,6 @@ bullets(s, [
     ("The penalty suppresses candidates that excel in one modality but are mediocre "
      "in the other — precisely the benchmark's designed negatives", {}),
 ], top=Inches(5.35), size=15, gap=4)
-takeaway(s, "Both branch scores must be simultaneously high — single-modality shortcuts are penalised.",
-         Inches(6.25))
 
 # =========================================================
 # 11 — hinge
@@ -402,10 +395,9 @@ txt(s, Inches(0.68), Inches(1.5), Inches(8.6), Inches(0.75),
     "In BASIC, no component ever reads the reference image and the modification text together.",
     size=18, bold=True, color=RED)
 bullets(s, [
-    ("Each branch is unimodal — the composition “this object” × “this transformation” "
-     "is never modelled", {}),
-    ("Compositional semantics are lost:  “as a painting”  vs  “next to a painting” "
-     "yield identical unimodal scores", {}),
+    ("Both branches are unimodal, so the composition “this object” × “this "
+     "transformation” is never modelled — “as a painting” and “next to a painting” "
+     "demand different targets, yet each branch sees only its half of the query", {}),
 ], top=Inches(2.3), size=15, gap=5)
 add_pic(s, IMG["tintin_q"], Inches(0.68), Inches(3.7), Inches(1.55), Inches(1.3))
 card(s, Inches(0.68), Inches(5.15), Inches(1.55), Inches(0.85),
@@ -420,7 +412,9 @@ card(s, Inches(5.7), Inches(4.05), Inches(3.6), Inches(1.3),
 txt(s, Inches(5.7), Inches(5.4), Inches(3.6), Inches(0.4),
     "a caption of the imagined target", size=12, color=MUTED,
     align=PP_ALIGN.CENTER)
-add_pic(s, IMG["eq_triplet"], Inches(3.2), Inches(6.1), Inches(3.4), Inches(0.75))
+txt(s, Inches(0.68), Inches(6.15), Inches(2.2), Inches(0.5),
+    "third branch:", size=14, bold=True, color=INK)
+add_pic(s, IMG["eq_triplet"], Inches(2.6), Inches(6.05), Inches(3.2), Inches(0.7))
 
 # =========================================================
 # 12 — caption generation
@@ -465,7 +459,7 @@ s = new_slide("Effect of the caption branch", notes=(
     "files). One caption: +5.9 macro. Averaging five: +7.5 — and no prompt selection "
     "on the evaluation set."))
 table(s, [
-    ("configuration", "macro-mAP", "mAP"),
+    ("configuration", "macro-mAP", "mAP (micro)"),
     ("img × txt   (BASIC baseline, no caption)", "17.95", "21.85"),
     ("img × txt × caption   (single, draft–refine)", "23.83", "29.46"),
     ("img × txt × caption   (5 captions, averaged)", "25.41", "30.79"),
@@ -488,10 +482,13 @@ takeaway(s, "The joint image–text reading that BASIC lacks is worth +7.5 macro
 # =========================================================
 s = new_slide("Post-processing I — centering", notes=(
     "1:00 — VLM embeddings are anisotropic: a large shared component (generic "
-    "photographic/linguistic statistics) inflates ALL similarities. Centering "
-    "subtracts a precomputed corpus mean and re-normalises; computed once offline, "
-    "zero query-time cost. Consistent gains on every backbone and both pipelines "
-    "(docs/full_centering_table.csv)."))
+    "visual/linguistic statistics) inflates ALL similarities. Centering subtracts a "
+    "precomputed corpus mean and re-normalises; computed once offline, zero query-time "
+    "cost. Numbers: runs/final_experiments/ablation_clip_l and siglip2_ladder run "
+    "summaries — same provenance as every other slide. Honest nuance: with the caption "
+    "branch the gain shrinks (CLIP-L +6.5) and on SigLIP2 vanishes at this rung "
+    "(−0.6, recovered later in the ladder): the caption already supplies part of the "
+    "distinctive signal centering is meant to isolate."))
 add_pic(s, IMG["eq_centering"], Inches(0.85), Inches(1.65), Inches(3.4), Inches(0.95))
 bullets(s, [
     ("VLM embedding spaces are anisotropic: a shared, uninformative component "
@@ -500,18 +497,21 @@ bullets(s, [
      "embedding — computed once, no query-time cost", {}),
 ], left=Inches(4.55), top=Inches(1.55), w=Inches(4.85), size=14, gap=6)
 table(s, [
-    ("backbone", "img × txt", "+ centering", "× caption", "× caption + centering"),
-    ("CLIP-L", "17.95", "25.22", "24.42", "28.74"),
-    ("CLIP-H", "41.04", "46.05", "47.75", "50.10"),
-    ("SigLIP-L", "21.10", "44.76", "41.15", "48.97"),
-    ("SigLIP2", "38.04", "53.94", "54.00", "59.23"),
-], Inches(0.85), Inches(3.3), Inches(8.3), row_h=0.48, size=13)
-txt(s, Inches(0.85), Inches(5.85), Inches(8.3), Inches(0.35),
+    ("pipeline", "raw", "+ centering", "Δ"),
+    ("img × txt — CLIP-L", "17.95", "27.76", "+9.8"),
+    ("img × txt × caption — CLIP-L", "25.41", "31.87", "+6.5"),
+    ("img × txt — SigLIP2", "38.12", "49.96", "+11.8"),
+    ("img × txt × caption — SigLIP2", "56.09", "55.51", "−0.6"),
+], Inches(1.0), Inches(3.35), Inches(8.0), row_h=0.48, size=13)
+txt(s, Inches(1.0), Inches(5.9), Inches(8.0), Inches(0.35),
     "macro-mAP · caption = 5-caption average", size=12, color=MUTED,
     align=PP_ALIGN.CENTER)
-takeaway(s, "Centering and the caption branch are complementary — their gains add up.",
-         Inches(6.3))
+txt(s, Inches(0.85), Inches(6.3), Inches(8.3), Inches(0.75),
+    "Large gains for the duplet; smaller with the caption branch — the caption "
+    "already supplies part of the distinctive signal.", size=14, italic=True,
+    color=MUTED, align=PP_ALIGN.CENTER)
 
+# =========================================================
 # =========================================================
 # 15 — contextualization
 # =========================================================
@@ -534,8 +534,8 @@ table(s, [
     ("img × txt × caption — CLIP-L", "32.82", "35.76", "+2.9"),
     ("img × txt — SigLIP2", "47.64", "57.69", "+10.1"),
     ("img × txt × caption — SigLIP2", "55.87", "61.98", "+6.1"),
-], Inches(1.1), Inches(3.8), Inches(7.8), row_h=0.48, size=13)
-txt(s, Inches(1.1), Inches(6.3), Inches(7.8), Inches(0.35),
+], Inches(1.0), Inches(3.8), Inches(8.0), row_h=0.48, size=13)
+txt(s, Inches(1.0), Inches(6.3), Inches(8.0), Inches(0.35),
     "macro-mAP · caption = 5-caption average", size=12, color=MUTED,
     align=PP_ALIGN.CENTER)
 
@@ -586,7 +586,7 @@ s = new_slide("Qualitative — where the caption wins", notes=(
     "and markers'. Image-only similarity retrieves lookalikes; the caption resolves "
     "the NEGATION and the required content, placing both ground truths at the top "
     "(AP 15 → 42 → 100)."))
-add_pic(s, IMG["success"], Inches(0.4), Inches(1.5), Inches(9.2), Inches(5.55))
+add_pic(s, IMG["success"], Inches(0.55), Inches(1.5), Inches(8.9), Inches(5.55))
 
 # =========================================================
 # 20 — qualitative failure
@@ -596,7 +596,7 @@ s = new_slide("Qualitative — characteristic failure", notes=(
     "painting, visually remote from the reference; every pipeline returns real masks. "
     "When the modification demands a drastic domain shift, the visual branch "
     "dominates the product. Honest diagnosis — sets up future work."))
-add_pic(s, IMG["failure"], Inches(0.4), Inches(1.5), Inches(9.2), Inches(4.65))
+add_pic(s, IMG["failure"], Inches(0.55), Inches(1.5), Inches(8.9), Inches(4.65))
 takeaway(s, "Failure mode: under drastic domain shifts, visual identity overpowers the modification.",
          Inches(6.35))
 

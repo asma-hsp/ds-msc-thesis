@@ -38,7 +38,7 @@ def clean_axes(ax):
     ax.set_axisbelow(True)
     ax.tick_params(length=0)
 
-RUNGS = ["raw\n(img × text)", "+ centering", "+ sim-norm", "+ Harris", "+ context",
+RUNGS = ["raw\n(img × txt)", "+ centering", "+ sim-norm", "+ Harris", "+ context",
          "+ projection", "+ query-exp."]
 
 def ladder_chart(basic, ours, fname, peak_idx=4, ylim=None, headline=None):

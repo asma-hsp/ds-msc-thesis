@@ -49,11 +49,13 @@ Formally: given the composed query, rank the entire database by a scoring
 function conditioned on both the reference image and the modification text.
 
 The central design decision is the zero-shot constraint. Supervised CIR methods —
-combiner networks, textual inversion — are trained on labelled triplets. At the
-instance level such triplets do not exist, and every newly added object would
-require new annotation; a supervised model also inherits its training
-distribution. So the entire pipeline uses frozen pre-trained models: no learned
-parameters, no fine-tuning, immediate generalization to unseen instances.
+combiner networks trained on labelled triplets — cannot be used here: such
+triplets do not exist at the instance level, and every newly added object would
+require new annotation. Zero-shot alternatives from the literature, such as
+textual inversion, exist — but they target the category regime and do not
+preserve instance identity. So the entire pipeline uses frozen pre-trained
+models: no learned parameters, no fine-tuning, immediate generalization to
+unseen instances.
 
 ## 7. Evaluation protocol | 1:00 | cum 6:10
 The system returns a ranked list; average precision is the area under that list's
@@ -96,8 +98,8 @@ dominated by a single edge direction.
 Here is the observation the thesis builds on. In BASIC, no component ever reads
 the reference image and the modification text together. Both branches are
 unimodal, so the composition — this object, under this transformation — is never
-modelled. "As a painting" and "next to a painting" produce identical branch
-scores.
+modelled. "As a painting" and "next to a painting" demand different targets, yet
+each branch sees only its half of the query and cannot represent the difference.
 
 The proposal: a multimodal large language model reads both query parts jointly
 and generates a caption of the imagined target — hence the thesis title. That
@@ -127,9 +129,16 @@ these models are anisotropic: all embeddings share a large common component —
 generic visual and linguistic statistics — which inflates every similarity score.
 Centering subtracts a precomputed corpus mean and re-normalises, isolating the
 distinctive part of each embedding. It is computed once, offline, and costs
-nothing at query time. The table shows consistent gains on all four backbones,
-for both the baseline and the caption pipeline — the caption branch and centering
-are complementary.
+nothing at query time.
+
+The gains are large for the image-times-text duplet — almost ten points on
+CLIP-L, almost twelve on SigLIP2. With the caption branch the gain shrinks, and
+on SigLIP2 it even dips slightly at this rung — which is informative: the caption
+already supplies part of the distinctive signal that centering is designed to
+isolate. The two mechanisms overlap; they are not simply additive.
+
+> If pressed on the SigLIP2 dip: −0.6 at this rung, recovered by the later
+> rungs; the full ladder still peaks at 61.98 with centering included.
 
 ## 15. Post-processing II — contextualization | 0:50 | cum 15:00
 The second important step addresses the text branch. The text encoder was trained
