@@ -142,47 +142,48 @@ plt.close(fig)
 # 3. CLIP dual-encoder schematic (single pair, chair example)
 # ------------------------------------------------------------------
 CHAIR_CAP = "\u201ca white ornate\nmetal chair\u201d"
+C_IMG, C_TXT = "#2a78d6", "#9B0014"
 fig, ax = plt.subplots(figsize=(11.0, 4.6), dpi=200)
 ax.set_xlim(0, 11.0); ax.set_ylim(0, 4.6); ax.axis("off")
 
-def rbox(x, y, w, h, label, fc="#f0efec", fontsize=13, tc=INK, bold=True):
+def rbox(x, y, w, h, label, fc="#f0efec", fontsize=13, tc=INK, bold=True, ec=MUTED):
     b = FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.08", fc=fc,
-                       ec=MUTED, lw=1.1)
+                       ec=ec, lw=1.3)
     ax.add_patch(b)
     ax.text(x + w / 2, y + h / 2, label, ha="center", va="center",
             fontsize=fontsize, color=tc, fontweight="bold" if bold else "normal")
 
-# top: one image -> image encoder
+# top row: image -> image encoder -> image vector
 thumb = letterbox(CHAIR_Q)
-ax.imshow(thumb, extent=(0.5, 2.3, 2.75, 4.1), aspect="auto", zorder=3)
-ax.annotate("", xy=(3.35, 3.42), xytext=(2.45, 3.42),
-            arrowprops=dict(arrowstyle="->", color=GRAY, lw=1.6))
-rbox(3.4, 2.97, 1.8, 0.9, "image\nencoder")
-# bottom: one text -> text encoder
-ax.text(1.4, 1.05, CHAIR_CAP, ha="center", va="center", fontsize=11,
+ax.imshow(thumb, extent=(0.35, 2.05, 2.85, 4.15), aspect="auto", zorder=3)
+ax.annotate("", xy=(3.05, 3.5), xytext=(2.2, 3.5),
+            arrowprops=dict(arrowstyle="-|>", color=GRAY, lw=1.8))
+rbox(3.1, 3.05, 1.9, 0.9, "image\nencoder", ec=C_IMG)
+ax.annotate("", xy=(6.05, 3.5), xytext=(5.1, 3.5),
+            arrowprops=dict(arrowstyle="-|>", color=C_IMG, lw=1.8))
+rbox(6.1, 3.15, 1.5, 0.7, "image\nvector", fc="white", ec=C_IMG, tc=C_IMG, fontsize=11)
+
+# bottom row: text -> text encoder -> text vector
+ax.text(1.2, 1.05, CHAIR_CAP, ha="center", va="center", fontsize=11,
         color=BLUE, family="monospace",
         bbox=dict(boxstyle="round,pad=0.4", fc="white", ec=BLUE, lw=1.2))
-ax.annotate("", xy=(3.35, 1.05), xytext=(2.55, 1.05),
-            arrowprops=dict(arrowstyle="->", color=GRAY, lw=1.6))
-rbox(3.4, 0.6, 1.8, 0.9, "text\nencoder")
-# shared embedding space
-space = plt.matplotlib.patches.Ellipse((8.3, 2.3), 4.4, 3.6,
-                                       fc="#fafaf8", ec=MUTED, lw=1.3)
-ax.add_patch(space)
-ax.text(8.3, 3.75, "shared embedding space", ha="center", fontsize=13,
-        color=INK, fontweight="bold")
-ax.annotate("", xy=(7.15, 2.85), xytext=(5.25, 3.42),
-            arrowprops=dict(arrowstyle="->", color=GRAY, lw=1.6))
-ax.annotate("", xy=(7.35, 1.85), xytext=(5.25, 1.05),
-            arrowprops=dict(arrowstyle="->", color=GRAY, lw=1.6))
-ax.text(6.05, 3.45, "one vector", fontsize=9.5, color=GRAY, ha="left", va="bottom")
-ax.text(6.05, 1.15, "one vector", fontsize=9.5, color=GRAY, ha="left", va="top")
-for (x, y, col) in [(7.55, 2.75, "#2a78d6"), (7.95, 2.05, "#9B0014")]:
-    dot = plt.matplotlib.patches.Circle((x, y), 0.13, fc=col, ec="none")
-    ax.add_patch(dot)
-ax.plot([7.55, 7.95], [2.75, 2.05], color=GRAY, lw=1.2, ls="--")
-ax.text(9.15, 2.35, "similar meaning\n= nearby points\n(cosine similarity)",
-        fontsize=11.5, color=INK, ha="center", va="center")
+ax.annotate("", xy=(3.05, 1.05), xytext=(2.3, 1.05),
+            arrowprops=dict(arrowstyle="-|>", color=GRAY, lw=1.8))
+rbox(3.1, 0.6, 1.9, 0.9, "text\nencoder", ec=C_TXT)
+ax.annotate("", xy=(6.05, 1.05), xytext=(5.1, 1.05),
+            arrowprops=dict(arrowstyle="-|>", color=C_TXT, lw=1.8))
+rbox(6.1, 0.7, 1.5, 0.7, "text\nvector", fc="white", ec=C_TXT, tc=C_TXT, fontsize=11)
+
+# both vectors meet -> cosine similarity score
+ax.annotate("", xy=(8.55, 2.5), xytext=(7.65, 3.3),
+            arrowprops=dict(arrowstyle="-|>", color=C_IMG, lw=1.8))
+ax.annotate("", xy=(8.55, 2.2), xytext=(7.65, 1.15),
+            arrowprops=dict(arrowstyle="-|>", color=C_TXT, lw=1.8))
+rbox(8.6, 1.95, 2.15, 0.85, "cosine\nsimilarity", fc="#f7e9ea", ec=C_TXT, tc=INK)
+ax.text(9.675, 1.55, "one match score", fontsize=10.5, color=MUTED,
+        ha="center", va="top", style="italic")
+ax.text(9.675, 3.45, "same embedding space", fontsize=11, color=INK,
+        ha="center", va="center", fontweight="bold")
 fig.savefig(f"{OUT}/clip_schematic.png", facecolor="white", bbox_inches="tight")
 plt.close(fig)
 
