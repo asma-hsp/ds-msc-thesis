@@ -38,36 +38,28 @@ def clean_axes(ax):
     ax.set_axisbelow(True)
     ax.tick_params(length=0)
 
-RUNGS = ["raw\n(img × txt)", "+ centering", "+ sim-norm", "+ Harris", "+ context",
-         "+ projection", "+ query-exp."]
+RUNGS = ["img × txt", "+ centering", "+ sim-norm", "+ Harris", "+ context"]
 
 def ladder_chart(basic, ours, fname, peak_idx=4, ylim=None, headline=None):
+    basic, ours = basic[:5], ours[:5]
     fig, ax = plt.subplots(figsize=(8.6, 4.1), dpi=200)
     clean_axes(ax)
     x = range(len(RUNGS))
-    # shaded 'dropped' region after +context
-    ax.axvspan(peak_idx + 0.35, len(RUNGS) - 0.6, color="#f0efec", zorder=0)
-    ax.text(peak_idx + 1.5, ylim[1] - 1.2, "hurt performance\n→ dropped",
-            ha="center", va="top", fontsize=10.5, color=MUTED, style="italic")
     ax.plot(x, basic, "-o", color=BASIC_C, linewidth=2, markersize=7, label="BASIC")
     ax.plot(x, ours, "-o", color=OURS_C, linewidth=2, markersize=7,
             label="Ours: img × txt × caption (avg-5)")
-    # direct labels: first and peak points of each series
-    for series, color, dy in ((basic, BASIC_C, -2.6), (ours, OURS_C, 1.4)):
-        for i in (0, peak_idx):
+    for series, color in ((basic, BASIC_C), (ours, OURS_C)):
+        for i in (0, len(RUNGS) - 1):
             ax.annotate(f"{series[i]:.1f}", (i, series[i]),
-                        textcoords="offset points", xytext=(0, 14 if dy > 0 else -20),
-                        ha="center", fontsize=11.5, fontweight="bold", color=color)
-    if headline:
-        ax.annotate(headline, (peak_idx, ours[peak_idx]),
-                    textcoords="offset points", xytext=(0, 30), ha="center",
-                    fontsize=12, fontweight="bold", color=OURS_C)
+                        textcoords="offset points",
+                        xytext=(0, 14 if series is ours else -20),
+                        ha="center", fontsize=12, fontweight="bold", color=color)
     ax.set_xticks(list(x))
-    ax.set_xticklabels(RUNGS, fontsize=10.5, color=INK)
+    ax.set_xticklabels(RUNGS, fontsize=11.5, color=INK)
     ax.set_ylabel("macro-mAP", fontsize=11)
     if ylim:
         ax.set_ylim(*ylim)
-    ax.legend(loc="lower center", frameon=False, fontsize=11)
+    ax.legend(loc="lower right", frameon=False, fontsize=11)
     fig.tight_layout()
     fig.savefig(f"{OUT}/{fname}", facecolor="white")
     plt.close(fig)
@@ -76,14 +68,14 @@ def ladder_chart(basic, ours, fname, peak_idx=4, ylim=None, headline=None):
 ladder_chart(
     basic=[17.95, 27.76, 27.40, 28.33, 32.25, 32.48, 30.28],
     ours=[25.41, 31.87, 31.97, 32.82, 35.76, 33.80, 32.39],
-    fname="ladder_clipl.png", ylim=(14, 41),
+    fname="ladder_clipl.png", ylim=(14, 40),
 )
 
 # SigLIP2 ladder — runs/caption_backbone_instancepool/siglip2_ladder/summary_ladder.csv
 ladder_chart(
     basic=[38.12, 49.96, 45.49, 47.64, 57.69, 52.67, 49.56],
     ours=[56.09, 55.51, 53.70, 55.87, 61.98, 59.02, 57.29],
-    fname="ladder_siglip2.png", ylim=(34, 70),
+    fname="ladder_siglip2.png", ylim=(34, 68),
 )
 
 # Backbone comparison — docs/backbone_recall.csv (macro-mAP, raw scores, no post-proc)

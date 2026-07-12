@@ -194,7 +194,7 @@ EQS = {
     "eq_ap": r"$\mathrm{AP} \;=\; \frac{1}{R}\,\sum_{k}\ \mathrm{P@}k \cdot \mathrm{rel}(k)$",
     "eq_map": r"$\mathrm{mAP} \;=\; \frac{1}{|Q|}\sum_{q \in Q}\mathrm{AP}(q)$",
     "eq_mmap": r"$\mathrm{macro}\;\mathrm{mAP} \;=\; \frac{1}{|\mathcal{I}|}\sum_{I \in \mathcal{I}}\;\frac{1}{|Q_I|}\sum_{q \in Q_I}\mathrm{AP}(q)$",
-    "eq_centering": r"$\tilde{e}(x) \;=\; \frac{e(x)-\mu}{\Vert\, e(x)-\mu \,\Vert}$",
+    "eq_centering": r"$\bar{q}^{\,v} = \phi^{v}(q^{v}) - \mu^{v}\,,\qquad \bar{q}^{\,t} = \phi^{t}(q^{t}) - \mu^{t}$",
     "eq_minnorm": r"$\tilde{s} \;=\; \frac{s - s_{\min}}{|\,s_{\min}\,|}\,,\qquad \tilde{s} \leftarrow \max(\tilde{s},\, 0)$",
     "eq_harris": r"$\tilde{s}^{\,f} \;=\; \tilde{s}^{\,v}\,\tilde{s}^{\,t} \;-\; \lambda\,\left(\tilde{s}^{\,v} + \tilde{s}^{\,t}\right)^{2}$",
     "eq_triplet": r"$\tilde{s}^{\,f} \;=\; \tilde{s}^{\,v}\cdot\tilde{s}^{\,t}\cdot\tilde{s}^{\,c}$",
@@ -271,3 +271,112 @@ plt.close(fig)
 letterbox(f"{OUT}/chair_ref.jpg").save(f"{OUT}/chair_ref_43.jpg", quality=92)
 letterbox(f"{OUT}/chair_set.jpg").save(f"{OUT}/chair_set_43.jpg", quality=92)
 print("stats + chair 4:3 done")
+
+# ------------------------------------------------------------------
+# 7. pipeline overview (slide-native version of thesis Fig. 5.1)
+# ------------------------------------------------------------------
+fig, ax = plt.subplots(figsize=(14.0, 5.8), dpi=200)
+ax.set_xlim(0, 14.0); ax.set_ylim(0, 5.8); ax.axis("off")
+
+def pbox(x, y, w, h, label, fc="#f0efec", fs=11, tc=INK, bold=True, ec=MUTED):
+    ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.06",
+                                fc=fc, ec=ec, lw=1.1))
+    ax.text(x + w / 2, y + h / 2, label, ha="center", va="center", fontsize=fs,
+            color=tc, fontweight="bold" if bold else "normal")
+
+def ar(x0, y0, x1, y1, color=GRAY, ls="-", rad=0.0):
+    ax.annotate("", xy=(x1, y1), xytext=(x0, y0),
+                arrowprops=dict(arrowstyle="->", color=color, lw=1.3, ls=ls,
+                                connectionstyle=f"arc3,rad={rad}"))
+
+LANE = {"v": 4.65, "t": 3.0, "c": 1.15}
+
+# --- inputs
+ax.imshow(letterbox(CHAIR_Q), extent=(0.15, 1.35, LANE["v"] - 0.45, LANE["v"] + 0.5),
+          aspect="auto", zorder=3)
+ax.text(0.75, LANE["v"] - 0.68, "query image", ha="center", fontsize=9.5, color=ORANGE)
+ax.text(0.75, LANE["t"], "“placed around\na table”", ha="center", va="center",
+        fontsize=9.5, color=BLUE, family="monospace",
+        bbox=dict(boxstyle="round,pad=0.3", fc="white", ec=BLUE, lw=1.0))
+ax.text(0.75, LANE["t"] - 0.62, "query text", ha="center", fontsize=9.5, color=BLUE)
+
+# --- caption branch: the MLLM reads BOTH parts of the query
+pbox(2.0, LANE["c"] - 0.45, 1.35, 0.9, "MLLM\n(InternVL)", fc="#fbe9e7", ec=RED, fs=10)
+ar(1.4, LANE["v"] - 0.45, 2.0, LANE["c"] + 0.3, color=RED, rad=-0.28)
+ar(1.4, LANE["t"] - 0.3, 2.0, LANE["c"] + 0.1, color=RED, rad=-0.18)
+ar(3.4, LANE["c"], 3.85, LANE["c"], color=RED)
+ax.text(5.05, LANE["c"], "“White metallic chair\nwith scrolled armrests\nplaced around a table.”",
+        ha="center", va="center", fontsize=8.5, color=INK, style="italic",
+        bbox=dict(boxstyle="round,pad=0.3", fc="white", ec=RED, lw=1.0))
+ax.text(5.05, LANE["c"] - 0.85, "generated target caption", ha="center", fontsize=8.5,
+        color=RED)
+
+# --- encoders
+for k, lab in (("v", "image\nencoder"), ("t", "text\nencoder"), ("c", "text\nencoder")):
+    pbox(6.6, LANE[k] - 0.4, 1.4, 0.8, lab, fs=10)
+ar(1.45, LANE["v"], 6.55, LANE["v"])
+ar(1.45, LANE["t"], 6.55, LANE["t"])
+ar(6.25, LANE["c"], 6.55, LANE["c"])
+
+# --- centering
+for k in LANE:
+    pbox(8.4, LANE[k] - 0.32, 0.85, 0.64, "\u2212 \u03bc", fs=11, fc="#eef3fb", ec=BLUE)
+    ax.text(8.83, LANE[k] - 0.52, "centering", ha="center", fontsize=7.5, color=BLUE)
+    ar(8.05, LANE[k], 8.37, LANE[k])
+
+# --- database feeds every dot product
+ax.text(9.85, 5.62, "database (752,092 images)", ha="center", fontsize=9, color=MUTED)
+pbox(9.05, 5.05, 1.6, 0.45, "image encoder  \u2212 \u03bc", fc="#eef3fb", ec=BLUE,
+     fs=8, bold=False)
+for k in LANE:
+    ax.text(9.85, LANE[k], "\u2299", ha="center", va="center", fontsize=15, color=INK)
+    ar(9.3, LANE[k], 9.68, LANE[k])
+    ar(9.85, 5.0, 9.85, LANE[k] + 0.25, color=BLUE, ls=":")
+for k, lab in (("v", "s\u1d5b"), ("t", "s\u1d57"), ("c", "s\u1d9c")):
+    ax.text(10.5, LANE[k], lab, ha="center", va="center", fontsize=13, color=INK,
+            fontweight="bold")
+    ar(10.05, LANE[k], 10.3, LANE[k])
+    ar(10.72, LANE[k], 11.05, LANE[k])
+
+# --- fusion
+pbox(11.1, 1.6, 2.05, 3.55,
+     "min-normalise\n+ clamp\n\n\u00d7   \u00d7\n\nHarris penalty\n(\u03bb)",
+     fs=10, fc="#fbe9e7", ec=RED)
+ax.text(12.12, 1.2, "final score", ha="center", fontsize=10.5, color=RED, fontweight="bold")
+ax.text(12.12, 0.75, "\u2192  ranked list", ha="center", fontsize=10, color=INK)
+ax.text(12.12, 0.28, "all components frozen", ha="center", fontsize=8.5, color=MUTED,
+        style="italic")
+fig.savefig(f"{OUT}/pipeline_overview.png", facecolor="white", bbox_inches="tight")
+plt.close(fig)
+
+# ------------------------------------------------------------------
+# 8. CLIP vs SigLIP objective schematic
+# ------------------------------------------------------------------
+fig, axes = plt.subplots(1, 2, figsize=(10.0, 3.5), dpi=200)
+for ax, (name, sub) in zip(axes, [
+        ("CLIP", "softmax over the batch:\neach image competes against all texts"),
+        ("SigLIP", "independent sigmoid per pair:\nmatch / no-match, no batch competition")]):
+    ax.set_xlim(-0.6, 4); ax.set_ylim(-1.35, 4); ax.axis("off")
+    for i in range(4):
+        for j in range(4):
+            on = (i == j)
+            fc = RED if on else "#f0efec"
+            ax.add_patch(FancyBboxPatch((j, 3 - i), 0.88, 0.88,
+                                        boxstyle="round,pad=0.02", fc=fc,
+                                        ec="white", lw=1.4))
+    if name == "CLIP":
+        ax.add_patch(plt.Rectangle((-0.08, 2.92), 4.04, 1.04, fill=False,
+                                   ec=BLUE, lw=2.2))
+        ax.text(4.05, 3.44, "softmax\nover row", fontsize=9, color=BLUE,
+                va="center", ha="left")
+    else:
+        for (i, j) in [(0, 0), (1, 2)]:
+            ax.add_patch(plt.Rectangle((j - 0.06, 3 - i - 0.06), 1.0, 1.0,
+                                       fill=False, ec=BLUE, lw=2.2))
+        ax.text(1.7, 4.0, "each cell scored on its own", fontsize=9, color=BLUE,
+                ha="center")
+    ax.text(1.94, -0.55, name, ha="center", fontsize=15, fontweight="bold", color=INK)
+    ax.text(1.94, -1.15, sub, ha="center", fontsize=9.5, color=MUTED)
+fig.savefig(f"{OUT}/clip_vs_siglip.png", facecolor="white", bbox_inches="tight")
+plt.close(fig)
+print("pipeline + clip/siglip done")
