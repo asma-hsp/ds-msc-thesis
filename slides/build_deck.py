@@ -37,7 +37,7 @@ IMG = {
     "ref": f"{ASSETS}/chair_ref_43.jpg",
     "top1": f"{ASSETS}/chair_set_43.jpg",
     "paper_stats": f"{ASSETS}/icir_paper_stats.png",
-    "pipeline": f"{ASSETS}/pipeline_overview.png",
+    "pipeline": f"{ASSETS}/pipeline_thesis.png",   # compiled from figures/pipeline_overview.tex
     "clip_siglip": f"{ASSETS}/clip_vs_siglip.png",
     "qual_success": f"{ASSETS}/qual_tintin_success_q1782.png",
     "qual_failure": f"{ASSETS}/qual_tintin_failure_q1779.png",
@@ -615,9 +615,7 @@ s = new_slide("The pipeline", notes=(
     "poorly on the others.\n\n"
     "I will now discuss two additional processing techniques that further improve "
     "retrieval performance."))
-add_pic(s, IMG["pipeline"], Inches(0.4), Inches(1.5), Inches(9.2), Inches(4.5))
-takeaway(s, "Three branches, one shared embedding space, all components frozen.",
-         Inches(6.2))
+add_pic(s, IMG["pipeline"], Inches(0.35), Inches(1.45), Inches(9.3), Inches(5.25))
 
 # =========================================================
 # 15 — score fusion
