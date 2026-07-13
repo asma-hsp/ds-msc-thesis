@@ -199,7 +199,7 @@ EQS = {
     "eq_minnorm": r"$\tilde{s} \;=\; \frac{s - s_{\min}}{|\,s_{\min}\,|}\,,\qquad \tilde{s} \leftarrow \max(\tilde{s},\, 0)$",
     "eq_harris": r"$\tilde{s}^{\,f} \;=\; \tilde{s}^{\,v}\,\tilde{s}^{\,t} \;-\; \lambda\,\left(\tilde{s}^{\,v} + \tilde{s}^{\,t}\right)^{2}$",
     "eq_triplet": r"$\tilde{s}^{\,f} \;=\; \tilde{s}^{\,v}\cdot\tilde{s}^{\,t}\cdot\tilde{s}^{\,c}$",
-    "eq_problem": r"$q=(I_q,\,t_q)\ \longrightarrow\ \mathrm{rank\ every}\ x \in \mathcal{X}\ \mathrm{by}\ s(x \mid I_q,\,t_q),\quad |\mathcal{X}| = 752{,}092$",
+    "eq_problem": r"$q=(I_q,\,t_q)\ \longrightarrow\ \mathrm{rank\ every}\ x \in \mathcal{X}\ \mathrm{by}\ s(x \mid I_q,\,t_q)$",
 }
 for name, eq in EQS.items():
     fig = plt.figure(figsize=(8, 1.2), dpi=300)

@@ -211,6 +211,9 @@ for ph in s.placeholders:
                                                 Inches(7.5), Inches(2.2))
         tf2 = ph.text_frame
         tf2.word_wrap = True
+        # drop the template's leftover guide-text paragraphs (Author / date / Something)
+        for p in list(tf2.paragraphs)[1:]:
+            p._p.getparent().remove(p._p)
         sub = [("Asma Hoseinpour Siouki", 17, True),
                ("MSc in Data Science — University of Padova", 13, False),
                ("", 6, False),
@@ -250,31 +253,31 @@ s = new_slide("Composed Image Retrieval", notes=(
     "satisfying the modification described by the text.\n\n"
     "One naming note: the reference image and modification text are the two parts of the "
     "query, so from here on I will simply call them the QUERY IMAGE and the QUERY TEXT."))
-Y, BH = Inches(1.7), Inches(2.0)
+Y, BH = Inches(1.55), Inches(2.0)
 add_pic(s, IMG["ref"], Inches(0.68), Y, Inches(2.5), BH, border=MUTED)
 txt(s, Inches(3.2), Y, Inches(0.4), BH, "+", size=30, bold=True,
     align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
-card(s, Inches(3.6), Inches(2.25), Inches(2.0), Inches(0.9),
+card(s, Inches(3.6), Inches(2.1), Inches(2.0), Inches(0.9),
      text="“placed around\na table”", size=13, italic=True, color=BLUE)
-arrow(s, Inches(5.7), Inches(2.5), Inches(0.6))
+arrow(s, Inches(5.7), Inches(2.35), Inches(0.6))
 add_pic(s, IMG["top1"], Inches(6.4), Y, Inches(2.5), BH, border=MUTED)
-txt(s, Inches(0.68), Inches(3.75), Inches(2.5), Inches(0.4),
+txt(s, Inches(0.68), Inches(3.6), Inches(2.5), Inches(0.4),
     "reference image\n(query image)", size=12, color=MUTED, align=PP_ALIGN.CENTER)
-txt(s, Inches(3.6), Inches(3.25), Inches(2.0), Inches(0.4),
+txt(s, Inches(3.6), Inches(3.1), Inches(2.0), Inches(0.4),
     "modification text\n(query text)", size=12, color=MUTED, align=PP_ALIGN.CENTER)
-txt(s, Inches(6.4), Inches(3.75), Inches(2.5), Inches(0.35), "target image",
+txt(s, Inches(6.4), Inches(3.6), Inches(2.5), Inches(0.35), "target image",
     size=12, color=MUTED, align=PP_ALIGN.CENTER)
 bullets(s, [
     ("Image only  →  the same chair, or visually similar chairs — but not as a dining set", {}),
     ("Text only  →  many dining sets — but not your specific chair", {}),
     ("Both together: the image identifies the object, the text describes the context "
      "in which you want to find it", {"bold": True}),
-], top=Inches(4.7), size=16, gap=7)
-txt(s, Inches(0.68), Inches(4.22), Inches(8.6), Inches(0.32),
+], top=Inches(4.55), size=16, gap=7)
+txt(s, Inches(0.68), Inches(4.07), Inches(8.6), Inches(0.32),
     "From here on we call them the query image and the query text.",
     size=11.5, italic=True, color=RED, align=PP_ALIGN.CENTER)
 takeaway(s, "Goal: retrieve images that preserve the query object and satisfy the query text.",
-         Inches(6.15))
+         Inches(6.0))
 
 # =========================================================
 # 3 — instance-level
@@ -289,14 +292,14 @@ s = new_slide("Instance-level composed retrieval", notes=(
     "Therefore, the main challenge is to DETECT that specific instance among many "
     "look-alikes of the same class — even when its context, appearance, viewpoint, or "
     "visual domain changes."))
-add_pic(s, IMG["inst_cat"], Inches(0.55), Inches(1.45), Inches(8.9), Inches(3.9))
+add_pic(s, IMG["inst_cat"], Inches(0.55), Inches(1.3), Inches(8.9), Inches(3.9))
 bullets(s, [
     ("Category-level:  any object of the correct class may satisfy the query", {}),
     ("Instance-level:  the system must retrieve the exact same object shown in the "
      "query image, while also satisfying the query text", {"bold": True}),
     ("The challenge: detect that one instance among many look-alikes of the same class — "
      "even when its context, appearance, viewpoint, or visual domain changes", {}),
-], top=Inches(5.4), size=15, gap=5)
+], top=Inches(5.25), size=15, gap=5)
 
 # =========================================================
 # 4 — i-CIR benchmark (+ scale strip)
@@ -317,14 +320,14 @@ s = new_slide("The i-CIR benchmark", notes=(
     "This prevents the system from succeeding by relying only on the image or only on "
     "the text.\n\n"
     "[Scale and full distributions are on the next slide.]"))
-add_pic(s, IMG["tintin_fig"], Inches(0.55), Inches(1.4), Inches(8.9), Inches(3.95))
+add_pic(s, IMG["tintin_fig"], Inches(0.55), Inches(1.25), Inches(8.9), Inches(3.95))
 bullets(s, [
     ("Each instance → several composed queries (query image + query text)", {}),
     ("Multiple ground truths: a single query can have several correct targets — every "
      "database image showing the same object under the requested modification", {"bold": True}),
     ("Curated hard negatives: right object / wrong modification, or right modification / "
      "wrong object — one modality alone is not enough", {}),
-], top=Inches(5.45), size=13.5, gap=4)
+], top=Inches(5.3), size=13.5, gap=4)
 
 # =========================================================
 # 5 — i-CIR scale (restored)
@@ -532,7 +535,7 @@ txt(s, Inches(0.68), Inches(1.35), Inches(8.6), Inches(0.4),
 txt(s, Inches(0.68), Inches(1.8), Inches(8.6), Inches(0.4),
     "Our proposal: add a THIRD branch — a caption of the imagined target, generated from "
     "the image and text together.", size=15.5, bold=True, color=INK)
-add_pic(s, IMG["pipeline"], Inches(0.3), Inches(2.4), Inches(9.4), Inches(4.3))
+add_pic(s, IMG["pipeline"], Inches(0.3), Inches(2.25), Inches(9.4), Inches(4.5))
 
 # =========================================================
 # 10 — the MLLM
@@ -572,7 +575,7 @@ txt(s, Inches(0.68), MY + MH + Inches(0.02), Inches(3.2), Inches(0.35),
 txt(s, Inches(6.78), MY + MH + Inches(0.02), Inches(2.5), Inches(0.35),
     "generated target caption", size=11, color=RED, align=PP_ALIGN.CENTER)
 takeaway(s, "One caption carries both the visual identity and the requested context.",
-         Inches(6.15))
+         Inches(5.85))
 
 # =========================================================
 # 11 — prompt design
@@ -703,7 +706,7 @@ s = new_slide("Adding the steps on top of each other", notes=(
     "do not help once the caption branch is present, so they are omitted. Numbers on the "
     "full-ablation backup slide.]"))
 add_pic(s, IMG["ladder_l"], Inches(0.55), Inches(1.5), Inches(8.9), Inches(4.5))
-takeaway(s, "The caption pipeline stays ahead at every step of the ladder.", Inches(6.2))
+takeaway(s, "The caption pipeline stays ahead at every step of the ladder.", Inches(6.0))
 
 # =========================================================
 # 16 — backbones (table + results)
@@ -729,7 +732,7 @@ txt(s, Inches(6.3), Inches(4.6), Inches(3.1), Inches(1.2),
     "Two families — softmax-contrastive (CLIP) and sigmoid (SigLIP) — at two capacity "
     "levels.", size=12, color=MUTED)
 takeaway(s, "The caption branch helps every backbone — it is not a CLIP-specific trick.",
-         Inches(6.2))
+         Inches(6.0))
 
 # =========================================================
 # 17 — best overall system
