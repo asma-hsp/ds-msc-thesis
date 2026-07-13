@@ -127,17 +127,19 @@ def bullets(slide, items, left=Inches(0.68), top=Inches(1.55), w=Inches(8.6),
     return box
 
 def takeaway(slide, text, top):
+    lines = text.split("\n")
     bar = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.68), top,
-                                 Inches(8.6), Inches(0.55))
+                                 Inches(8.6), Inches(0.55 if len(lines) == 1 else 0.9))
     bar.fill.solid(); bar.fill.fore_color.rgb = LIGHT
     bar.line.fill.background()
     tf = bar.text_frame
     tf.word_wrap = True
     tf.margin_left = tf.margin_right = Inches(0.12)
-    p = tf.paragraphs[0]
-    p.text = text
-    p.alignment = PP_ALIGN.CENTER
-    style_runs(p, 15, bold=True, color=RED)
+    for i, ln in enumerate(lines):
+        p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+        p.text = ln
+        p.alignment = PP_ALIGN.CENTER
+        style_runs(p, 15, bold=True, color=RED)
 
 def card(slide, left, top, w, h, text=None, fill=WHITE, line=MUTED, size=13,
          bold=False, color=INK, italic=False, align=PP_ALIGN.CENTER):
@@ -184,18 +186,43 @@ def table(slide, rows, left, top, width, row_h=0.42, size=14,
 # =========================================================
 # 1 — title
 # =========================================================
-s = prs.slides[0]
-s.shapes.title.text = ("Imagining the Target:\nZero-Shot Instance-Level Composed "
-                       "Image Retrieval with MLLM-Generated Captions")
-for p in s.shapes.title.text_frame.paragraphs:
-    style_runs(p, 26, bold=False, color=INK)
+s = prs.slides[0]   # solid UniPD-red background -> everything in white
+tp = s.shapes.title
+tp.left, tp.top, tp.width, tp.height = (Inches(0.55), Inches(1.0),
+                                        Inches(8.9), Inches(2.15))
+tf = tp.text_frame
+tf.word_wrap = True
+tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+tf.paragraphs[0].text = "Imagining the Target:"
+p = tf.add_paragraph()
+p.text = ("Zero-Shot Instance-Level Composed Image Retrieval "
+          "with MLLM-Generated Captions")
+p.space_before = Pt(10)
+for i, par in enumerate(tf.paragraphs):
+    par.alignment = PP_ALIGN.CENTER
+    style_runs(par, 30 if i == 0 else 21, bold=(i == 0), color=WHITE)
+rule = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(4.25), Inches(3.38),
+                          Inches(1.5), Inches(0.03))
+rule.fill.solid(); rule.fill.fore_color.rgb = WHITE
+rule.line.fill.background()
 for ph in s.placeholders:
     if ph.placeholder_format.idx == 1:
-        ph.text = ("Asma Hoseinpour Siouki\nMSc Data Science — University of Padova\n"
-                   "Supervisor: Prof. Lamberto Ballan · Co-supervisor: Prof. Marco Fiorucci\n"
-                   "July 2026")
-        for p in ph.text_frame.paragraphs:
-            style_runs(p, 15, color=INK)
+        ph.left, ph.top, ph.width, ph.height = (Inches(1.25), Inches(3.65),
+                                                Inches(7.5), Inches(2.2))
+        tf2 = ph.text_frame
+        tf2.word_wrap = True
+        sub = [("Asma Hoseinpour Siouki", 17, True),
+               ("MSc in Data Science — University of Padova", 13, False),
+               ("", 6, False),
+               ("Supervisor: Prof. Lamberto Ballan", 12.5, False),
+               ("Co-supervisor: Prof. Marco Fiorucci", 12.5, False),
+               ("July 2026", 12, False)]
+        for i, (t, sz, bd) in enumerate(sub):
+            p = tf2.paragraphs[0] if i == 0 else tf2.add_paragraph()
+            p.text = t
+            p.alignment = PP_ALIGN.CENTER
+            p.space_after = Pt(4)
+            style_runs(p, sz, bold=bd, color=WHITE)
 s.notes_slide.notes_text_frame.text = (
     "[0:20]  Good morning everyone, and thank you for being here.")
 sldIdLst = prs.slides._sldIdLst
@@ -323,13 +350,11 @@ txt(s, Inches(0.55), Inches(5.75), Inches(8.9), Inches(0.4),
     size=11, color=MUTED, align=PP_ALIGN.CENTER)
 
 # =========================================================
-# 6 — problem formulation / zero-shot
+# 6 — zero-shot setting
 # =========================================================
-s = new_slide("Problem formulation — a zero-shot setting", notes=(
-    "[0:55]  Formally, we are given a query image and a query text, and we want to "
-    "retrieve database images relevant to both.\n\n"
-    "In this thesis we adopt a ZERO-SHOT setting: we do not train or fine-tune any model "
-    "on the i-CIR dataset.\n\n"
+s = new_slide("A zero-shot setting", notes=(
+    "[0:40]  In this thesis we adopt a ZERO-SHOT setting: we do not train or fine-tune "
+    "any model on the i-CIR dataset.\n\n"
     "Why does this matter? Supervised composed image retrieval requires labelled triplets "
     "— a query image, a query text, and a correct target image. At the instance level, "
     "collecting these annotations for every new object would be expensive and hard to "
@@ -337,10 +362,8 @@ s = new_slide("Problem formulation — a zero-shot setting", notes=(
     "generalize to instances it has never seen — and in a real system new objects appear "
     "constantly.\n\n"
     "So a supervised approach would decrease both the scalability and the generalizability "
-    "of the system.\n\n"
-    "Instead, by using frozen pre-trained models, the retrieval system applies directly "
-    "to previously unseen object instances, with no additional training."))
-add_pic(s, IMG["eq_problem"], Inches(0.9), Inches(1.6), Inches(8.2), Inches(0.8))
+    "of the system. With frozen pre-trained models, the system applies directly to "
+    "previously unseen object instances, with no additional training."))
 bullets(s, [
     ("Zero-shot: we do not train or fine-tune any model on i-CIR", {"bold": True}),
     ("Supervised CIR needs labelled triplets (query image, query text, target image) — "
@@ -349,15 +372,18 @@ bullets(s, [
      "training time — yet in practice new objects appear constantly", {}),
     ("Frozen pre-trained models apply directly to previously unseen instances, no "
      "per-instance training", {"bold": True}),
-], top=Inches(2.7), size=16, gap=9)
+], top=Inches(1.95), size=17, gap=12)
+takeaway(s, "No training anywhere — every model in this work stays frozen.", Inches(6.0))
 
 # =========================================================
-# 6 — evaluation metric
+# 7 — problem formulation + evaluation
 # =========================================================
-s = new_slide("Retrieval, ranking, and the metric", notes=(
-    "[0:55]  First, how retrieval works. Given a query, the system assigns a relevance "
-    "score to EVERY database image, and sorts them from most to least relevant. This "
-    "ranked list is the output; evaluation checks WHERE the correct targets land in it.\n\n"
+s = new_slide("Problem formulation and evaluation", notes=(
+    "[0:55]  Formally: given a query image and a query text, retrieve the database images "
+    "relevant to both.\n\n"
+    "The system assigns a relevance score to EVERY database image and sorts them from "
+    "most to least relevant. This ranked list is the output; evaluation checks WHERE the "
+    "correct targets land in it.\n\n"
     "For a single query we use Average Precision. AP is high when the correct images "
     "appear near the top of the ranking; if they appear lower, the score decreases.\n\n"
     "We then compute mean Average Precision by averaging AP across all queries.\n\n"
@@ -365,33 +391,34 @@ s = new_slide("Retrieval, ranking, and the metric", notes=(
     "directly over all queries, instances with more queries would dominate the result.\n\n"
     "For this reason our main metric is macro-mAP: we first average within each object "
     "instance, then across instances — so every instance contributes equally."))
-txt(s, Inches(0.75), Inches(1.2), Inches(8.6), Inches(0.32),
+add_pic(s, IMG["eq_problem"], Inches(0.9), Inches(1.3), Inches(8.2), Inches(0.55))
+txt(s, Inches(0.75), Inches(2.0), Inches(8.6), Inches(0.32),
     "The system scores every database image and ranks them, most to least relevant:",
     size=13, color=INK)
 pos = {0, 2, 5}
 for i in range(8):
-    card(s, Inches(0.75 + i * 0.72), Inches(1.62), Inches(0.6), Inches(0.6),
+    card(s, Inches(0.75 + i * 0.72), Inches(2.4), Inches(0.6), Inches(0.6),
          text="✓" if i in pos else "",
          fill=RGBColor(0x0C, 0xA3, 0x0C) if i in pos else LIGHT,
          line=None, size=18, bold=True, color=WHITE)
-txt(s, Inches(6.7), Inches(1.69), Inches(2.7), Inches(0.5),
+txt(s, Inches(6.7), Inches(2.47), Inches(2.7), Inches(0.5),
     "ranked list (green = correct)", size=12, color=MUTED)
 mrows = [
-    ("eq_pk", "Precision@k", "fraction of the top-k results that are correct"),
-    ("eq_ap", "Average Precision", "high when correct images appear near the top"),
-    ("eq_map", "mAP", "AP averaged over all queries"),
-    ("eq_mmap", "macro-mAP", "average within each instance, then across instances"),
+    ("eq_pk", "Precision@k", "fraction of the top-k results that are correct", MUTED),
+    ("eq_ap", "Average Precision", "high when correct images appear near the top", MUTED),
+    ("eq_map", "mAP", "AP averaged over all queries", MUTED),
+    ("eq_mmap", "macro-mAP",
+     "main metric — average within each instance, then across instances", RED),
 ]
-y = Inches(2.35)
-for eq, name, desc in mrows:
-    b = txt(s, Inches(0.75), y + Inches(0.05), Inches(3.15), Inches(0.9),
+y = Inches(3.18)
+for eq, name, desc, dc in mrows:
+    b = txt(s, Inches(0.75), y + Inches(0.02), Inches(3.15), Inches(0.85),
             name, size=14, bold=True, color=INK)
     p2 = b.text_frame.add_paragraph()
     p2.text = desc
-    style_runs(p2, 11, color=MUTED)
-    add_pic(s, IMG[eq], Inches(4.05), y, Inches(5.3), Inches(0.86))
-    y += Inches(0.98)
-takeaway(s, "Main metric: macro-mAP — every instance contributes equally.", Inches(6.2))
+    style_runs(p2, 11, color=dc)
+    add_pic(s, IMG[eq], Inches(4.05), y, Inches(5.3), Inches(0.78))
+    y += Inches(0.9)
 
 # =========================================================
 # 7 — vision-language models
@@ -442,19 +469,24 @@ s = new_slide("The baseline: BASIC", notes=(
     "The two scores are then MULTIPLIED. This multiplicative fusion acts like a soft "
     "logical AND: a database image receives a high final score only if it matches both "
     "the query image and the query text.\n\n"
+    "BASIC uses CLIP ViT-L/14 as its main backbone — the backbone most commonly used in "
+    "the zero-shot CIR literature. We adopt the same backbone as our main one, so our "
+    "results are directly comparable to BASIC and to the literature.\n\n"
     "The method also includes additional processing steps — centering, score "
     "normalization, contextualization — which I will discuss later."))
-txt(s, Inches(0.68), Inches(1.12), Inches(8.6), Inches(0.32),
+txt(s, Inches(0.68), Inches(0.86), Inches(8.6), Inches(0.3),
     "introduced with the i-CIR benchmark  ·  Psomas et al., 2025",
-    size=12.5, italic=True, color=MUTED)
-add_pic(s, IMG["basic"], Inches(0.55), Inches(1.55), Inches(8.9), Inches(3.35))
+    size=12.5, italic=True, color=WHITE)
+add_pic(s, IMG["basic"], Inches(0.55), Inches(1.45), Inches(8.9), Inches(3.05))
 bullets(s, [
     ("The two parts of the query are processed separately, each by its own encoder", {}),
     ("For every database image: visual similarity sᵛ to the query image, and textual "
      "similarity sᵗ to the query text (dot products of embeddings)", {}),
     ("The two scores are multiplied — a soft logical AND: a high final score requires "
      "matching BOTH the query image and the query text", {"bold": True}),
-], top=Inches(4.95), size=14, gap=5)
+    ("Main backbone: CLIP ViT-L/14 — the standard in zero-shot CIR; we adopt it too, so "
+     "our results are directly comparable", {}),
+], top=Inches(4.6), size=13.5, gap=4)
 
 # =========================================================
 # 9 — limitation + our idea
@@ -471,8 +503,9 @@ s = new_slide("Limitation of the baseline — our proposal", notes=(
     "model that imagines the target and writes a caption of it. That caption is embedded "
     "by the same frozen text encoder and becomes a third similarity score.\n\n"
     "So for every database image we now compute three scores — to the image, to the text, "
-    "and to the generated caption — and combine them. I will detail the captioner and the "
-    "fusion on the next slides."))
+    "and to the generated caption. They are normalized and multiplied, a soft logical AND "
+    "across the three branches, as the figure shows. [Fusion formulas: backup slide 23.] "
+    "Next, the captioner."))
 txt(s, Inches(0.68), Inches(1.35), Inches(8.6), Inches(0.4),
     "In BASIC, the query image and the query text are never processed jointly — "
     "each branch sees only half of the query.",
@@ -589,48 +622,10 @@ txt(s, Inches(0.68), Inches(6.35), Inches(8.6), Inches(0.35),
     size=12, italic=True, color=RED, align=PP_ALIGN.CENTER)
 
 # =========================================================
-# 13 — the pipeline (incl. score fusion)
-# =========================================================
-s = new_slide("Combining the three scores", notes=(
-    "[1:00]  We now have three similarity scores per database image — to the query image, "
-    "the query text, and the generated caption. How do we combine them?\n\n"
-    "First, min-based normalization puts the three branches on comparable scales, and any "
-    "negative residual values are clamped to zero — meaning they provide no positive "
-    "evidence for the candidate.\n\n"
-    "The normalized scores are then combined MULTIPLICATIVELY, because a good result must "
-    "match all three branches at the same time — like a soft logical AND.\n\n"
-    "On top of that we use a Harris-inspired penalty. The idea comes from the Harris "
-    "corner detector, where a strong response in only one direction is not enough. "
-    "Similarly, a candidate should not win just because it matches one branch very well "
-    "while matching the others poorly — for example an image that shows the exact chair "
-    "but not around a table, or chairs around a table that are not the specific chair. "
-    "The Harris term penalizes this imbalance, weighted by a hyperparameter lambda.\n\n"
-    "The surface on the right shows the effect: the score is only high when both "
-    "arguments are simultaneously large."))
-txt(s, Inches(0.68), Inches(1.45), Inches(4.7), Inches(0.35),
-    "1. Min-normalise, then clamp negatives to zero", size=14, bold=True, color=RED)
-add_pic(s, IMG["eq_minnorm"], Inches(0.7), Inches(1.9), Inches(4.4), Inches(0.7))
-bullets(s, [
-    ("Puts the three branches on comparable scales; a negative residual = no positive "
-     "evidence for that candidate", {}),
-], left=Inches(0.68), top=Inches(2.7), w=Inches(4.7), size=13, gap=4)
-txt(s, Inches(0.68), Inches(3.75), Inches(4.7), Inches(0.35),
-    "2. Multiply, with a Harris-inspired penalty (λ)", size=14, bold=True, color=RED)
-add_pic(s, IMG["eq_harris"], Inches(0.7), Inches(4.2), Inches(4.4), Inches(0.8))
-bullets(s, [
-    ("A candidate must be strong on ALL branches — the exact chair NOT around a table, or "
-     "chairs around a table that are NOT the query chair, are both suppressed", {"bold": True}),
-], left=Inches(0.68), top=Inches(5.15), w=Inches(4.7), size=13, gap=4)
-add_pic(s, IMG["harris"], Inches(5.5), Inches(1.55), Inches(4.0), Inches(4.4))
-txt(s, Inches(5.5), Inches(5.95), Inches(4.0), Inches(0.35),
-    "high only when both scores are large", size=11.5, italic=True, color=MUTED,
-    align=PP_ALIGN.CENTER)
-
-# =========================================================
 # 14 — post-processing (centering + contextualisation)
 # =========================================================
 s = new_slide("Two refinements: centering and contextualisation", notes=(
-    "[1:05]  Two further techniques improve retrieval — one on the embeddings, one on the "
+    "[0:50]  Two further techniques improve retrieval — one on the embeddings, one on the "
     "query text itself.\n\n"
     "CENTERING, applied to the embeddings. Vision–language embedding spaces contain a "
     "large common component shared by many embeddings — generic visual or linguistic "
@@ -672,8 +667,9 @@ for i, (raw, ctx) in enumerate([("“during sunset”", "“dog during the sunse
         size=14, bold=True, color=RED, align=PP_ALIGN.CENTER)
     card(s, Inches(7.35), Inches(3.65 + i * 0.8), Inches(1.95), Inches(0.62),
          text=ctx, size=10.5, italic=True, color=INK)
-takeaway(s, "Remove what is common to everything; speak to the encoder in its own language.",
-         Inches(5.6))
+takeaway(s, "Centering — remove what is common to everything.\n"
+            "Contextualisation — speak to the encoder in its own language.",
+         Inches(5.55))
 
 # =========================================================
 # 15 — the ladder
@@ -864,6 +860,37 @@ s.notes_slide.notes_text_frame.text = "Thank the committee; open for questions."
 # =========================================================
 # backups
 # =========================================================
+s = new_slide("Backup — combining the three scores", notes=(
+    "How the three similarity scores are fused. Min-based normalization puts the branches "
+    "on comparable scales; negative residuals are clamped to zero — no positive evidence. "
+    "The normalized scores are multiplied, a soft logical AND: a good result must match "
+    "all three branches at once.\n\n"
+    "On top, a Harris-inspired penalty — from the Harris corner detector, where a strong "
+    "response in one direction only is not enough. A candidate must not win on one branch "
+    "alone: the exact chair not around a table, or chairs around a table that are not the "
+    "query chair, are both suppressed. The penalty is weighted by a hyperparameter lambda, "
+    "fixed across all experiments.\n\n"
+    "The surface shows the effect: the score is high only when both arguments are "
+    "simultaneously large."))
+txt(s, Inches(0.68), Inches(1.45), Inches(4.7), Inches(0.35),
+    "1. Min-normalise, then clamp negatives to zero", size=14, bold=True, color=RED)
+add_pic(s, IMG["eq_minnorm"], Inches(0.7), Inches(1.9), Inches(4.4), Inches(0.7))
+bullets(s, [
+    ("Puts the three branches on comparable scales; a negative residual = no positive "
+     "evidence for that candidate", {}),
+], left=Inches(0.68), top=Inches(2.7), w=Inches(4.7), size=13, gap=4)
+txt(s, Inches(0.68), Inches(3.75), Inches(4.7), Inches(0.35),
+    "2. Multiply, with a Harris-inspired penalty (λ)", size=14, bold=True, color=RED)
+add_pic(s, IMG["eq_harris"], Inches(0.7), Inches(4.2), Inches(4.4), Inches(0.8))
+bullets(s, [
+    ("A candidate must be strong on ALL branches — the exact chair NOT around a table, or "
+     "chairs around a table that are NOT the query chair, are both suppressed", {"bold": True}),
+], left=Inches(0.68), top=Inches(5.15), w=Inches(4.7), size=13, gap=4)
+add_pic(s, IMG["harris"], Inches(5.5), Inches(1.55), Inches(4.0), Inches(4.4))
+txt(s, Inches(5.5), Inches(5.95), Inches(4.0), Inches(0.35),
+    "high only when both scores are large", size=11.5, italic=True, color=MUTED,
+    align=PP_ALIGN.CENTER)
+
 s = new_slide("Backup — full CLIP-L ablation", notes=(
     "Every rung of the ladder, for the three pipelines. macro-mAP, full i-CIR, CLIP "
     "ViT-L/14. Projection and query expansion are shown here: they do not help once the "

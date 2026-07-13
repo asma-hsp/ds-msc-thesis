@@ -94,6 +94,26 @@ def flush_para(par, callout=False):
 
 while i < len(lines):
     line = lines[i]
+    if line.strip() == "---":          # horizontal rule
+        pdf.ln(2)
+        pdf.set_draw_color(*MUTED)
+        pdf.set_line_width(0.3)
+        pdf.line(20, pdf.get_y(), 20 + EPW, pdf.get_y())
+        pdf.ln(3)
+        i += 1
+        continue
+    if line.startswith("# "):          # mid-document part heading
+        if pdf.get_y() > 297 - 18 - 40:
+            pdf.add_page()
+        pdf.ln(2)
+        pdf.set_font("dejavu", "B", 14)
+        pdf.set_text_color(*RED)
+        pdf.multi_cell(EPW, 7, line[2:].strip())
+        pdf.ln(2)
+        i += 1
+        continue
+    if line.startswith("## ") and "|" not in line:   # heading without budget | cum
+        line = f"{line.rstrip()} | — | —"
     m = sec_re.match(line)
     if m:
         stitle, budget, cum = m.groups()
