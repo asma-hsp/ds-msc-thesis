@@ -340,8 +340,7 @@ s = new_slide("The i-CIR benchmark", notes=(
 add_pic(s, IMG["tintin_fig"], Inches(0.55), Inches(1.25), Inches(8.9), Inches(3.95))
 bullets(s, [
     ("Each instance → several composed queries (query image + query text)", {}),
-    ("Multiple ground truths: a single query can have several correct targets — every "
-     "database image showing the same object under the requested modification", {"bold": True}),
+    ("Multiple ground truths: a single query can have several correct targets", {"bold": True}),
     ("Curated hard negatives: right object / wrong modification, or right modification / "
      "wrong object — one modality alone is not enough", {}),
 ], top=Inches(5.3), size=13.5, gap=4)
@@ -386,13 +385,14 @@ s = new_slide("A zero-shot setting", notes=(
     "previously unseen object instances, with no additional training."))
 bullets(s, [
     ("Zero-shot: we do not train or fine-tune any model on i-CIR", {"bold": True}),
+    ("i-CIR is itself designed for the zero-shot setting — it provides no training split, "
+     "only queries and their retrieval pools", {}),
     ("Supervised CIR needs labelled triplets (query image, query text, target image) — "
      "at the instance level, every new object would require new annotation", {}),
     ("That decreases scalability, and it limits generalization to instances never seen at "
      "training time — yet in practice new objects appear constantly", {}),
-    ("Frozen pre-trained models apply directly to previously unseen instances, no "
-     "per-instance training", {"bold": True}),
-], top=Inches(1.95), size=17, gap=12)
+    ("Frozen pre-trained models apply directly to previously unseen instances", {"bold": True}),
+], top=Inches(1.85), size=16, gap=11)
 takeaway(s, "No training anywhere — every model in this work stays frozen.", Inches(6.0))
 
 # =========================================================
@@ -405,20 +405,16 @@ s = new_slide("Problem formulation", notes=(
     "pool — its positives plus its curated hard negatives — and sorts them from most to "
     "least relevant. Pool size varies from instance to instance. This ranked list is the "
     "output; evaluation checks WHERE the correct targets land in it."))
-add_pic(s, IMG["eq_problem"], Inches(0.9), Inches(1.75), Inches(8.2), Inches(0.85))
-txt(s, Inches(0.75), Inches(3.05), Inches(8.6), Inches(0.35),
-    "The system scores every image in the instance's own pool and ranks them, most to "
-    "least relevant:", size=15, color=INK)
-pos = {0, 2, 5}
-for i in range(8):
-    card(s, Inches(0.75 + i * 0.78), Inches(3.6), Inches(0.65), Inches(0.65),
-         text="✓" if i in pos else "",
-         fill=RGBColor(0x0C, 0xA3, 0x0C) if i in pos else LIGHT,
-         line=None, size=18, bold=True, color=WHITE)
-txt(s, Inches(7.15), Inches(3.7), Inches(2.3), Inches(0.5),
-    "ranked list\n(green = correct)", size=12, color=MUTED)
-takeaway(s, "Each instance has its own retrieval pool — positives plus curated hard "
-            "negatives — and pool size varies by instance.", Inches(5.0))
+add_pic(s, IMG["eq_problem"], Inches(0.9), Inches(1.7), Inches(8.2), Inches(0.85))
+bullets(s, [
+    ("The retrieval system scores every image in the instance's own pool and ranks them, "
+     "most to least relevant", {}),
+    ("Each instance has its own retrieval pool — its positives plus its curated hard "
+     "negatives — and the pool size varies from instance to instance", {"bold": True}),
+    ("So for each instance we rank its data pool and return the top-k as the retrieval "
+     "result", {}),
+], top=Inches(3.1), size=17, gap=14)
+takeaway(s, "One ranking per instance, over that instance's own pool.", Inches(5.9))
 
 # =========================================================
 # 8 — evaluation metric
@@ -486,16 +482,20 @@ s = new_slide("Vision–language models: CLIP and SigLIP", notes=(
     "scales better to large batches.\n\n"
     "We compare these frozen backbones to test whether our method depends on one "
     "particular vision–language model."))
-add_pic(s, IMG["clip"], Inches(0.5), Inches(1.5), Inches(5.3), Inches(2.7))
-add_pic(s, IMG["clip_siglip"], Inches(5.95), Inches(1.5), Inches(3.5), Inches(2.7))
+txt(s, Inches(0.68), Inches(1.3), Inches(8.6), Inches(0.35),
+    "The core challenge: represent images and texts so that their similarity can be "
+    "measured at all.", size=15, bold=True, color=RED)
+add_pic(s, IMG["clip"], Inches(0.5), Inches(1.75), Inches(5.3), Inches(2.6))
+add_pic(s, IMG["clip_siglip"], Inches(5.95), Inches(1.75), Inches(3.5), Inches(2.6))
 bullets(s, [
     ("Dual-encoder (two-tower): one image encoder, one text encoder, both mapping into "
-     "the same embedding space → similarity = cosine similarity", {}),
+     "the SAME embedding space — so an image and a text become comparable vectors, and "
+     "similarity is just the cosine between them", {}),
     ("Used completely frozen: we only extract embeddings, never update parameters", {"bold": True}),
     ("CLIP — compares all image–text pairs within a batch, softmax contrastive objective", {}),
     ("SigLIP — classifies each pair independently, sigmoid loss: no global softmax, "
      "scales better to large batches", {}),
-], top=Inches(4.45), size=13.5, gap=4)
+], top=Inches(4.5), size=13, gap=3)
 
 # =========================================================
 # 8 — BASIC
@@ -521,15 +521,16 @@ s = new_slide("The baseline: BASIC", notes=(
 txt(s, Inches(0.68), Inches(0.86), Inches(8.6), Inches(0.3),
     "introduced with the i-CIR benchmark  ·  Psomas et al., 2025",
     size=12.5, italic=True, color=WHITE)
-add_pic(s, IMG["pipeline_basic"], Inches(0.35), Inches(1.35), Inches(9.3), Inches(3.5))
+add_pic(s, IMG["pipeline_basic"], Inches(0.35), Inches(1.3), Inches(9.3), Inches(3.4))
 bullets(s, [
     ("Two branches: the query image through the visual encoder, the query text through "
      "the text encoder — processed separately", {}),
-    ("The two similarities are multiplied — a soft logical AND: a high final score "
-     "requires matching BOTH the query image and the query text", {"bold": True}),
+    ("The score used to rank every database image is the PRODUCT of these two "
+     "similarities — a soft logical AND: a high score requires matching BOTH halves of "
+     "the query", {"bold": True}),
     ("Main backbone: CLIP ViT-L/14 — the standard in zero-shot CIR; we adopt it too, so "
      "our results are directly comparable", {}),
-], top=Inches(5.05), size=13.5, gap=4)
+], top=Inches(4.9), size=13.5, gap=4)
 
 # =========================================================
 # 11 — BASIC's two refinements (centering + contextualisation)
@@ -664,7 +665,7 @@ s = new_slide("Designing the instruction", notes=(
     "encourages the model to describe the imagined target from a slightly different "
     "perspective, and together they produce a diverse set of candidate captions."))
 bullets(s, [
-    ("The caption quality depends strongly on how the task is formulated", {}),
+    ("The caption quality depends strongly on how we instruct the MLLM to generate it", {}),
     ("Extensive prompt design: more than 20 instructions tested, varying the level of "
      "detail, the use of examples, the order of constraints, and restrictions against "
      "irrelevant information", {}),
@@ -861,12 +862,11 @@ s = new_slide("Conclusions", notes=(
     "product on CLIP-L, and centering and the caption are complementary — backup slides "
     "have the numbers.]"))
 bullets(s, [
-    ("The caption is the single most effective component.", {"bold": True, "size": 20}),
-    ("Adding the target caption improves every backbone on the full dataset.", {"size": 17}),
-    ("", {"nobullet": True, "size": 8}),
-    ("SigLIP2 is the strongest backbone for the pipeline.", {"bold": True, "size": 20}),
-    ("61.98 macro-mAP — the best result in the thesis, fully zero-shot.", {"size": 17}),
-], top=Inches(2.1), size=17, gap=14)
+    ("The caption is the single most effective component — adding the target caption "
+     "improves every backbone on the full dataset.", {"bold": True}),
+    ("SigLIP2 is the strongest backbone for the pipeline — 61.98 macro-mAP, the best "
+     "result in the thesis, fully zero-shot.", {"bold": True}),
+], top=Inches(2.4), size=19, gap=26)
 
 # =========================================================
 # 23 — thank you (full-bleed red)
@@ -1043,17 +1043,18 @@ s = new_slide("Inference latency — the cost of the caption", notes=(
     "avg-5 buys another 1.6 points for 5× the compute. If latency mattered, K=1 is the "
     "operating point to pick."))
 table(s, [
-    ("per query (CLIP-L)", "caption generation", "total", "vs BASIC"),
-    ("BASIC", "—", "254 ms", "1.0×"),
-    ("Ours, 1 caption", "3.11 s", "3.16 s", "12.5×"),
-    ("Ours, 5 captions (avg-5)", "15.13 s", "15.19 s", "59.8×"),
+    ("per query (CLIP-L)", "caption generation", "query embedding", "total"),
+    ("BASIC", "—", "55 ms", "254 ms"),
+    ("Ours, 1 caption", "3.11 s", "58 ms", "3.16 s"),
+    ("Ours, 5 captions (avg-5)", "15.13 s", "60 ms", "15.19 s"),
 ], Inches(0.75), Inches(1.55), Inches(8.5), row_h=0.55, size=13.5, highlight_rows={3})
 txt(s, Inches(0.75), Inches(3.85), Inches(8.5), Inches(0.35),
-    "mean over 100 queries · database embeddings precomputed offline · embedding the "
-    "captions costs only 2–4 ms", size=11.5, color=MUTED, align=PP_ALIGN.CENTER)
+    "mean over 100 queries · database embeddings precomputed offline · BASIC's cost is "
+    "mostly its contextualisation step (196 ms)",
+    size=11.5, color=MUTED, align=PP_ALIGN.CENTER)
 bullets(s, [
-    ("Caption generation is essentially ALL of the online cost — the retrieval backbone "
-     "barely matters (22 ms CLIP-L vs 46 ms SigLIP2)", {"bold": True}),
+    ("Caption generation is essentially ALL of the online cost — embedding the query is "
+     "tens of milliseconds, and encoding the captions themselves only 2–4 ms", {"bold": True}),
     ("A real accuracy/latency knob: one caption already gives 23.83 macro-mAP (vs BASIC "
      "17.95) at a fifth of the caption cost; avg-5 buys +1.6 more for 5× the compute", {}),
     ("Levers: fewer captions, shorter generations, a smaller or quantised MLLM", {}),

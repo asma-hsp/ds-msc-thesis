@@ -11,7 +11,7 @@ import os
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.patches import FancyBboxPatch, Circle
+from matplotlib.patches import FancyBboxPatch, Circle, Arc
 from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -174,16 +174,29 @@ ax.annotate("", xy=(6.05, 1.05), xytext=(5.1, 1.05),
             arrowprops=dict(arrowstyle="-|>", color=C_TXT, lw=1.8))
 rbox(6.1, 0.7, 1.5, 0.7, "text\nvector", fc="white", ec=C_TXT, tc=C_TXT, fontsize=11)
 
-# both vectors meet -> cosine similarity score
-ax.annotate("", xy=(8.55, 2.5), xytext=(7.65, 3.3),
-            arrowprops=dict(arrowstyle="-|>", color=C_IMG, lw=1.8))
-ax.annotate("", xy=(8.55, 2.2), xytext=(7.65, 1.15),
-            arrowprops=dict(arrowstyle="-|>", color=C_TXT, lw=1.8))
-rbox(8.6, 1.95, 2.15, 0.85, "cosine\nsimilarity", fc="#f7e9ea", ec=C_TXT, tc=INK)
-ax.text(9.675, 1.55, "one match score", fontsize=10.5, color=MUTED,
-        ha="center", va="top", style="italic")
-ax.text(9.675, 3.45, "same embedding space", fontsize=11, color=INK,
+# both vectors land in ONE shared embedding space (drawn as a circle), where the
+# angle between them IS the similarity
+space = Circle((9.25, 2.3), 1.42, fc="#f4f6fb", ec=MUTED, lw=1.4, ls=(0, (5, 3)),
+               zorder=1)
+ax.add_patch(space)
+ax.text(9.25, 3.92, "shared embedding space", fontsize=11.5, color=INK,
         ha="center", va="center", fontweight="bold")
+ax.annotate("", xy=(8.35, 2.95), xytext=(7.65, 3.3),
+            arrowprops=dict(arrowstyle="-|>", color=C_IMG, lw=1.8))
+ax.annotate("", xy=(8.35, 1.62), xytext=(7.65, 1.15),
+            arrowprops=dict(arrowstyle="-|>", color=C_TXT, lw=1.8))
+# the two embedded vectors inside the space, with the angle between them
+ax.annotate("", xy=(9.95, 3.05), xytext=(9.25, 2.3),
+            arrowprops=dict(arrowstyle="-|>", color=C_IMG, lw=2.4), zorder=4)
+ax.annotate("", xy=(10.25, 2.25), xytext=(9.25, 2.3),
+            arrowprops=dict(arrowstyle="-|>", color=C_TXT, lw=2.4), zorder=4)
+ax.add_patch(Arc((9.25, 2.3), 1.05, 1.05, theta1=-3, theta2=47,
+                 color=MUTED, lw=1.3, zorder=4))
+ax.text(9.62, 2.02, "θ", fontsize=12, color=MUTED, ha="center", va="center",
+        style="italic", zorder=5)
+ax.text(9.25, 0.42, "cos θ  =  similarity", fontsize=11.5, color=INK,
+        ha="center", va="center", fontweight="bold", zorder=5,
+        bbox=dict(boxstyle="round,pad=0.3", fc="#f7e9ea", ec=C_TXT, lw=1.2))
 fig.savefig(f"{OUT}/clip_schematic.png", facecolor="white", bbox_inches="tight")
 plt.close(fig)
 
@@ -219,12 +232,11 @@ print("assets written to", OUT)
 import csv
 from collections import defaultdict
 
-img_q = defaultdict(set)
-txt_q = defaultdict(set)
+# composed queries per instance: each row of query_files.csv IS one composed query
+cq_per_inst = defaultdict(int)
 with open(f"{DATA}/query_files.csv") as fh:
     for path, text, inst in csv.reader(fh):
-        img_q[inst].add(path)
-        txt_q[inst].add(text)
+        cq_per_inst[inst] += 1
 pos_per_query = defaultdict(int)
 with open(f"{DATA}/database_files.csv") as fh:
     for path, text, inst in csv.reader(fh):
@@ -239,22 +251,20 @@ for inst in sorted(os.listdir(f"{DATA}/database")):
 import numpy as np
 import statistics
 panels = [
-    ("(a) image queries / instance", sorted(len(v) for v in img_q.values()),
-     np.arange(0.5, 26.5, 1)),
-    ("(b) text queries / instance", sorted(len(v) for v in txt_q.values()),
-     np.arange(0.5, 6.5, 1)),
-    ("(c) hard negatives / instance", sorted(hn_counts), 20),
-    ("(d) positives / composed query",
+    ("(a) hard negatives / instance", sorted(hn_counts), 20),
+    ("(b) positives / composed query",
      [min(v, 30) for v in pos_per_query.values()], np.arange(0.5, 31.5, 1)),
+    ("(c) composed queries / instance", sorted(cq_per_inst.values()),
+     np.arange(0.5, 26.5, 1)),
 ]
-fig, axes = plt.subplots(1, 4, figsize=(13.2, 3.1), dpi=200)
+fig, axes = plt.subplots(1, 3, figsize=(11.4, 3.2), dpi=200)
 for i, (ax, (title, vals, bins)) in enumerate(zip(axes, panels)):
     med = statistics.median(vals)
     ax.hist(vals, bins=bins, color=BLUE, edgecolor="white", linewidth=0.6)
     ax.axvline(med, color=ORANGE, lw=2)
     ax.text(0.97, 0.92, f"median {med:g}", transform=ax.transAxes, ha="right",
             fontsize=10.5, color=ORANGE, style="italic")
-    if i == 3:
+    if i == 1:
         ax.text(0.97, 0.78, "long tail to 127", transform=ax.transAxes,
                 ha="right", fontsize=9.5, color=GRAY, style="italic")
     ax.set_title(title, fontsize=12.5, color=INK, loc="left")
