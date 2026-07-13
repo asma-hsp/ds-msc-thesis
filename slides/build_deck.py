@@ -38,9 +38,10 @@ IMG = {
     "top1": f"{ASSETS}/chair_set_43.jpg",
     "paper_stats": f"{ASSETS}/icir_paper_stats.png",
     "pipeline": f"{ASSETS}/pipeline_thesis.png",   # compiled from figures/pipeline_overview.tex
+    "pipeline_basic": f"{ASSETS}/pipeline_basic.png",  # from figures/pipeline_basic.tex
     "clip_siglip": f"{ASSETS}/clip_vs_siglip.png",
-    "qual_success": f"{ASSETS}/qual_homer_success_q832.png",
-    "qual_failure": f"{ASSETS}/qual_dogglasses_failure_q1490.png",
+    "qual_success": f"{ASSETS}/qual_homer_success_q832_labelled.png",
+    "qual_failure": f"{ASSETS}/qual_dogglasses_failure_q1490_labelled.png",
     "tintin_q": f"{FIG}/caption_example_samples/ref.jpg",
     "eq_pk": f"{ASSETS}/eq_pk.png",
     "eq_ap": f"{ASSETS}/eq_ap.png",
@@ -166,21 +167,37 @@ def arrow(slide, left, top, w, h=Inches(0.42)):
     a.line.fill.background()
     return a
 
+GREEN = RGBColor(0x0C, 0x7A, 0x2E)
+
 def table(slide, rows, left, top, width, row_h=0.42, size=14,
-          highlight_rows=(), col0_left=True):
+          highlight_rows=(), col0_left=True, red_rows=()):
+    """A cell may be a plain value, or (value, delta) — the delta is appended as a
+    separate green run, e.g. ("23.83", "▲ +5.9")."""
     n, m = len(rows), len(rows[0])
     tbl = slide.shapes.add_table(n, m, left, top, width,
                                  Inches(row_h * n)).table
     for i, row in enumerate(rows):
         for j, val in enumerate(row):
             cell = tbl.cell(i, j)
+            delta = None
+            if isinstance(val, tuple):
+                val, delta = val
             cell.text = str(val)
             cell.vertical_anchor = MSO_ANCHOR.MIDDLE
+            base = (WHITE if i == 0 else RED if i in red_rows else INK)
             for p in cell.text_frame.paragraphs:
                 p.alignment = (PP_ALIGN.LEFT if (j == 0 and col0_left)
                                else PP_ALIGN.CENTER)
-                style_runs(p, size, bold=(i == 0 or i in highlight_rows),
-                           color=WHITE if i == 0 else INK)
+                style_runs(p, size,
+                           bold=(i == 0 or i in highlight_rows or i in red_rows),
+                           color=base)
+            if delta:
+                p = cell.text_frame.paragraphs[0]
+                r = p.add_run()
+                r.text = "   " + delta
+                r.font.size = Pt(size - 2)
+                r.font.bold = True
+                r.font.color.rgb = GREEN
     return tbl
 
 # =========================================================
@@ -201,13 +218,13 @@ p.space_before = Pt(10)
 for i, par in enumerate(tf.paragraphs):
     par.alignment = PP_ALIGN.CENTER
     style_runs(par, 30 if i == 0 else 21, bold=(i == 0), color=WHITE)
-rule = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(4.25), Inches(3.38),
+rule = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(4.25), Inches(3.15),
                           Inches(1.5), Inches(0.03))
 rule.fill.solid(); rule.fill.fore_color.rgb = WHITE
 rule.line.fill.background()
 for ph in s.placeholders:
     if ph.placeholder_format.idx == 1:
-        ph.left, ph.top, ph.width, ph.height = (Inches(1.25), Inches(3.65),
+        ph.left, ph.top, ph.width, ph.height = (Inches(1.25), Inches(3.35),
                                                 Inches(7.5), Inches(2.2))
         tf2 = ph.text_frame
         tf2.word_wrap = True
@@ -407,40 +424,45 @@ takeaway(s, "Each instance has its own retrieval pool — positives plus curated
 # 8 — evaluation metric
 # =========================================================
 s = new_slide("Evaluation metric", notes=(
-    "[0:35]  Same ranked list as before. For a single query we use Average Precision, "
-    "built on Precision@k — the fraction of the top-k results that are correct. AP is "
-    "high when the correct images appear near the top of the ranking; if they appear "
-    "lower, the score decreases.\n\n"
-    "We then compute mean Average Precision by averaging AP across all queries.\n\n"
+    "[0:40]  Every metric is evaluated at a cut-off k — we only look at the top k of the "
+    "ranking.\n\n"
+    "Precision@k is the fraction of the top-k results that are correct. AP@k builds on it "
+    "and is high when the correct images appear near the top; if they appear lower, the "
+    "score decreases.\n\n"
+    "mAP@k averages AP@k across all queries.\n\n"
     "However, the number of queries is not the same for every instance. If we averaged "
     "directly over all queries, instances with more queries would dominate the result.\n\n"
-    "For this reason our main metric is macro-mAP: we first average within each object "
-    "instance, then across instances — so every instance contributes equally."))
+    "For this reason our main metric is macro-mAP@k: we first average within each object "
+    "instance, then across instances — so every instance contributes equally.\n\n"
+    "Throughout this work we set k = 100, which is the most common choice in the composed "
+    "image retrieval literature and makes our numbers directly comparable."))
 pos = {0, 2, 5}
 for i in range(8):
-    card(s, Inches(0.75 + i * 0.6), Inches(1.35), Inches(0.5), Inches(0.5),
+    card(s, Inches(0.75 + i * 0.6), Inches(1.32), Inches(0.5), Inches(0.5),
          text="✓" if i in pos else "",
          fill=RGBColor(0x0C, 0xA3, 0x0C) if i in pos else LIGHT,
          line=None, size=14, bold=True, color=WHITE)
-txt(s, Inches(6.0), Inches(1.42), Inches(3.35), Inches(0.4),
-    "same ranked list", size=11.5, italic=True, color=MUTED)
+txt(s, Inches(6.0), Inches(1.39), Inches(3.35), Inches(0.4),
+    "same ranked list — cut off at k", size=11.5, italic=True, color=MUTED)
 mrows = [
     ("eq_pk", "Precision@k", "fraction of the top-k results that are correct", MUTED),
-    ("eq_ap", "Average Precision", "high when correct images appear near the top", MUTED),
-    ("eq_map", "mAP", "AP averaged over all queries", MUTED),
-    ("eq_mmap", "macro-mAP",
+    ("eq_ap", "AP@k", "high when correct images appear near the top", MUTED),
+    ("eq_map", "mAP@k", "AP@k averaged over all queries", MUTED),
+    ("eq_mmap", "macro-mAP@k",
      "main metric — average within each instance, then across instances", RED),
 ]
-y = Inches(2.25)
+y = Inches(2.05)
 for eq, name, desc, dc in mrows:
-    b = txt(s, Inches(0.75), y + Inches(0.02), Inches(3.15), Inches(0.85),
+    b = txt(s, Inches(0.75), y + Inches(0.02), Inches(3.15), Inches(0.8),
             name, size=15, bold=True, color=INK)
     p2 = b.text_frame.add_paragraph()
     p2.text = desc
     style_runs(p2, 11, color=dc)
-    add_pic(s, IMG[eq], Inches(4.15), y, Inches(3.6), Inches(0.55))
-    y += Inches(0.92)
-takeaway(s, "Main metric: macro-mAP — every instance contributes equally.", Inches(6.15))
+    add_pic(s, IMG[eq], Inches(4.15), y, Inches(3.6), Inches(0.52))
+    y += Inches(0.87)
+takeaway(s, "Main metric: macro-mAP@k — every instance contributes equally.\n"
+            "We set k = 100 throughout — the standard cut-off in the CIR literature.",
+         Inches(5.7))
 
 # =========================================================
 # 7 — vision-language models
@@ -499,19 +521,68 @@ s = new_slide("The baseline: BASIC", notes=(
 txt(s, Inches(0.68), Inches(0.86), Inches(8.6), Inches(0.3),
     "introduced with the i-CIR benchmark  ·  Psomas et al., 2025",
     size=12.5, italic=True, color=WHITE)
-add_pic(s, IMG["basic"], Inches(0.55), Inches(1.45), Inches(8.9), Inches(3.05))
+add_pic(s, IMG["pipeline_basic"], Inches(0.35), Inches(1.35), Inches(9.3), Inches(3.5))
 bullets(s, [
-    ("The two parts of the query are processed separately, each by its own encoder", {}),
-    ("For every database image: visual similarity sᵛ to the query image, and textual "
-     "similarity sᵗ to the query text (dot products of embeddings)", {}),
-    ("The two scores are multiplied — a soft logical AND: a high final score requires "
-     "matching BOTH the query image and the query text", {"bold": True}),
+    ("Two branches: the query image through the visual encoder, the query text through "
+     "the text encoder — processed separately", {}),
+    ("The two similarities are multiplied — a soft logical AND: a high final score "
+     "requires matching BOTH the query image and the query text", {"bold": True}),
     ("Main backbone: CLIP ViT-L/14 — the standard in zero-shot CIR; we adopt it too, so "
      "our results are directly comparable", {}),
-], top=Inches(4.6), size=13.5, gap=4)
+], top=Inches(5.05), size=13.5, gap=4)
 
 # =========================================================
-# 9 — limitation + our idea
+# 11 — BASIC's two refinements (centering + contextualisation)
+# =========================================================
+s = new_slide("Two refinements: centering and contextualisation", notes=(
+    "[0:50]  BASIC adds two further techniques — one on the embeddings, one on the "
+    "query text itself. We keep both in our own pipeline.\n\n"
+    "CENTERING, applied to the embeddings. Vision–language embedding spaces contain a "
+    "large common component shared by many embeddings — generic visual or linguistic "
+    "patterns rather than the distinctive information needed for retrieval. We compute a "
+    "mean embedding for each modality on a separate corpus, subtract it, and re-normalise. "
+    "This isolates the semantic content from the shared distributional bias.\n\n"
+    "CONTEXTUALISATION, applied to the raw query text — so it is a query-side step, not a "
+    "score post-processing step. The text encoder is trained mostly on full captions, so a "
+    "bare fragment such as 'sculpture' or 'during sunset' is out-of-distribution and "
+    "produces a text feature poorly aligned with image features. We therefore enrich the "
+    "query with terms from a subject corpus, before and after — 'dog during the sunset', "
+    "'sculpture dog' — then embed and average the variants, giving a more robust textual "
+    "feature."))
+txt(s, Inches(0.68), Inches(1.45), Inches(4.3), Inches(0.4), "Centering",
+    size=16, bold=True, color=RED)
+txt(s, Inches(0.68), Inches(1.85), Inches(4.3), Inches(0.32),
+    "on the embeddings", size=11.5, italic=True, color=MUTED)
+add_pic(s, IMG["eq_centering"], Inches(0.68), Inches(2.25), Inches(4.3), Inches(0.75))
+bullets(s, [
+    ("Embeddings share a large common component: generic visual / linguistic patterns, "
+     "not distinctive information", {}),
+    ("Subtract a per-modality mean (computed on a separate corpus) and re-normalise", {"bold": True}),
+], left=Inches(0.68), top=Inches(3.15), w=Inches(4.3), size=12.5, gap=5)
+txt(s, Inches(5.15), Inches(1.45), Inches(4.3), Inches(0.4), "Contextualisation",
+    size=16, bold=True, color=RED)
+txt(s, Inches(5.15), Inches(1.85), Inches(4.3), Inches(0.32),
+    "on the raw query text (a query-side step)", size=11.5, italic=True, color=MUTED)
+bullets(s, [
+    ("The text encoder is trained on full captions; a bare fragment is "
+     "out-of-distribution", {}),
+    ("Enrich the query text with terms from a subject corpus, before and after — then "
+     "embed and average the variants", {"bold": True}),
+], left=Inches(5.15), top=Inches(2.25), w=Inches(4.3), size=12.5, gap=5)
+for i, (raw, ctx) in enumerate([("“during sunset”", "“dog during the sunset”"),
+                                ("“sculpture”", "“sculpture dog”")]):
+    card(s, Inches(5.15), Inches(3.65 + i * 0.8), Inches(1.75), Inches(0.62),
+         text=raw, size=10.5, italic=True, color=BLUE)
+    txt(s, Inches(6.95), Inches(3.72 + i * 0.8), Inches(0.35), Inches(0.45), "→",
+        size=14, bold=True, color=RED, align=PP_ALIGN.CENTER)
+    card(s, Inches(7.35), Inches(3.65 + i * 0.8), Inches(1.95), Inches(0.62),
+         text=ctx, size=10.5, italic=True, color=INK)
+takeaway(s, "Centering — remove what is common to everything.\n"
+            "Contextualisation — speak to the encoder in its own language.",
+         Inches(5.55))
+
+# =========================================================
+# 12 — limitation + our idea
 # =========================================================
 s = new_slide("Limitation of the baseline — our proposal", notes=(
     "[1:10]  The main limitation of the baseline is that the query image and the "
@@ -627,10 +698,9 @@ s = new_slide("Effect of the caption branch", notes=(
     "From here on, all results use CLIP ViT-L/14 as the backbone unless stated otherwise."))
 table(s, [
     ("", "img × txt", "img × txt × caption\n(single)", "img × txt × caption\n(avg-5)"),
-    ("macro-mAP", "17.95", "23.83", "25.41"),
-    ("gain", "—", "+5.9", "+7.5"),
-], Inches(0.9), Inches(2.0), Inches(8.2), row_h=0.72, size=15, highlight_rows={1})
-txt(s, Inches(0.9), Inches(4.3), Inches(8.2), Inches(0.4),
+    ("macro-mAP", "17.95", ("23.83", "▲ +5.9"), ("25.41", "▲ +7.5")),
+], Inches(0.9), Inches(2.1), Inches(8.2), row_h=0.8, size=16, highlight_rows={1})
+txt(s, Inches(0.9), Inches(3.85), Inches(8.2), Inches(0.4),
     "CLIP ViT-L/14 · raw similarity product · no post-processing",
     size=12, color=MUTED, align=PP_ALIGN.CENTER)
 bullets(s, [
@@ -644,56 +714,6 @@ txt(s, Inches(0.68), Inches(6.35), Inches(8.6), Inches(0.35),
     size=12, italic=True, color=RED, align=PP_ALIGN.CENTER)
 
 # =========================================================
-# 14 — post-processing (centering + contextualisation)
-# =========================================================
-s = new_slide("Two refinements: centering and contextualisation", notes=(
-    "[0:50]  Two further techniques improve retrieval — one on the embeddings, one on the "
-    "query text itself.\n\n"
-    "CENTERING, applied to the embeddings. Vision–language embedding spaces contain a "
-    "large common component shared by many embeddings — generic visual or linguistic "
-    "patterns rather than the distinctive information needed for retrieval. We compute a "
-    "mean embedding for each modality on a separate corpus, subtract it, and re-normalise. "
-    "This isolates the semantic content from the shared distributional bias.\n\n"
-    "CONTEXTUALISATION, applied to the raw query text — so it is a query-side step, not a "
-    "score post-processing step. The text encoder is trained mostly on full captions, so a "
-    "bare fragment such as 'sculpture' or 'during sunset' is out-of-distribution and "
-    "produces a text feature poorly aligned with image features. We therefore enrich the "
-    "query with terms from a subject corpus, before and after — 'dog during the sunset', "
-    "'sculpture dog' — then embed and average the variants, giving a more robust textual "
-    "feature."))
-txt(s, Inches(0.68), Inches(1.45), Inches(4.3), Inches(0.4), "Centering",
-    size=16, bold=True, color=RED)
-txt(s, Inches(0.68), Inches(1.85), Inches(4.3), Inches(0.32),
-    "on the embeddings", size=11.5, italic=True, color=MUTED)
-add_pic(s, IMG["eq_centering"], Inches(0.68), Inches(2.25), Inches(4.3), Inches(0.75))
-bullets(s, [
-    ("Embeddings share a large common component: generic visual / linguistic patterns, "
-     "not distinctive information", {}),
-    ("Subtract a per-modality mean (computed on a separate corpus) and re-normalise", {"bold": True}),
-], left=Inches(0.68), top=Inches(3.15), w=Inches(4.3), size=12.5, gap=5)
-txt(s, Inches(5.15), Inches(1.45), Inches(4.3), Inches(0.4), "Contextualisation",
-    size=16, bold=True, color=RED)
-txt(s, Inches(5.15), Inches(1.85), Inches(4.3), Inches(0.32),
-    "on the raw query text (a query-side step)", size=11.5, italic=True, color=MUTED)
-bullets(s, [
-    ("The text encoder is trained on full captions; a bare fragment is "
-     "out-of-distribution", {}),
-    ("Enrich the query text with terms from a subject corpus, before and after — then "
-     "embed and average the variants", {"bold": True}),
-], left=Inches(5.15), top=Inches(2.25), w=Inches(4.3), size=12.5, gap=5)
-for i, (raw, ctx) in enumerate([("“during sunset”", "“dog during the sunset”"),
-                                ("“sculpture”", "“sculpture dog”")]):
-    card(s, Inches(5.15), Inches(3.65 + i * 0.8), Inches(1.75), Inches(0.62),
-         text=raw, size=10.5, italic=True, color=BLUE)
-    txt(s, Inches(6.95), Inches(3.72 + i * 0.8), Inches(0.35), Inches(0.45), "→",
-        size=14, bold=True, color=RED, align=PP_ALIGN.CENTER)
-    card(s, Inches(7.35), Inches(3.65 + i * 0.8), Inches(1.95), Inches(0.62),
-         text=ctx, size=10.5, italic=True, color=INK)
-takeaway(s, "Centering — remove what is common to everything.\n"
-            "Contextualisation — speak to the encoder in its own language.",
-         Inches(5.55))
-
-# =========================================================
 # 15 — the ladder
 # =========================================================
 s = new_slide("Adding the steps on top of each other", notes=(
@@ -705,7 +725,9 @@ s = new_slide("Adding the steps on top of each other", notes=(
     "[If asked: two further BASIC steps — the contrastive projection and query expansion — "
     "do not help once the caption branch is present, so they are omitted. Numbers on the "
     "full-ablation backup slide.]"))
-add_pic(s, IMG["ladder_l"], Inches(0.55), Inches(1.5), Inches(8.9), Inches(4.5))
+txt(s, Inches(0.68), Inches(0.86), Inches(8.6), Inches(0.3),
+    "backbone: CLIP ViT-L/14  ·  macro-mAP", size=12.5, italic=True, color=WHITE)
+add_pic(s, IMG["ladder_l"], Inches(0.55), Inches(1.35), Inches(8.9), Inches(4.5))
 takeaway(s, "The caption pipeline stays ahead at every step of the ladder.", Inches(6.0))
 
 # =========================================================
@@ -720,17 +742,20 @@ s = new_slide("Does it transfer? Four frozen backbones", notes=(
     "The caption branch improves EVERY backbone. The largest jump is on SigLIP-L, where "
     "macro-mAP roughly doubles, from 21.1 to 43.3. SigLIP2 is the strongest base model.\n\n"
     "This shows the contribution does not depend on one particular vision–language model."))
-add_pic(s, IMG["backbones"], Inches(0.55), Inches(1.45), Inches(5.55), Inches(4.4))
+add_pic(s, IMG["backbones"], Inches(0.5), Inches(1.4), Inches(5.5), Inches(4.4))
 table(s, [
-    ("backbone", "dim"),
-    ("CLIP ViT-L/14", "768"),
-    ("CLIP ViT-H/14", "1024"),
-    ("SigLIP ViT-L/16", "1024"),
-    ("SigLIP2 g/16", "1536"),
-], Inches(6.3), Inches(2.0), Inches(3.1), row_h=0.5, size=12, highlight_rows={4})
-txt(s, Inches(6.3), Inches(4.6), Inches(3.1), Inches(1.2),
+    ("backbone", "dim", "ours"),
+    ("CLIP ViT-L/14", "768", "25.4"),
+    ("CLIP ViT-H/14", "1024", "47.1"),
+    ("SigLIP ViT-L/16", "1024", "43.3"),
+    ("SigLIP2 g/16", "1536", "56.1"),
+], Inches(6.15), Inches(1.75), Inches(3.3), row_h=0.52, size=12, red_rows={4})
+txt(s, Inches(6.15), Inches(4.5), Inches(3.3), Inches(0.6),
+    "SigLIP2 is the strongest backbone —\nby a wide margin, in every rung.",
+    size=12.5, bold=True, color=RED)
+txt(s, Inches(6.15), Inches(5.2), Inches(3.3), Inches(0.8),
     "Two families — softmax-contrastive (CLIP) and sigmoid (SigLIP) — at two capacity "
-    "levels.", size=12, color=MUTED)
+    "levels.", size=11, color=MUTED)
 takeaway(s, "The caption branch helps every backbone — it is not a CLIP-specific trick.",
          Inches(6.0))
 
@@ -738,12 +763,13 @@ takeaway(s, "The caption branch helps every backbone — it is not a CLIP-specif
 # 17 — best overall system
 # =========================================================
 s = new_slide("Our best overall system", notes=(
-    "[0:50]  To state the final system plainly: the SigLIP2 backbone, the caption branch "
+    "[0:45]  To state the final system plainly: the SigLIP2 backbone, the caption branch "
     "with five averaged captions, and post-processing through centering and "
     "contextualisation. Every component frozen.\n\n"
-    "61.98 macro-mAP and 62.07 mAP. Beyond mAP: the correct target is ranked first for 71% "
-    "of queries, and appears in the top ten for 95% of queries. Recall@100 is 94%.\n\n"
-    "That high recall is important — I come back to it in the future work."))
+    "61.98 macro-mAP and 62.07 mAP — that is +4.3 over the strongest BASIC configuration.\n\n"
+    "And recall@100 is 93.8%: for almost every query, a correct target IS somewhere in the "
+    "retrieved shortlist. That high recall is important — I come back to it in the future "
+    "work."))
 recipe = [("backbone", "SigLIP2 g/16-384"), ("caption branch", "InternVL 3.5-8B\navg-5"),
           ("post-processing", "centering\n+ contextualisation")]
 for i, (lab, val) in enumerate(recipe):
@@ -757,22 +783,21 @@ for i, (lab, val) in enumerate(recipe):
     if i < 2:
         txt(s, Inches(3.42 + i * 2.95), Inches(2.0), Inches(0.4), Inches(0.5),
             "+", size=22, bold=True, color=RED, align=PP_ALIGN.CENTER)
-metrics = [("61.98", "macro-mAP"), ("62.07", "mAP"), ("71.1%", "Hit@1"),
-           ("94.9%", "Hit@10"), ("93.8%", "Recall@100")]
+metrics = [("61.98", "macro-mAP"), ("62.07", "mAP"), ("93.8%", "Recall@100")]
 for i, (num, lab) in enumerate(metrics):
     hero = (i == 0)
-    c = card(s, Inches(0.62 + i * 1.79), Inches(3.35), Inches(1.62), Inches(1.15),
-             text=num, size=20 if hero else 17, bold=True,
+    c = card(s, Inches(1.35 + i * 2.5), Inches(3.35), Inches(2.2), Inches(1.25),
+             text=num, size=24 if hero else 20, bold=True,
              color=RED if hero else INK, fill=ROSE if hero else LIGHT, line=None)
     p2 = c.text_frame.add_paragraph()
     p2.text = lab
     p2.alignment = PP_ALIGN.CENTER
-    style_runs(p2, 11, color=MUTED)
+    style_runs(p2, 12, color=MUTED)
 bullets(s, [
     ("+4.3 macro-mAP over the strongest BASIC configuration (57.69)", {}),
-    ("The correct target reaches the top-10 for 94.9% of queries — most of the remaining "
-     "error is in the ORDER of already-retrieved candidates", {"bold": True}),
-], top=Inches(4.75), size=15, gap=6)
+    ("Recall@100 = 93.8% — for almost every query a correct target IS in the retrieved "
+     "shortlist", {"bold": True}),
+], top=Inches(4.95), size=15, gap=6)
 
 # =========================================================
 # 19 — qualitative success
@@ -787,62 +812,41 @@ s = new_slide("Qualitative example — success", notes=(
 add_pic(s, IMG["qual_success"], Inches(0.4), Inches(1.5), Inches(9.2), Inches(5.0))
 
 # =========================================================
-# 20 — qualitative failure
-# =========================================================
-s = new_slide("Qualitative example — failure", notes=(
-    "[0:30, flex]  Gold metal eyeglasses, 'worn by a dog'. Here all three methods fail — "
-    "AP near zero. The single ground truth is a photo of a dog actually wearing these "
-    "glasses. Every method instead returns glasses photographed on tables or held up, "
-    "because the visual branch anchors hard on the glasses themselves and the caption "
-    "cannot overcome a target this rare.\n\n"
-    "This is the characteristic failure mode: when the modification demands a drastic, "
-    "rarely-photographed context, the image branch dominates and the correct target is "
-    "simply not near the top."))
-add_pic(s, IMG["qual_failure"], Inches(0.4), Inches(1.5), Inches(9.2), Inches(5.0))
-
-# =========================================================
-# 21 — limitations & future work
+# 20 — limitations & future work
 # =========================================================
 s = new_slide("Limitations and future work", notes=(
-    "[0:50]  Limitations. The main cost is caption generation — about 15 seconds per "
-    "query, which dominates online inference. The results also depend on prompt design: "
-    "averaging five captions mitigates this but does not remove it. And the fixed, "
-    "unweighted product cannot adapt when one branch should matter more.\n\n"
-    "Future work. A stronger or more efficient captioner — or a single high-quality caption "
-    "that matches avg-5 without five generations — would cut the main compute cost. The "
-    "fixed product could be replaced by a learned or weighted fusion of the three "
-    "similarities, relaxing the zero-shot constraint in exchange for accuracy.\n\n"
-    "Because recall is already high — the correct instance lands in the top-ranked "
-    "shortlist for the large majority of queries — a second-stage RERANKER that reorders "
-    "this shortlist is a promising direction: most of the remaining error is in the "
-    "ordering of candidates that are already retrieved. A text-conditioned reranker that "
-    "reorders by similarity to the target caption, rather than to the query image, is "
-    "a natural candidate, since it keeps the modification in the loop at the reranking "
-    "stage.\n\n"
+    "[0:45]  Limitations. The main cost is caption generation, which dominates online "
+    "inference. The results also depend on prompt design: averaging five captions "
+    "mitigates this but does not remove it.\n\n"
+    "Future work. The fixed product could be replaced by a learned or weighted fusion of "
+    "the three similarities, relaxing the zero-shot constraint in exchange for accuracy.\n\n"
+    "Because recall is already high — a correct target lands in the retrieved shortlist "
+    "for almost every query — a second-stage RERANKER that reorders this shortlist is a "
+    "promising direction: most of the remaining error is in the ordering of candidates "
+    "that are already retrieved. A text-conditioned reranker that reorders by similarity "
+    "to the target caption, rather than to the query image, is a natural candidate, since "
+    "it keeps the modification in the loop at the reranking stage.\n\n"
     "Finally, the caption-as-third-modality idea is benchmark-agnostic and could be "
     "evaluated beyond i-CIR, on category-level CIR benchmarks and other instance-level "
     "retrieval settings."))
-txt(s, Inches(0.68), Inches(1.45), Inches(8.6), Inches(0.4), "Limitations",
-    size=16, bold=True, color=RED)
+txt(s, Inches(0.68), Inches(1.5), Inches(8.6), Inches(0.4), "Limitations",
+    size=17, bold=True, color=RED)
 bullets(s, [
-    ("Compute — caption generation dominates online inference (≈ 15 s per query)", {}),
+    ("Compute — caption generation dominates online inference", {}),
     ("Prompt sensitivity — results depend on instruction design; avg-5 mitigates but does "
      "not remove it", {}),
-    ("The fixed, unweighted product cannot re-weight the branches per query", {}),
-], top=Inches(1.9), size=14.5, gap=4)
-txt(s, Inches(0.68), Inches(3.7), Inches(8.6), Inches(0.4), "Future work",
-    size=16, bold=True, color=RED)
+], top=Inches(2.0), size=15, gap=6)
+txt(s, Inches(0.68), Inches(3.5), Inches(8.6), Inches(0.4), "Future work",
+    size=17, bold=True, color=RED)
 bullets(s, [
-    ("A stronger or more efficient captioner — or a single caption matching avg-5 without "
-     "five generations — would cut the main compute cost", {}),
     ("A learned or weighted fusion of the three similarities, relaxing the zero-shot "
      "constraint in exchange for accuracy", {}),
-    ("Second-stage reranking: recall is already high (Hit@10 = 94.9%), so most of the "
-     "remaining error is in the ORDER of candidates already retrieved — a text-conditioned "
+    ("Second-stage reranking: recall is already high (Recall@100 = 93.8%), so most of the "
+     "remaining error is in the ORDER of candidates already retrieved — a caption-conditioned "
      "reranker keeps the modification in the loop", {"bold": True}),
     ("The caption-as-third-modality idea is benchmark-agnostic: category-level CIR and "
      "other instance-level retrieval settings", {}),
-], top=Inches(4.15), size=14.5, gap=4)
+], top=Inches(4.0), size=15, gap=6)
 
 # =========================================================
 # 22 — conclusions
@@ -882,7 +886,7 @@ s.notes_slide.notes_text_frame.text = "Thank the committee; open for questions."
 # =========================================================
 # backups
 # =========================================================
-s = new_slide("Backup — combining the three scores", notes=(
+s = new_slide("Combining the three scores", notes=(
     "How the three similarity scores are fused. Min-based normalization puts the branches "
     "on comparable scales; negative residuals are clamped to zero — no positive evidence. "
     "The normalized scores are multiplied, a soft logical AND: a good result must match "
@@ -913,12 +917,23 @@ txt(s, Inches(5.5), Inches(5.95), Inches(4.0), Inches(0.35),
     "high only when both scores are large", size=11.5, italic=True, color=MUTED,
     align=PP_ALIGN.CENTER)
 
-s = new_slide("Backup — full CLIP-L ablation", notes=(
+s = new_slide("Qualitative example — failure", notes=(
+    "Gold metal eyeglasses, 'worn by a dog'. Here all three methods fail — AP near zero. "
+    "The single ground truth is a photo of a dog actually wearing these glasses. Every "
+    "method instead returns glasses photographed on tables or held up, because the visual "
+    "branch anchors hard on the glasses themselves and the caption cannot overcome a "
+    "target this rare.\n\n"
+    "This is the characteristic failure mode: when the modification demands a drastic, "
+    "rarely-photographed context, the image branch dominates and the correct target is "
+    "simply not near the top."))
+add_pic(s, IMG["qual_failure"], Inches(0.4), Inches(1.5), Inches(9.2), Inches(5.0))
+
+s = new_slide("Full ablation — CLIP ViT-L/14", notes=(
     "Every rung of the ladder, for the three pipelines. macro-mAP, full i-CIR, CLIP "
     "ViT-L/14. Projection and query expansion are shown here: they do not help once the "
     "caption branch is present, which is why the pipeline stops at contextualisation."))
 table(s, [
-    ("step", "img × txt", "× caption (single)", "× caption (avg-5)"),
+    ("step", "BASIC", "× caption (single)", "× caption (avg-5)"),
     ("raw product", "17.95", "23.83", "25.41"),
     ("+ centering", "27.76", "31.02", "31.87"),
     ("+ sim-normalisation", "27.40", "30.28", "31.97"),
@@ -926,12 +941,31 @@ table(s, [
     ("+ contextualisation", "32.25", "34.06", "35.76"),
     ("+ projection", "32.48", "32.58", "33.80"),
     ("+ query expansion", "30.28", "31.53", "32.39"),
-], Inches(1.0), Inches(1.75), Inches(8.0), row_h=0.5, size=13.5, highlight_rows={5})
-txt(s, Inches(1.0), Inches(5.5), Inches(8.0), Inches(0.4),
+], Inches(1.0), Inches(1.6), Inches(8.0), row_h=0.5, size=13.5, highlight_rows={5})
+txt(s, Inches(1.0), Inches(5.6), Inches(8.0), Inches(0.4),
     "macro-mAP · full i-CIR · CLIP ViT-L/14 · the pipeline stops at contextualisation",
     size=12, color=MUTED, align=PP_ALIGN.CENTER)
 
-s = new_slide("Backup — SigLIP2 ladder", notes=(
+s = new_slide("Full ablation — SigLIP2 g/16-384", notes=(
+    "The same ladder on the best backbone. The single-caption column here is instruction H "
+    "(the strongest single instruction on SigLIP2). Same shape as CLIP-L: the caption "
+    "pipeline leads at every rung, and contextualisation gives the final jump to 61.98 — "
+    "the best result in the thesis — against 57.69 for BASIC at the same rung."))
+table(s, [
+    ("step", "BASIC", "× caption (single)", "× caption (avg-5)"),
+    ("raw product", "38.12", "53.91", "56.09"),
+    ("+ centering", "49.96", "54.39", "55.51"),
+    ("+ sim-normalisation", "45.49", "51.40", "53.70"),
+    ("+ Harris criterion", "47.64", "54.04", "55.87"),
+    ("+ contextualisation", "57.69", "60.31", "61.98"),
+    ("+ projection", "52.67", "57.17", "59.02"),
+    ("+ query expansion", "49.56", "55.35", "57.29"),
+], Inches(1.0), Inches(1.6), Inches(8.0), row_h=0.5, size=13.5, highlight_rows={5})
+txt(s, Inches(1.0), Inches(5.6), Inches(8.0), Inches(0.4),
+    "macro-mAP · full i-CIR · SigLIP2 g/16-384 · the pipeline stops at contextualisation",
+    size=12, color=MUTED, align=PP_ALIGN.CENTER)
+
+s = new_slide("SigLIP2 ladder", notes=(
     "The best backbone, with the full ladder — the slide we skipped in the talk. The shape "
     "is the same as on CLIP-L: the caption pipeline stays above BASIC throughout, and "
     "contextualisation gives the final jump. Best configuration 61.98 macro-mAP, against "
@@ -941,7 +975,7 @@ txt(s, Inches(0.55), Inches(6.2), Inches(8.9), Inches(0.4),
     "macro-mAP · full i-CIR · SigLIP2 g/16-384", size=12, color=MUTED,
     align=PP_ALIGN.CENTER)
 
-s = new_slide("Backup — component contributions (CLIP-L)", notes=(
+s = new_slide("Baselines — what each branch contributes", notes=(
     "Each branch on its own, then the product, then the triplet. Raw similarity, no "
     "post-processing, macro-mAP, CLIP ViT-L/14. Two things to note: the caption alone "
     "(19.51) already beats the full image × text product (17.95); and adding the caption "
@@ -962,7 +996,7 @@ txt(s, Inches(2.15), Inches(6.42), Inches(5.7), Inches(0.3),
     "raw similarity · no post-processing · macro-mAP · CLIP ViT-L/14",
     size=11.5, color=MUTED, align=PP_ALIGN.CENTER)
 
-s = new_slide("Backup — centering and the caption are complementary", notes=(
+s = new_slide("Centering and the caption are complementary", notes=(
     "The caption gain is not absorbed by centering: it survives on top of it. At the raw "
     "product the caption adds +7.5; after centering it still adds +4.1. The two "
     "contributions stack, which is why the best configuration keeps both. CLIP-L, macro-mAP."))
@@ -977,7 +1011,7 @@ bullets(s, [
     ("So the best configuration combines both", {}),
 ], top=Inches(4.3), size=15, gap=7)
 
-s = new_slide("Backup — reproducing BASIC", notes=(
+s = new_slide("Reproducing BASIC", notes=(
     "The i-CIR paper reports 34.35 for BASIC (CLIP-L, full stack). Our re-run of the "
     "released code gives 32.48. The gap is concentrated in the image branch and is "
     "consistent with re-extracting features in a newer software stack. Both methods are "
@@ -996,24 +1030,36 @@ bullets(s, [
      "comparisons in this thesis are unaffected", {"bold": True}),
 ], top=Inches(4.1), size=15, gap=7)
 
-s = new_slide("Backup — inference latency", notes=(
-    "100 queries, RTX-6000-Ada 48 GB, five captions per query. Caption generation is "
-    "≈99.7% of the online cost; retrieval itself is negligible. Database embeddings are "
-    "precomputed offline."))
+s = new_slide("Inference latency — the cost of the caption", notes=(
+    "Online cost of answering ONE query, CLIP ViT-L/14; database embeddings are "
+    "precomputed offline and excluded.\n\n"
+    "BASIC costs about 254 ms per query — most of it its own contextualisation step "
+    "(196 ms).\n\n"
+    "Our caption branch is what dominates. Generating ONE caption with InternVL costs "
+    "3.11 s — already 12× BASIC. Generating FIVE, which is what avg-5 needs, costs "
+    "15.13 s — about 60× BASIC. Embedding the captions afterwards is nothing: 2–4 ms.\n\n"
+    "So there is a real accuracy-vs-latency knob here. A single caption already gives "
+    "23.83 macro-mAP against BASIC's 17.95 at the same rung, at 1/5 of the caption cost; "
+    "avg-5 buys another 1.6 points for 5× the compute. If latency mattered, K=1 is the "
+    "operating point to pick."))
 table(s, [
-    ("stage", "CLIP-L", "SigLIP2"),
-    ("caption generation (5 captions)", "≈ 14.7 s", "≈ 14.7 s"),
-    ("embedding the query triplet", "22 ms", "46 ms"),
-    ("total, per query (median)", "14.75 s", "14.75 s"),
-], Inches(1.4), Inches(1.9), Inches(7.2), row_h=0.58, size=14, highlight_rows={3})
+    ("per query (CLIP-L)", "caption generation", "total", "vs BASIC"),
+    ("BASIC", "—", "254 ms", "1.0×"),
+    ("Ours, 1 caption", "3.11 s", "3.16 s", "12.5×"),
+    ("Ours, 5 captions (avg-5)", "15.13 s", "15.19 s", "59.8×"),
+], Inches(0.75), Inches(1.55), Inches(8.5), row_h=0.55, size=13.5, highlight_rows={3})
+txt(s, Inches(0.75), Inches(3.85), Inches(8.5), Inches(0.35),
+    "mean over 100 queries · database embeddings precomputed offline · embedding the "
+    "captions costs only 2–4 ms", size=11.5, color=MUTED, align=PP_ALIGN.CENTER)
 bullets(s, [
-    ("Caption generation is ≈ 99.7% of online inference — the backbone choice does not "
-     "change latency", {"bold": True}),
-    ("Database embeddings are precomputed offline; ranking itself is instantaneous", {}),
+    ("Caption generation is essentially ALL of the online cost — the retrieval backbone "
+     "barely matters (22 ms CLIP-L vs 46 ms SigLIP2)", {"bold": True}),
+    ("A real accuracy/latency knob: one caption already gives 23.83 macro-mAP (vs BASIC "
+     "17.95) at a fifth of the caption cost; avg-5 buys +1.6 more for 5× the compute", {}),
     ("Levers: fewer captions, shorter generations, a smaller or quantised MLLM", {}),
-], top=Inches(4.5), size=15, gap=6)
+], top=Inches(4.45), size=14, gap=6)
 
-s = new_slide("Backup — the five instructions, sample captions", notes=(
+s = new_slide("The five instructions — sample captions", notes=(
     "The five prompting strategies on the tintin example, 'as an iconic rooftop sign'. "
     "Each phrases the same target differently; their embeddings are averaged (avg-5)."))
 add_pic(s, IMG["tintin_q"], Inches(0.68), Inches(1.7), Inches(2.0), Inches(1.7), border=MUTED)
@@ -1029,7 +1075,7 @@ for i, (tag, cap) in enumerate(caps):
     card(s, Inches(3.0), Inches(1.6 + i * 1.0), Inches(6.4), Inches(0.9),
          text=f"{tag}:  “{cap}”", size=10.5, align=PP_ALIGN.LEFT)
 
-s = new_slide("Backup — the five instructions, explained", notes=(
+s = new_slide("The five instructions — explained", notes=(
     "What each of the five prompting strategies actually asks the model to do. They were "
     "selected from more than twenty candidates because they are complementary — each "
     "controls a different failure mode of caption generation."))

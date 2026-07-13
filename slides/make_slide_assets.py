@@ -191,10 +191,11 @@ plt.close(fig)
 # 4. formula renders
 # ------------------------------------------------------------------
 EQS = {
+    # NB: matplotlib mathtext has no \textrm — hyphens go inside \mathrm{}
     "eq_pk": r"$\mathrm{P@}k \;=\; \frac{\mathrm{correct\ results\ in\ top-}k}{k}$",
-    "eq_ap": r"$\mathrm{AP} \;=\; \frac{1}{R}\,\sum_{k}\ \mathrm{P@}k \cdot \mathrm{rel}(k)$",
-    "eq_map": r"$\mathrm{mAP} \;=\; \frac{1}{|Q|}\sum_{q \in Q}\mathrm{AP}(q)$",
-    "eq_mmap": r"$\mathrm{macro}\;\mathrm{mAP} \;=\; \frac{1}{|\mathcal{I}|}\sum_{I \in \mathcal{I}}\;\frac{1}{|Q_I|}\sum_{q \in Q_I}\mathrm{AP}(q)$",
+    "eq_ap": r"$\mathrm{AP@}k \;=\; \frac{1}{R}\,\sum_{j=1}^{k}\ \mathrm{P@}j \cdot \mathrm{rel}(j)$",
+    "eq_map": r"$\mathrm{mAP@}k \;=\; \frac{1}{|Q|}\sum_{q \in Q}\mathrm{AP@}k(q)$",
+    "eq_mmap": r"$\mathrm{macro\ mAP@}k \;=\; \frac{1}{|\mathcal{I}|}\sum_{I \in \mathcal{I}}\;\frac{1}{|Q_I|}\sum_{q \in Q_I}\mathrm{AP@}k(q)$",
     "eq_centering": r"$\bar{q}^{\,v} = \phi^{v}(q^{v}) - \mu^{v}\,,\qquad \bar{q}^{\,t} = \phi^{t}(q^{t}) - \mu^{t}$",
     "eq_minnorm": r"$\tilde{s} \;=\; \frac{s - s_{\min}}{|\,s_{\min}\,|}\,,\qquad \tilde{s} \leftarrow \max(\tilde{s},\, 0)$",
     "eq_harris": r"$\tilde{s}^{\,f} \;=\; \tilde{s}^{\,v}\,\tilde{s}^{\,t} \;-\; \lambda\,\left(\tilde{s}^{\,v} + \tilde{s}^{\,t}\right)^{2}$",

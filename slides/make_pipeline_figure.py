@@ -1,5 +1,9 @@
-"""Render the THESIS pipeline figure (figures/pipeline_overview.tex) to a PNG
-for the slides — no hand-made substitute, the exact same TikZ source the thesis uses.
+"""Render the THESIS pipeline figures to PNGs for the slides — the exact same
+TikZ sources the thesis uses, no hand-made substitutes.
+
+  figures/pipeline_overview.tex -> slides/assets/pipeline_thesis.png  (our method)
+  figures/pipeline_basic.tex    -> slides/assets/pipeline_basic.png   (BASIC baseline:
+                                   same layout and styling, caption branch removed)
 
 Needs a LaTeX engine. On the cluster there is none by default; grab tectonic once:
 
@@ -8,7 +12,6 @@ Needs a LaTeX engine. On the cluster there is none by default; grab tectonic onc
     tar xzf /tmp/tect.tar.gz -C /tmp
 
 Then:  python slides/make_pipeline_figure.py
-Output: slides/assets/pipeline_thesis.png
 """
 import os
 import shutil
@@ -19,9 +22,13 @@ import tempfile
 import fitz  # pymupdf
 
 REPO = "/extra/ahoseinp/projects/ds-msc-thesis"
-OUT = f"{REPO}/slides/assets/pipeline_thesis.png"
 TECTONIC = shutil.which("tectonic") or "/tmp/tectonic"
-DPI = 170  # 300 dpi OOMs on the login node
+DPI = 300  # standalone page is small, so this stays well within memory
+
+FIGURES = [
+    ("figures/pipeline_overview", "pipeline_thesis.png"),
+    ("figures/pipeline_basic",    "pipeline_basic.png"),
+]
 
 WRAPPER = r"""\documentclass[border=4pt]{standalone}
 \usepackage{graphicx}
@@ -31,22 +38,26 @@ WRAPPER = r"""\documentclass[border=4pt]{standalone}
 \usetikzlibrary{arrows.meta,shapes.geometric,positioning,calc,backgrounds,fit,
                 shapes.multipart,decorations.pathreplacing}
 \begin{document}
-\input{figures/pipeline_overview}
+\input{%s}
 \end{document}
 """
 
 if not os.path.exists(TECTONIC):
     sys.exit(f"no LaTeX engine at {TECTONIC} — see the docstring")
 
-tex = os.path.join(REPO, "_pipe_standalone.tex")
-with open(tex, "w") as fh:
-    fh.write(WRAPPER)
-
-with tempfile.TemporaryDirectory() as td:
-    subprocess.run([TECTONIC, "-X", "compile", tex, "--outdir", td],
-                   cwd=REPO, check=True)
-    pdf = os.path.join(td, "_pipe_standalone.pdf")
-    fitz.open(pdf)[0].get_pixmap(dpi=DPI).save(OUT)
-
-os.remove(tex)
-print("wrote", OUT)
+for src, out_name in FIGURES:
+    out = os.path.join(REPO, "slides", "assets", out_name)
+    tex = os.path.join(REPO, "_pipe_standalone.tex")
+    with open(tex, "w") as fh:
+        fh.write(WRAPPER % src)
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            subprocess.run([TECTONIC, "-X", "compile", tex, "--outdir", td],
+                           cwd=REPO, check=True)
+            pdf = os.path.join(td, "_pipe_standalone.pdf")
+            pix = fitz.open(pdf)[0].get_pixmap(dpi=DPI)
+            pix.save(out)
+            print(f"wrote {out}  ({pix.width}x{pix.height} @ {DPI} dpi)")
+    finally:
+        if os.path.exists(tex):
+            os.remove(tex)

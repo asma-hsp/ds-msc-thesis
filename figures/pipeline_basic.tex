@@ -1,0 +1,199 @@
+% BASIC baseline pipeline — deliberately the SAME layout and styling as
+% figures/pipeline_overview.tex (our method), but with the caption branch
+% removed. Showing them side by side makes our contribution read as exactly
+% one added row.
+%
+% Row layout:  top = image branch,  bottom = text branch.
+% No MLLM, no caption, no third dot product: the two scores go straight into
+% min-normalization and the AND fusion.
+%
+% Usage (standalone -> PNG for the slides):
+%   see slides/make_pipeline_figure.py
+\def\pipeRef{figures/pipeline_samples/ref}
+\def\pipeTop{figures/pipeline_samples/top1}
+\def\pipeDbA{figures/pipeline_samples/db1}
+\def\pipeDbB{figures/pipeline_samples/db2}
+\def\pipeDbC{figures/pipeline_samples/db3}
+\def\pipeDbD{figures/pipeline_samples/db4}
+\def\pipeDbE{figures/pipeline_samples/db5}
+\def\pipeDbF{figures/pipeline_samples/db6}
+\def\pipeDbG{figures/pipeline_samples/db7}
+\def\pipeDbH{figures/pipeline_samples/db8}
+\def\pipeDbI{figures/pipeline_samples/db9}
+\def\pipeQueryText{in an old archival photo}
+
+\begin{tikzpicture}[
+  >=Stealth, line cap=round, line join=round,
+  font=\large,
+  imgnode/.style   = {draw=#1, line width=1.6pt, inner sep=0pt},
+  imgnode/.default = gray,
+  venc/.style      = {draw=blue!35!black, fill=blue!45!black, text=white,
+                       minimum width=0.95cm, minimum height=2.7cm,
+                       rounded corners=3pt, inner sep=2pt},
+  txtph/.style     = {draw=teal!60!black, fill=white, rounded corners=3pt,
+                       line width=1.1pt, text width=3.1cm, minimum height=3.0cm,
+                       align=center, font=\large\itshape, inner sep=6pt},
+  sop/.style       = {draw=gray!45!black, fill=white, circle,
+                       minimum size=0.85cm, inner sep=1pt, font=\normalsize},
+  prodop/.style    = {draw=gray!45!black, fill=white, circle,
+                       minimum size=0.9cm, inner sep=0pt, font=\Large\bfseries},
+  bubble/.style    = {draw=blue!35, fill=blue!9, rounded corners=5pt,
+                       align=center, font=\small, inner sep=5pt},
+  footlbl/.style   = {font=\footnotesize, text=gray!45!black},
+  sub/.style       = {font=\large},
+  blbl/.style      = {font=\Large, inner sep=1pt},
+  iarr/.style      = {->, draw=blue!60!black,   line width=1.2pt},
+  tarr/.style      = {->, draw=teal!65!black,   line width=1.2pt},
+  garr/.style      = {->, draw=gray!45,         line width=1.0pt},
+]
+
+% ── branch y-coordinates (only two branches now) ─────────────────────────────
+\def\yI{2.6}     % image branch (top)
+\def\yT{-2.6}    % text branch  (bottom)
+
+% =============================================================================
+% GRAY PIPELINE BAND
+% =============================================================================
+\fill[gray!12, rounded corners=10pt] (-2.45,-5.15) rectangle (18.60,4.30);
+
+% =============================================================================
+% INPUTS (x = 0)
+% =============================================================================
+\node[imgnode=blue!60!black] (qv) at (0, \yI) {\includegraphics[width=3.5cm]{\pipeRef}};
+\node[below=3pt of qv, sub] {image query $q^v$};
+
+\node[txtph] (qt) at (0, \yT) {\pipeQueryText};
+\node[below=3pt of qt, sub] {text query $q^t$};
+
+% =============================================================================
+% CONTEXTUALIZATION (text branch) — identical module to our pipeline
+% =============================================================================
+\node[draw=gray!55, dashed, rounded corners=4pt, minimum width=6.0cm,
+      minimum height=3.0cm, fill=gray!12] (ctx) at (5.35, \yT) {};
+\node[anchor=north, font=\normalsize, inner sep=3pt] at (ctx.north) {contextualization};
+\node[font=\footnotesize, text=gray!25!black, anchor=west] (ctxa) at (2.6, \yT+0.7)
+  {\textcolor{green!45!black}{dog} + text query};
+\node[font=\footnotesize, text=gray!25!black, anchor=west] (ctxb) at (2.6, \yT+0.2)
+  {\textcolor{green!45!black}{building} + text query};
+\node[font=\footnotesize, text=gray!25!black, anchor=west] at (2.6, \yT-0.3)
+  {\hspace*{2.6em}$\vdots$};
+\node[font=\footnotesize, text=gray!25!black, anchor=west] (ctxc) at (2.6, \yT-0.9)
+  {\textcolor{green!45!black}{man} + text query};
+\node[venc, minimum height=1.9cm, minimum width=0.6cm, inner sep=1pt] (ctxenc)
+  at (6.5, \yT) {\rotatebox{90}{\scriptsize textual encoder}};
+\draw[garr, line width=0.7pt] (ctxa.east) -- (ctxenc.west |- ctxa);
+\draw[garr, line width=0.7pt] (ctxb.east) -- (ctxenc.west |- ctxb);
+\draw[garr, line width=0.7pt] (ctxc.east) -- (ctxenc.west |- ctxc);
+\node[draw=gray!55, fill=white, rounded corners=2pt, font=\footnotesize,
+      inner sep=3pt] (ctxmean) at (7.6, \yT) {mean};
+\draw[garr, line width=0.7pt] (ctxenc.east) -- (ctxmean.west);
+\draw[tarr] (qt.east) -- (ctx.west);
+
+% =============================================================================
+% VISUAL ENCODER (x = 9.5) — the text branch is encoded inside the module
+% =============================================================================
+\def\encX{9.5}
+\node[venc] (ev) at (\encX, \yI) {\rotatebox{90}{visual encoder}};
+\draw[iarr] (qv.east) -- (ev.west);
+
+% =============================================================================
+% CENTERING (x = 11.05)
+% =============================================================================
+\def\ctrX{11.05}
+\node[sop] (muv) at (\ctrX, \yI) {$-\boldsymbol{\mu}^v$};
+\node[sop] (mut) at (\ctrX, \yT) {$-\boldsymbol{\mu}^t$};
+\node[below=4pt of mut, footlbl] {centering};
+\draw[iarr] (ev.east)  -- (muv.west);
+\draw[tarr] (ctx.east) -- (mut.west);
+
+% =============================================================================
+% DOT PRODUCTS (x = 13.2)
+% =============================================================================
+\def\dotX{13.2}
+\node[sop] (dv) at (\dotX, \yI) {$\cdot$};
+\node[sop] (dt) at (\dotX, \yT) {$\cdot$};
+\node[below=4pt of dt, footlbl] {dot product};
+\draw[iarr] (muv.east) -- (dv.west)
+  node[midway, above=2pt, blbl, text=blue!60!black] {$\bar{q}^v$};
+\draw[tarr] (mut.east) -- (dt.west)
+  node[midway, above=2pt, blbl, text=teal!65!black] {$\bar{q}^t$};
+
+% =============================================================================
+% MIN NORMALIZATION (one tall box spanning both branches)
+% =============================================================================
+\node[venc, minimum height=7.4cm, minimum width=0.95cm] (minn) at (15.20, 0)
+  {\rotatebox{90}{min normalization}};
+\draw[iarr] (dv.east) -- (minn.west |- dv)
+  node[midway, above=2pt, blbl, text=blue!60!black] {$s^v_i$};
+\draw[tarr] (dt.east) -- (minn.west |- dt)
+  node[midway, above=2pt, blbl, text=teal!65!black] {$s^t_i$};
+
+% =============================================================================
+% IMAGE DATASET (identical cylinder)
+% =============================================================================
+\def\cylX{18.3}
+\def\cylRx{2.4}
+\def\cylRy{0.38}
+\def\cylBot{5.20}
+\def\cylTop{7.95}
+\fill[white] (\cylX-\cylRx, \cylBot) rectangle (\cylX+\cylRx, \cylTop);
+\begin{scope}
+  \clip (\cylX-\cylRx, \cylBot) rectangle (\cylX+\cylRx, \cylTop);
+  \node[inner sep=0pt] at (16.8, 7.40) {\includegraphics[height=1.1cm]{\pipeDbA}};
+  \node[inner sep=0pt] at (18.3, 7.40) {\includegraphics[height=1.1cm]{\pipeDbB}};
+  \node[inner sep=0pt] at (19.8, 7.40) {\includegraphics[height=1.1cm]{\pipeDbC}};
+  \node[inner sep=0pt] at (16.8, 6.575) {\includegraphics[height=1.1cm]{\pipeDbD}};
+  \node[inner sep=0pt] at (18.3, 6.575) {\includegraphics[height=1.1cm]{\pipeDbE}};
+  \node[inner sep=0pt] at (19.8, 6.575) {\includegraphics[height=1.1cm]{\pipeDbF}};
+  \node[inner sep=0pt] at (16.8, 5.75) {\includegraphics[height=1.1cm]{\pipeDbG}};
+  \node[inner sep=0pt] at (18.3, 5.75) {\includegraphics[height=1.1cm]{\pipeDbH}};
+  \node[inner sep=0pt] at (19.8, 5.75) {\includegraphics[height=1.1cm]{\pipeDbI}};
+\end{scope}
+\draw[gray!45!black, line width=0.9pt] (\cylX-\cylRx, \cylBot) -- (\cylX-\cylRx, \cylTop);
+\draw[gray!45!black, line width=0.9pt] (\cylX+\cylRx, \cylBot) -- (\cylX+\cylRx, \cylTop);
+\draw[gray!45!black, line width=0.9pt] (\cylX-\cylRx, \cylBot)
+  arc[start angle=180, end angle=360, x radius=\cylRx, y radius=\cylRy];
+\fill[blue!13] (\cylX, \cylTop) ellipse ({\cylRx} and {\cylRy});
+\draw[gray!45!black, line width=0.9pt] (\cylX, \cylTop) ellipse ({\cylRx} and {\cylRy});
+\node[sub] at (\cylX, 8.65) {image dataset $\mathcal{X}$};
+
+\node[venc, minimum height=2.0cm] (dbenc) at (14.95, 6.25)
+  {\rotatebox{90}{\footnotesize visual encoder}};
+\node[sop] (dbmu) at (\dotX, 6.25) {$-\boldsymbol{\mu}^v$};
+\draw[garr] (\cylX-\cylRx, 6.25) -- (dbenc.east);
+\draw[garr] (dbenc.west) -- (dbmu.east);
+
+% database spine feeds both dot products
+\draw[garr] (dbmu.south) -- (dv.north);
+\draw[garr] (dv.south) -- (dt.north);
+\node[footlbl, right=2pt] at (\dotX, 4.45) {$\{\bar{x}^v_i\}$};
+
+% =============================================================================
+% AND FUSION + FINAL SCORE + TOP-1
+% =============================================================================
+\node[prodop] (prod) at (16.90, 0) {$\otimes$};
+\draw[iarr] (minn.east |- dv) -- (prod.north west);
+\draw[tarr] (minn.east |- dt) -- (prod.south west);
+
+\node[bubble] (andbub) at (17.70, 2.30) {AND operation\\(clamp + Harris)};
+\draw[gray!55, dashed, line width=0.8pt] (andbub.south) -- (prod.north);
+
+\node[font=\Large, inner sep=2pt] (sfinal) at (18.10, 0) {$\tilde{s}^f_i$};
+\draw[garr] (prod.east) -- (sfinal.west);
+
+\node[imgnode=green!55!black] (out) at (20.50, 0)
+  {\includegraphics[width=3.5cm]{\pipeTop}};
+\node[below=3pt of out, sub] {top-1 retrieved};
+\draw[garr, line width=1.1pt] (sfinal.east) -- (out.west);
+
+% =============================================================================
+% LEGEND
+% =============================================================================
+\begin{scope}[shift={(5.4, -5.55)}]
+  \draw[iarr, line width=1.4pt] (0,0) -- ++(0.85,0)
+    node[right, font=\large, text=black] {image branch};
+  \draw[tarr, line width=1.4pt] (4.6,0) -- ++(0.85,0)
+    node[right, font=\large, text=black] {text branch};
+\end{scope}
+
+\end{tikzpicture}
