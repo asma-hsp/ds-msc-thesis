@@ -1,340 +1,391 @@
 # Defense notes — Imagining the Target
 Asma Hoseinpour Siouki · MSc Data Science · University of Padova · July 2026
-**20-minute slot, script paced for ≈14:15** — leaves generous buffer for
-questions, transitions, and running over. 22 talk slides + thank-you (23) +
-9 backups (24–32). Slides 19–20 are the flex valve: if behind, show only the
-success case. During Q&A: type a backup slide's number + Enter to jump to it.
+**20-minute slot, script paced for ≈14:20** — leaves generous buffer for
+questions, transitions, and running over. 21 talk slides + thank-you (22) +
+11 backups (23–33). Slide 19 is the flex valve: cut it if you are behind.
+During Q&A: type a backup slide's number + Enter to jump straight to it.
 
-## 1. Title | 0:15 | cum 0:15
+## 1. Title | 0:20 | cum 0:20
 Good morning everyone, and thank you for being here.
 
-## 2. Composed Image Retrieval | 0:55 | cum 1:10
+My name is Asma, and today I will be presenting my thesis work on
+**instance-level composed image retrieval** — and specifically, on how we can
+use a multimodal language model to imagine the target image before we search
+for it.
+
+This work was supervised by Professor Ballan and co-supervised by
+Professor Fiorucci.
+
+## 2. Composed Image Retrieval | 0:55 | cum 1:15
+Let me start with the task itself.
+
 Imagine you see a chair online that you really like, and you want to find a
 dining set that includes that exact chair together with a table.
 
-Searching with the image alone returns the same chair or similar chairs — but
-not as a dining set. Searching with text alone, "a dining table and chairs",
-returns many sets — but not your specific chair.
+Searching with the image alone returns the same chair, or chairs that look
+similar — but not as part of a dining set. Searching with text alone, "a dining
+table and chairs", returns many dining sets — but not your specific chair.
 
-You need both: the image identifies the chair, the text describes the context
+You need both: the image identifies the object, the text describes the context
 you want to find it in.
 
-This is composed image retrieval, the task of my thesis. The query is a
-reference image plus a modification text, and the goal is to retrieve images
-that preserve the reference object while satisfying the modification.
+This is composed image retrieval. The query has two parts — a reference image
+and a modification text — and the goal is to retrieve images that preserve the
+reference object while satisfying the modification.
 
-> Naming note: these are the two parts of the query, so from here on I call
-> them the **query image** and the **query text**.
+> Naming note: these are simply the two halves of the query, so from here on I
+> call them the **query image** and the **query text**.
 
-## 3. Instance-level composed retrieval | 0:40 | cum 1:50
+## 3. Instance-level composed retrieval | 0:40 | cum 1:55
 My thesis focuses on the instance-level version of this task.
 
-In category-level retrieval, any object of the correct class can be correct —
-any chair around a table would do. At the instance level, that is not enough:
-the system must retrieve the exact same chair shown in the query image, while
-also satisfying the query text.
+In category-level retrieval, any object of the right class counts as correct —
+any chair around a table would do. At the instance level that is not enough:
+the system must retrieve the exact same chair from the query image, while also
+satisfying the query text.
 
 So the challenge is to detect that one specific instance among many
 look-alikes, even when its context, viewpoint, or visual domain changes.
 
-## 4. The i-CIR benchmark | 0:50 | cum 2:40
-We use the i-CIR benchmark, designed specifically for this task.
+## 4. The i-CIR benchmark | 0:50 | cum 2:45
+We work on i-CIR, the benchmark built specifically for this task.
 
-Each object instance has several composed queries — query image plus query
-text. Importantly, each query can have multiple correct targets: every
-database image showing the same object under the requested modification. So
-evaluation is about ranking all of them highly, not finding one right answer.
+Each object instance comes with several composed queries — a query image plus a
+query text. Importantly, a single query can have **multiple correct targets**,
+so evaluation is about ranking all of them highly, not finding one right
+answer.
 
-Each instance also comes with curated hard negatives: images that are visually
-similar but fail the modification, or satisfy the modification but show a
-different instance. This prevents the system from succeeding on one modality
-alone.
+Each instance also comes with curated hard negatives: images that look very
+similar but fail the modification, or that satisfy the modification but show a
+different object. That is what makes the benchmark hard — you cannot succeed by
+using only one half of the query.
 
-## 5. The i-CIR benchmark — scale | 0:25 | cum 3:05
-On scale: about 752 thousand database images, 202 instances, and 1,883
-composed queries — a median of six per instance.
+## 5. The i-CIR benchmark — scale | 0:25 | cum 3:10
+Briefly, the scale. Around 752 thousand images in total, 202 instances, and
+1,883 composed queries.
 
-The histograms show the distributions, and confirm that many queries have more
-than one ground truth.
+The three histograms show the distributions: the hard negatives per instance,
+the number of correct targets per composed query — confirming that many queries
+have more than one — and the composed queries per instance, with a median of
+six.
 
-## 6. A zero-shot setting | 0:40 | cum 3:45
-We adopt a zero-shot setting — no training or fine-tuning on i-CIR.
+## 6. A zero-shot setting | 0:40 | cum 3:50
+We work in a zero-shot setting: we never train or fine-tune any model on i-CIR.
+The benchmark itself is designed this way — it provides no training split, only
+the queries and their retrieval pools.
 
-Supervised CIR needs labelled triplets, and at the instance level every new
-object would require new annotation. A model trained on fixed instances also
-does not necessarily generalize to unseen ones — and new objects appear
-constantly. So supervision would hurt both scalability and generalizability.
+And this is the right choice for the task. Supervised composed retrieval needs
+labelled triplets, so at the instance level every new object would need new
+annotation. Worse, a model trained on a fixed set of instances would not
+necessarily generalize to instances it has never seen — and in practice new
+objects appear all the time. Supervision would hurt both scalability and
+generalizability.
 
 With frozen pre-trained models, the system applies directly to unseen
 instances.
 
-## 7. Problem formulation | 0:20 | cum 4:05
-Formally: given a query image and a query text, retrieve the database images
-relevant to both.
+## 7. Problem formulation | 0:25 | cum 4:15
+Formally: given a query image and a query text, the retrieval system scores
+every image in the instance's pool and ranks them from most to least relevant.
 
-The system scores every database image and sorts them from most to least
-relevant. This ranking is the output — evaluation checks where the correct
-targets land in it.
+One detail specific to this benchmark: each instance has its **own** retrieval
+pool — its positives plus its curated hard negatives — and the pool size varies
+from instance to instance.
 
-## 8. Evaluation metric | 0:35 | cum 4:40
-Per query we use Average Precision, built on Precision-at-k — the fraction of
-the top-k results that are correct. AP is high when the correct images are
-near the top.
+So for each instance we rank that instance's pool, and return the top-k as the
+retrieval result.
 
-Averaging AP over all queries gives mean Average Precision.
+## 8. Evaluation metric | 0:40 | cum 4:55
+Every metric here is evaluated at a cut-off k.
 
-But instances have different numbers of queries, so a direct average lets
-large instances dominate. Our main metric is therefore macro-mAP: average
-within each instance first, then across instances — every instance counts
-equally.
+Precision-at-k is the fraction of the top-k results that are correct. AP-at-k
+builds on it and is high when the correct images sit near the top of the
+ranking. mAP averages that over all queries.
 
-## 9. Vision–language models: CLIP and SigLIP | 0:55 | cum 5:35
-To represent images and text we use frozen vision–language models: CLIP and
-SigLIP.
+But instances have different numbers of queries, so a plain average would let
+the big instances dominate. Our main metric is therefore **macro-mAP**: we
+average within each instance first, then across instances, so every instance
+counts equally.
 
-Both are dual-encoders: an image encoder and a text encoder mapping into the
-same embedding space, where similarity is cosine similarity. We use them
-completely frozen — we only extract embeddings.
+Throughout the thesis we set **k = 100** — the standard cut-off in this
+literature, which keeps our numbers comparable.
 
-They differ in training. CLIP compares all image–text pairs within a batch
-through a softmax contrastive objective. SigLIP classifies each pair
+## 9. Vision–language models: CLIP and SigLIP | 0:55 | cum 5:50
+Now, the core technical challenge: to retrieve anything, we need to represent
+images and texts in a way that lets us actually measure how similar they are.
+
+That is what vision–language models give us. Both CLIP and SigLIP are
+dual-encoders: an image encoder and a text encoder that map their inputs into
+the **same** shared embedding space. Once an image and a text are vectors in
+one space, their similarity is just the cosine of the angle between them.
+
+We use these models completely frozen — we only extract embeddings.
+
+The two differ in how they were trained. CLIP compares all image–text pairs
+within a batch through a softmax contrastive objective. SigLIP treats each pair
 independently with a sigmoid loss — no global softmax, which scales better to
 large batches.
 
-We compare both families to check that our method does not depend on one
+We test both families to check that our contribution does not depend on one
 particular model.
 
-## 10. The baseline: BASIC | 1:00 | cum 6:35
-Our baseline is BASIC, the zero-shot method introduced with the benchmark by
-Psomas and colleagues in 2025.
+## 10. The baseline: BASIC | 0:55 | cum 6:45
+Our baseline is BASIC, the zero-shot method released with the benchmark by
+Psomas and colleagues.
 
-BASIC processes the two parts of the query separately: the query image goes
-through the visual encoder, the query text through the text encoder.
+BASIC has two branches, and it processes the two halves of the query
+separately: the query image goes through the visual encoder, the query text
+through the text encoder.
 
-For every database image it computes two similarities — visual, to the query
-image, and textual, to the query text — and multiplies them. The
-multiplication acts like a soft logical AND: a high score requires matching
-both parts.
+For every image in the pool it computes two similarities — one to the query
+image, one to the query text — and **the score used for ranking is the product
+of these two similarities**. The multiplication acts like a soft logical AND: a
+candidate only scores high if it matches both halves of the query.
 
-BASIC uses CLIP ViT-L/14 as its main backbone — the standard in the zero-shot
-CIR literature — and we adopt the same one, so our results are directly
+BASIC uses CLIP ViT-L/14 as its main backbone, which is also the standard in
+this literature, so we adopt the same one and our results stay directly
 comparable.
 
-BASIC also includes further processing steps — centering, normalization,
-contextualization — which I will cover shortly.
+## 11. Two refinements: centering and contextualisation | 0:50 | cum 7:35
+BASIC adds two refinements, and we keep both. One acts on the embeddings, one
+on the query text.
 
-## 11. Limitation of the baseline — our proposal | 0:55 | cum 7:30
-The key limitation: the query image and query text are never processed
-jointly. Each branch sees only half of the query, so the complete composed
-query is never explicitly represented.
+**Centering.** Embedding spaces carry a large component that is common to
+almost everything — generic visual and linguistic patterns rather than what
+makes a specific image distinctive. We subtract a per-modality mean, computed
+on a separate corpus, and re-normalise. That isolates the semantic content.
 
-Our proposal is a third branch. This is the full pipeline: as before, the
-image and text branches — and in addition, both query parts go together to a
-multimodal language model, which imagines the target and writes a caption of
-it. The caption is embedded by the same frozen text encoder and becomes a
-third similarity score.
+**Contextualisation** acts on the raw query text, so it is a query-side step,
+not score post-processing. The text encoder was trained on full captions, so a
+bare fragment like "sculpture" is out of distribution and gives a weak text
+feature. We enrich the query with terms from a subject corpus, before and
+after — "sculpture dog" — then embed and average the variants.
 
-The three scores are normalized and multiplied — a soft logical AND across the
-three branches, as the figure shows.
+## 12. Limitation of the baseline — our proposal | 0:55 | cum 8:30
+Here is the key limitation. In BASIC, the query image and the query text are
+**never processed jointly**. Each branch only ever sees half of the query, so
+the complete composed query is never actually represented anywhere.
 
-> Fusion formulas and the Harris penalty → backup 24.
+Our proposal is to add a third branch. This is the full pipeline: the image and
+text branches as before — and in addition, both halves of the query go together
+into a multimodal language model, which **imagines the target** and writes a
+caption describing it. That caption is embedded by the same frozen text
+encoder, and becomes a third similarity score.
 
-## 12. The captioner: InternVL 3.5-8B | 0:40 | cum 8:10
-For caption generation we use InternVL 3.5, eight billion parameters, frozen —
-an open-source multimodal LLM that processes image and text jointly, at a
-practical balance of quality and cost. No fine-tuning anywhere.
+The three scores are normalised and multiplied — a soft logical AND across all
+three branches.
 
-In the chair example it sees the chair image and "placed around a table", and
+> Fusion formulas and the Harris penalty → backup 23.
+
+## 13. The captioner: InternVL 3.5-8B | 0:40 | cum 9:10
+For caption generation we use InternVL 3.5, at eight billion parameters, frozen
+— an open-source multimodal model that takes an image and a text together, at a
+practical balance of quality and cost. No fine-tuning anywhere in this
+pipeline.
+
+In the chair example it sees the chair image plus "placed around a table", and
 writes: "White metallic chair with scrolled armrests placed around a table."
 
-Notice this single caption carries both the visual identity and the requested
-context — exactly the signal the two separate branches cannot represent.
+Notice that this single caption carries **both** the visual identity of the
+object and the requested context — exactly the signal the two separate branches
+cannot represent on their own.
 
-## 13. Designing the instruction | 0:35 | cum 8:45
-Caption quality depends strongly on the instruction given to the model. I
-tested more than twenty instructions, varying the detail level, examples,
-constraint order, and restrictions against irrelevant information.
+## 14. Designing the instruction | 0:35 | cum 9:45
+Caption quality depends strongly on how we instruct the model to generate it. I
+tested more than twenty instructions, varying the level of detail, the use of
+examples, the order of constraints, and restrictions against irrelevant
+information.
 
 From these I selected five complementary strategies. Each describes the
-imagined target from a different perspective, and we average their caption
+imagined target from a different angle, and we average their caption
 embeddings.
 
-> What each strategy does → backup 32.
+> What each strategy does → backup 33.
 
-## 14. Effect of the caption branch | 0:45 | cum 9:30
-A single caption improves macro-mAP by about 5.9 points, from 17.95 to 23.83 —
-it captures compositional information the two branches miss.
+## 15. Effect of the caption branch | 0:45 | cum 10:30
+And this is the payoff. A single caption lifts macro-mAP from 17.95 to 23.83 —
+almost six points — which says the caption is carrying compositional
+information the two branches miss on their own.
 
-Averaging five captions from the five strategies goes further: it suppresses
-prompt-specific wording and keeps what is consistent. That reaches 25.41 —
-about 7.5 points over the image–text baseline.
+Averaging five captions from the five strategies does better still: it
+suppresses wording specific to any one prompt and keeps what they agree on.
+That reaches 25.41 — about seven and a half points over the image–text
+baseline.
 
-> Reminder on the slide: all results from here on are CLIP ViT-L/14 unless
-> stated otherwise.
+> All results from here on are CLIP ViT-L/14 unless stated otherwise.
 
-## 15. Two refinements: centering and contextualisation | 0:50 | cum 10:20
-Two further refinements — one on the embeddings, one on the raw query text.
+## 16. Adding the steps on top of each other | 0:30 | cum 11:00
+Here we add each step cumulatively — the baseline in blue, our caption pipeline
+in red, on CLIP-L.
 
-Centering: embedding spaces share a large common component — generic patterns
-rather than distinctive information. We subtract a per-modality mean computed
-on a separate corpus and re-normalise, isolating the semantic content.
+The caption pipeline stays above the baseline at every single rung. Centering
+gives the baseline its big jump, and contextualisation gives the largest single
+gain.
 
-Contextualisation acts on the raw query text — a query-side step, not score
-post-processing. The text encoder is trained on full captions, so a bare
-fragment like "sculpture" is out-of-distribution. We enrich the query with
-corpus terms before and after — "sculpture dog" — then embed and average the
-variants for a more robust text feature.
+> Why it stops at contextualisation: projection and query expansion do not help
+> once the caption branch is present → backup 25.
 
-## 16. Adding the steps on top of each other | 0:30 | cum 10:50
-Adding each step cumulatively — baseline in blue, our caption pipeline in red,
-on CLIP-L.
+## 17. Does it transfer? Four frozen backbones | 0:45 | cum 11:45
+Next: does this depend on the backbone? We test four frozen ones — CLIP ViT-L,
+our main backbone; the larger CLIP ViT-H; SigLIP ViT-L; and the recent SigLIP2.
 
-The caption pipeline stays above the baseline along the entire ladder.
-Centering gives the baseline its big jump; contextualisation gives the largest
-single gain.
+The caption branch improves **every single one**. The biggest jump is on
+SigLIP-L, where macro-mAP roughly doubles, from 21 to 43. And SigLIP2 is
+clearly the strongest backbone overall.
 
-> If asked why it stops here: projection and query expansion do not help once
-> the caption branch is present → backup 25.
+So the contribution is not a CLIP-specific trick.
 
-## 17. Does it transfer? Four frozen backbones | 0:45 | cum 11:35
-We evaluate four frozen backbones: CLIP ViT-L — our main backbone — the larger
-CLIP ViT-H, SigLIP ViT-L, and the recent SigLIP2, the best-aligned of the
-four.
+## 18. Our best overall system | 0:40 | cum 12:25
+Putting the best pieces together: SigLIP2, the caption branch with five
+averaged captions, and centering plus contextualisation. Every component
+frozen.
 
-The caption branch improves every single one. The largest jump is SigLIP-L,
-where macro-mAP roughly doubles, from 21 to 43. SigLIP2 is the strongest base
-model.
+That reaches **61.98 macro-mAP** — four point three above the strongest BASIC
+configuration.
 
-So the contribution does not depend on one particular vision–language model.
+And recall@100 is 93.8%: for almost every query, a correct target *is*
+somewhere in the retrieved shortlist. Hold onto that number — I come back to it
+in the future work.
 
-## 18. Our best overall system | 0:40 | cum 12:15
-The final system: SigLIP2, the caption branch with five averaged captions, and
-centering plus contextualisation. Everything frozen.
+> The SigLIP2 ladder behind 61.98 → backup 27.
 
-It reaches 61.98 macro-mAP. Beyond mAP: the correct target is ranked first for
-71% of queries and appears in the top ten for 95%. Recall at one hundred is
-94%.
+## 19. Qualitative example — success | 0:25 | cum 12:50 (flex)
+One example of it working. Homer Simpson, "as a plushie".
 
-That high recall matters — I will come back to it in the future work.
+The plain product scores 4% — it drifts off to generic plushies: SpongeBob,
+minions, a teddy bear. BASIC gets 33%. Our caption — "Homer Simpson as a
+plushie, with the same facial features" — pins the search to actual Homer
+plushies and reaches 88%.
 
-> The SigLIP2 ladder behind 61.98 → backup 26.
+That is the caption branch doing exactly its job: holding onto the identity
+while honouring the modification.
 
-## 19. Qualitative example — success | 0:25 | cum 12:40 (flex)
-A success: Homer Simpson, "as a plushie".
+## 20. Limitations and future work | 0:45 | cum 13:35
+Limitations. The main one is compute: caption generation dominates the online
+cost. And the results are sensitive to prompt design — averaging five captions
+mitigates that, but does not remove it.
 
-The plain product gets 4% AP — generic plushies: SpongeBob, minions. BASIC
-reaches 33%. The caption — "Homer Simpson as a plushie, same facial features"
-— pins the retrieval to actual Homer plushies: 88%. The caption keeps the
-identity while honouring the modification.
+For future work, the fixed product could be replaced by a learned or weighted
+fusion of the three similarities, trading the zero-shot constraint for
+accuracy.
 
-## 20. Qualitative example — failure | 0:25 | cum 13:05 (flex)
-An honest failure: gold metal eyeglasses, "worn by a dog".
+But the direction I find most promising follows from that recall number.
+Because recall is already so high, a correct target is nearly always in the
+shortlist — which means most of the remaining error is in the **ordering** of
+candidates we have already retrieved. That is exactly what a second-stage
+reranker fixes, and a caption-conditioned reranker would keep the modification
+in the loop at that stage too.
 
-All three methods score near zero. The single ground truth is a dog actually
-wearing these glasses; every method returns glasses on tables instead. When
-the modification demands a drastic, rarely-photographed context, the image
-branch dominates and the target never gets near the top.
+Finally, the caption-as-a-third-modality idea is benchmark-agnostic, so it
+could be tested well beyond i-CIR.
 
-## 21. Limitations and future work | 0:40 | cum 13:45
-Limitations: caption generation costs about fifteen seconds per query and
-dominates inference; results depend on prompt design — averaging mitigates but
-does not remove it; and the fixed product cannot re-weight the branches.
-
-Future work: a more efficient captioner would cut the main cost. A learned
-fusion of the three scores could trade the zero-shot constraint for accuracy.
-And since recall is already high, a second-stage reranker is promising — most
-remaining error is in the ordering of candidates already retrieved, and a
-caption-conditioned reranker keeps the modification in the loop. Finally, the
-caption-as-third-modality idea is benchmark-agnostic and could be tested
-beyond i-CIR.
-
-## 22. Conclusions | 0:30 | cum 14:15
+## 21. Conclusions | 0:30 | cum 14:05
 Two conclusions.
 
-The caption is the single most effective component — it improves every
-backbone on the full dataset.
+First, the **caption is the single most effective component** — adding the
+target caption improves every backbone we tested, on the full dataset.
 
-And SigLIP2 is the strongest backbone for the pipeline, reaching the
-thesis-best 61.98 macro-mAP, fully zero-shot.
+And second, **SigLIP2 is the strongest backbone** for this pipeline, reaching
+61.98 macro-mAP — the best result in the thesis, and fully zero-shot.
 
-> If pushed: the caption alone beats the plain product on CLIP-L → backup 27;
-> centering and the caption stack → backup 28.
+> If pushed: the caption alone beats the plain product on CLIP-L → backup 28;
+> centering and the caption stack rather than overlap → backup 29.
 
-## 23. Thank you | — | —
-Thank you. I am happy to take questions.
+## 22. Thank you | 0:15 | cum 14:20
+Thank you for your attention. I am happy to take any questions.
 
 ## Q&A map | — | —
-Score fusion formulas + Harris penalty → **backup 24**. Full CLIP-L ablation,
-every rung (incl. projection and query expansion) → **backup 25**. SigLIP2
-ladder (produces 61.98) → **backup 26**. Component contributions — image-only,
-text-only, caption-only, product, triplet → **backup 27**. Centering + caption
-are complementary → **backup 28**. "The paper reports 34.35 for BASIC" →
-**backup 29**. Latency breakdown → **backup 30**. Five instruction strategies,
-sample captions → **backup 31**; what each does → **backup 32**.
+Score fusion + Harris penalty → **23**. Failure case → **24**. Full CLIP-L
+ablation, every rung incl. projection and query expansion → **25**. Same
+ablation on SigLIP2 → **26**. SigLIP2 ladder (produces 61.98) → **27**.
+Single-branch baselines → **28**. Centering + caption complementary → **29**.
+"The paper reports 34.35 for BASIC" → **30**. Latency / "is 15 s per query
+practical?" → **31**. The five instructions: sample captions → **32**, what
+each one does → **33**.
 
-Problem formulation on slide 7; metric on slide 8; full pipeline figure on
-slide 11; backbone table on slide 17.
+In the talk: problem formulation slide 7 · metric slide 8 · pipeline figure
+slide 12 · backbone table slide 17.
 
 ---
 
 # Backup-slide notes
 
-## 24. Combining the three scores
-Min-based normalization puts the three branches on comparable scales;
-negative residuals are clamped to zero — no positive evidence. The normalized
-scores are multiplied: a soft logical AND. On top, a Harris-inspired penalty,
-from the Harris corner detector: a candidate must not win on one branch alone
-— the exact chair not around a table, or tables with the wrong chair, are both
-suppressed. The penalty is weighted by a hyperparameter lambda, fixed across
-all experiments. The surface shows the score is high only when both arguments
-are simultaneously large.
+## 23. Combining the three scores
+Min-normalisation puts the three branches on comparable scales, and negative
+residuals are clamped to zero — they count as no evidence. The normalised
+scores are then multiplied: a soft logical AND. On top of that, a
+Harris-inspired penalty, borrowed from the Harris corner detector, where a
+strong response in only one direction is not enough. A candidate must not win
+on one branch alone — the exact chair *not* around a table, or a table with the
+wrong chairs, are both suppressed. λ is a hyperparameter, fixed across every
+experiment. The surface shows the effect: the score is high only when both
+arguments are large at once.
 
-## 25. Full CLIP-L ablation
-Every rung, for the three pipelines. Two extra BASIC steps appear here:
-projection and query expansion. Projection barely helps BASIC (32.25 → 32.48)
-and *hurts* the caption pipelines; query expansion hurts everything. That is
-why our pipeline stops at contextualisation. Best triplet: 35.76.
+## 24. Qualitative example — failure
+Gold metal eyeglasses, "worn by a dog". All three methods score near zero. The
+single ground truth is a photo of a dog actually wearing these glasses, and
+every method instead returns glasses on tables. This is the characteristic
+failure mode: when the modification demands a drastic, rarely-photographed
+context, the image branch dominates and the caption cannot rescue it.
 
-## 26. SigLIP2 ladder
-Same shape as CLIP-L: the caption pipeline stays above BASIC throughout, and
-contextualisation gives the final jump. Best configuration 61.98 macro-mAP vs
-57.69 for BASIC at the same rung — and 38.1 for the plain product.
+## 25. Full ablation — CLIP ViT-L/14
+Every rung, all three pipelines. Two extra BASIC steps appear here: projection
+barely helps BASIC (32.25 → 32.48) and actively *hurts* the caption pipelines;
+query expansion hurts everything. That is why our pipeline stops at
+contextualisation. Best triplet: 35.76.
 
-## 27. Component contributions (CLIP-L)
-Each branch alone, then the combinations — raw similarity, no post-processing.
-Image only 2.75, text only 3.26: neither works alone. The caption alone
-reaches 19.51 — it already beats the full image × text product at 17.95,
-because it is the only signal that sees both query parts. Adding it to the
-product: 25.41.
+## 26. Full ablation — SigLIP2 g/16-384
+The same ladder on the best backbone; 61.98 at contextualisation against 57.69
+for BASIC at the same rung. Note the single-caption column here is instruction
+**H** (the strongest single instruction on SigLIP2), whereas the CLIP-L table
+uses instruction J — so that one column is not strictly like-for-like across
+the two tables.
 
-## 28. Centering and the caption are complementary
-The caption gain is not absorbed by centering. At the raw product the caption
+## 27. SigLIP2 ladder
+The same story as CLIP-L in chart form: the caption pipeline leads at every
+rung, and contextualisation gives the final jump — 61.98, against 57.69 for
+BASIC and 38.1 for the plain product.
+
+## 28. Baselines — what each branch contributes
+Each branch alone, then the combinations; raw similarity, no post-processing.
+Image only 2.75, text only 3.26 — neither works alone. But the **caption alone
+reaches 19.51**, already beating the full image × text product at 17.95,
+because it is the only signal that has seen both halves of the query. Adding it
+to the product gives 25.41.
+
+## 29. Centering and the caption are complementary
+The caption's gain is not absorbed by centering. At the raw product the caption
 adds +7.5; after centering it still adds +4.1. The two contributions stack,
 which is why the best configuration keeps both.
 
-## 29. Reproducing BASIC
+## 30. Reproducing BASIC
 The paper reports 34.35; our re-run of the released code gives 32.48. The gap
-is concentrated in the image branch and is consistent with re-extracting
-features in a newer software stack — image decoding and resizing differ across
-library versions. Contextualisation also draws fresh object nouns per query.
-Both BASIC and our method run in the same environment, so every comparison in
-the thesis is unaffected.
+sits in the image branch and is consistent with re-extracting features on a
+newer software stack — image decoding and resizing differ across library
+versions. Contextualisation also draws fresh nouns per query, adding a little
+run-to-run variance. Crucially, BASIC and our method run in the *same*
+environment, so every comparison in the thesis is unaffected.
 
-## 30. Inference latency
-100 queries, RTX-6000-Ada. Caption generation — five captions — takes about
-14.7 seconds and is 99.7% of the online cost; embedding the query triplet is
-milliseconds, and the backbone choice does not change latency. Database
-embeddings are precomputed offline. Levers: fewer captions, shorter
-generations, a smaller or quantised MLLM.
+## 31. Inference latency — the cost of the caption
+Online cost per query on CLIP-L; database embeddings are precomputed offline.
+BASIC costs ~254 ms, most of which is its own contextualisation step (196 ms).
+Our caption branch is what dominates: one caption costs 3.11 s, five cost
+15.13 s. Embedding is negligible either way — tens of milliseconds, and only
+2–4 ms to encode the captions themselves.
 
-## 31. The five instructions — sample captions
+The useful point: this is a real accuracy-vs-latency knob. A **single** caption
+already gives 23.83 macro-mAP against BASIC's 17.95, at a fifth of the caption
+cost; avg-5 buys only 1.6 points more for five times the compute. If latency
+mattered in deployment, K=1 is the operating point to pick.
+
+## 32. The five instructions — sample captions
 The five strategies on the Tintin example, "as an iconic rooftop sign". Each
-phrases the same target differently; their embeddings are averaged (avg-5).
+phrases the same imagined target differently; their embeddings are averaged.
 
-## 32. The five instructions — explained
-Adaptive precision adjusts the detail level to the query. Constraint-priority
-states the modification first so it is never dropped. The anti-noise contract
-forbids inventing attributes not visible in the image. The slot-fill template
-keeps captions uniform and comparable. Draft–refine adds a self-correction
-pass. They were chosen from twenty-plus candidates because each controls a
+## 33. The five instructions — explained
+Adaptive precision scales the detail to the query. Constraint-priority states
+the modification first so it is never dropped. The anti-noise contract forbids
+inventing attributes not visible in the image. The slot-fill template keeps
+captions uniform and comparable. Draft–refine adds a self-correction pass. They
+were selected from twenty-plus candidates precisely because each one controls a
 different failure mode.
