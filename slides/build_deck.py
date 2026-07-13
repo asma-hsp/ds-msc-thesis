@@ -379,15 +379,16 @@ takeaway(s, "No training anywhere — every model in this work stays frozen.", I
 # 7 — problem formulation
 # =========================================================
 s = new_slide("Problem formulation", notes=(
-    "[0:20]  Formally: given a query image and a query text, retrieve the database images "
+    "[0:20]  Formally: given a query image and a query text, retrieve the images "
     "relevant to both.\n\n"
-    "The system assigns a relevance score to EVERY database image and sorts them from "
-    "most to least relevant. This ranked list is the output; evaluation checks WHERE the "
-    "correct targets land in it."))
+    "The system assigns a relevance score to every image in the instance's own retrieval "
+    "pool — its positives plus its curated hard negatives — and sorts them from most to "
+    "least relevant. Pool size varies from instance to instance. This ranked list is the "
+    "output; evaluation checks WHERE the correct targets land in it."))
 add_pic(s, IMG["eq_problem"], Inches(0.9), Inches(1.75), Inches(8.2), Inches(0.85))
 txt(s, Inches(0.75), Inches(3.05), Inches(8.6), Inches(0.35),
-    "The system scores every database image and ranks them, most to least relevant:",
-    size=15, color=INK)
+    "The system scores every image in the instance's own pool and ranks them, most to "
+    "least relevant:", size=15, color=INK)
 pos = {0, 2, 5}
 for i in range(8):
     card(s, Inches(0.75 + i * 0.78), Inches(3.6), Inches(0.65), Inches(0.65),
@@ -396,21 +397,30 @@ for i in range(8):
          line=None, size=18, bold=True, color=WHITE)
 txt(s, Inches(7.15), Inches(3.7), Inches(2.3), Inches(0.5),
     "ranked list\n(green = correct)", size=12, color=MUTED)
-takeaway(s, "The output is a ranking of all 752,092 database images — evaluation checks "
-            "where the correct targets land.", Inches(5.0))
+takeaway(s, "Each instance has its own retrieval pool — positives plus curated hard "
+            "negatives — and pool size varies by instance.", Inches(5.0))
 
 # =========================================================
 # 8 — evaluation metric
 # =========================================================
 s = new_slide("Evaluation metric", notes=(
-    "[0:35]  For a single query we use Average Precision, built on Precision@k — the "
-    "fraction of the top-k results that are correct. AP is high when the correct images "
-    "appear near the top of the ranking; if they appear lower, the score decreases.\n\n"
+    "[0:35]  Same ranked list as before. For a single query we use Average Precision, "
+    "built on Precision@k — the fraction of the top-k results that are correct. AP is "
+    "high when the correct images appear near the top of the ranking; if they appear "
+    "lower, the score decreases.\n\n"
     "We then compute mean Average Precision by averaging AP across all queries.\n\n"
     "However, the number of queries is not the same for every instance. If we averaged "
     "directly over all queries, instances with more queries would dominate the result.\n\n"
     "For this reason our main metric is macro-mAP: we first average within each object "
     "instance, then across instances — so every instance contributes equally."))
+pos = {0, 2, 5}
+for i in range(8):
+    card(s, Inches(0.75 + i * 0.6), Inches(1.35), Inches(0.5), Inches(0.5),
+         text="✓" if i in pos else "",
+         fill=RGBColor(0x0C, 0xA3, 0x0C) if i in pos else LIGHT,
+         line=None, size=14, bold=True, color=WHITE)
+txt(s, Inches(6.0), Inches(1.42), Inches(3.35), Inches(0.4),
+    "same ranked list", size=11.5, italic=True, color=MUTED)
 mrows = [
     ("eq_pk", "Precision@k", "fraction of the top-k results that are correct", MUTED),
     ("eq_ap", "Average Precision", "high when correct images appear near the top", MUTED),
@@ -418,15 +428,15 @@ mrows = [
     ("eq_mmap", "macro-mAP",
      "main metric — average within each instance, then across instances", RED),
 ]
-y = Inches(1.6)
+y = Inches(2.25)
 for eq, name, desc, dc in mrows:
-    b = txt(s, Inches(0.75), y + Inches(0.08), Inches(3.15), Inches(0.95),
+    b = txt(s, Inches(0.75), y + Inches(0.02), Inches(3.15), Inches(0.85),
             name, size=15, bold=True, color=INK)
     p2 = b.text_frame.add_paragraph()
     p2.text = desc
-    style_runs(p2, 11.5, color=dc)
-    add_pic(s, IMG[eq], Inches(4.05), y, Inches(5.3), Inches(0.92))
-    y += Inches(1.08)
+    style_runs(p2, 11, color=dc)
+    add_pic(s, IMG[eq], Inches(4.15), y, Inches(3.6), Inches(0.55))
+    y += Inches(0.92)
 takeaway(s, "Main metric: macro-mAP — every instance contributes equally.", Inches(6.15))
 
 # =========================================================
